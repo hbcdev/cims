@@ -1,0 +1,21 @@
+SELECT Claim.notify_no, Claim.notify_date, Claim.claim_no,;
+  Claim.service_type AS claim_type, Claim.policy_no, Claim.plan, Claim.client_name,;
+  Claim.effective, Claim.expried, Claim.prov_name, Claim.admis_date,;
+  Claim.disc_date, Claim.illness1, Icd10.description, Claim.indication_admit AS indi_admit, ;
+  Claim.diag_plan AS treatment, Claim.fcharge,;
+  Claim.fdiscount, Claim.fbenfpaid, Claim.fnopaid, Claim.fremain,;
+  Claim.fnote, Claim.scharge, Claim.sdiscount, Claim.sbenfpaid,;
+  Claim.snopaid, Claim.sremain, Claim.assessor_date, Claim.snote, Claim.deduc AS Consult, ;
+  IIF(EMPTY(Claim.fax_by), Claim.abenfpaid, Claim.exgratia) AS exgratia, ;
+  Claim.anote, Claim.result, Claim.return_date, Claim.pvno,;
+  Claim.paid_date, Claim.paid_to, Claim.chqno, Claim.agent_code, Claim.agent,;
+  Claim.agency, Claim.fundcode, DATE() - TTOD(Claim.notify_date) AS pdays ;
+ FROM  cims!claim LEFT OUTER JOIN cims!icd10 ;
+   ON  Claim.illness1 = Icd10.code;
+ WHERE Claim.fundcode = gcFundCode ;
+   AND (NOT result Like "C%") ;
+   AND TTOD(Claim.notify_date) >= gdStartDate ;
+   OR (Claim.result LIKE "W%" OR Claim.result LIKE "D%" OR Claim.paid_date >= gdStartDate) ;
+ HAVING Claim.fundcode= gcFundCode ;
+ ORDER BY Claim.result ;
+ INTO TABLE (gcSaveTo+"update_paid_claim.dbf")

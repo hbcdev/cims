@@ -1,0 +1,116 @@
+:Base i_view32.hlp
+:Title IrfanView Help Contents
+:Index Index for i_view32.hlp=i_view32.hlp
+1 Overview
+2 Introduction=Hlp_IrfanView
+2 Installation=Hlp_Installation
+2 Uninstall IrfanView=Hlp_Uninstall
+2 Frequently Asked Questions=Hlp_Frequently_Asked
+2 Supported File Formats=Hlp_Supported_File
+2 PlugIns=Hlp_PlugIns
+2 Command Line Options=Hlp_Command_Line
+2 Toolbar=Hlp_Toolbar
+1 File Menu
+2 Open=Hlp_Open
+2 Reopen=Hlp_Reopen
+2 Open with external editor=Hlp_OpenExternalViewer
+2 Open in HEX viewer=Hlp_OpenHexViewer
+2 Thumbnails=Hlp_Thumbnails
+2 Slideshow=Hlp_Slideshow
+2 Batch Conversion/Rename=Hlp_Batch_Conversion
+2 Rename=Hlp_Rename
+2 Move=Hlp_Move
+2 Copy=Hlp_Copy
+2 Delete=Hlp_Delete
+2 Save=Hlp_Save
+2 Save As=Hlp_Save_As
+2 Save, Options JPEG/GIF=Hlp_Save_Options
+2 Save, Options LDF=Hlp_Savex_Options3
+2 Save, Options LWF=Hlp_Savex_Options
+2 Save, Options PBM/PGM/PPM=Hlp_Savex_Options2
+2 Save, Options TIFF=Hlp_Savex_Options1
+2 Print=Hlp_Print
+2 Select TWAIN Source=Hlp_Select_TWAIN
+2 Acquire=Hlp_Acquire
+2 Batch Scanning=Hlp_Batch_Scanning
+2 MRUDs=Hlp_MRUDs
+2 Exit=Hlp_Exit
+1 Edit Menu
+2 Undo=Hlp_Undo
+2 Add Text=Hlp_Add_Text
+2 Cut=Hlp_Cut
+2 Crop=Hlp_Crop
+2 Copy=Hlp_Copy
+2 Paste=Hlp_Paste
+2 Delete=Hlp_Delete
+2 Clear Clipboard=Hlp_Clear_Clipboard
+1 Image Menu
+2 Information=Hlp_Information
+2 Create new image=Hlp_Create_new
+2 Rotate Left=Hlp_Rotate_Left
+2 Rotate Right=Hlp_Rotate_Right
+2 Vertical Flip=Hlp_Vertical_Flip
+2 Horizontal Flip=Hlp_Horizontal_Flip
+2 Resize/Resample=Hlp_Resize
+2 Count colors used=Hlp_Count_colors
+2 Increase Color Depth=Hlp_Increase_Color
+2 Decrease Color Depth=Hlp_Decrease_Color
+2 Convert to Greyscale=Hlp_Convert_to
+2 Negative=Hlp_Negative
+2 Enhance colors=Hlp_Brightness
+2 Sharpen=Hlp_Sharpen
+2 Effects=Hlp_Effects
+2 Effects setup=Hlp_Effects_setup
+2 Filter Factory=Hlp_Filter_Factory
+2 Swap Colors=Hlp_Swap_Colors
+2 Edit Palette=Hlp_Edit_Palette
+1 Options Menu
+2 Properties=Hlp_Properties
+2 Properties, JPEG/PCD=Hlp_Properties_JPEG
+2 Properties, Extensions=Hlp_Properties_Extensions
+2 Properties, Copy/Move/Delete=Hlp_Propertiesx_CopyxMovexDelete
+2 Properties, Others 1=Hlp_Propertiesx_Others_1
+2 Properties, Others 2=Hlp_Propertiesx_Others_2
+2 Properties, Viewing=Hlp_Propertiesx_Viewing
+2 Start Multimedia Player=Hlp_Start_Multimaedia
+2 Stop Animation=Hlp_Stop_Animation
+2 Extract all frames=Hlp_Extract_all
+2 Send image by EMail=Hlp_Send_images
+2 JPG Transformation=Hlp_JPG_Transformation
+2 Capture=Hlp_Capture
+2 Sort directory files=Hlp_Sort_directory
+2 Set as Wallpaper=Hlp_Set_as
+2 Minimize=Hlp_Minimize
+2 Always on Top=Hlp_Always_on
+1 View Menu
+2 Toolbar=Hlp_Toolbar
+2 Full screen=Hlp_Full_screen
+2 Viewing options=Hlp_Viewing_Options
+2 Next File in Directory=Hlp_Next_File
+2 Previous File in Directory=Hlp_Previous_File
+2 First File in Directory=Hlp_First_File
+2 Last File in Directory=Hlp_Last_File
+2 Random File in Directory=Hlp_Random_File
+2 Refresh=Hlp_Refresh
+2 Start/Stop automatic viewing=Hlp_StartAutomaticViewing
+2 Zoom In=Hlp_Zoom_In
+2 Zoom Out=Hlp_Zoom_Out
+2 Lock Zoom=Hlp_Lock_Zoom
+2 Original size=Hlp_Original_size
+2 Show HEX view=Hlp_Show_HEX
+2 Multipage images=Hlp_Multipage_TIFF
+1 Help Menu
+2 Help=Hlp_Help
+2 Installed Plugins=Hlp_PluginInfo
+2 Thanks=Hlp_Thanks
+2 Registration=Hlp_Registration
+2 Info=Hlp_Info
+2 About IrfanView=Hlp_About_IrfanView
+1 Thumbnails
+2 Thumbnail Window=Hlp_Thumbnails
+1 Available Hotkeys
+2 Hotkeys=Hlp_Hotkeys
+1 Find newest IrfanView version
+2 Update/Contact=Hlp_Contacting_the
+1 Frequently Asked Questions
+2 Frequently Asked Questions=Hlp_Frequently_Asked

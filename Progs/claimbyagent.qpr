@@ -1,0 +1,28 @@
+PUBLIC m.cFundCode,;
+	m.nMonth,;
+	m.nYear
+LOCAL loMonthPick
+m.cFundCode = ""
+m.nMonth = MONTH(DATE())
+m.nYear = YEAR(DATE())
+loMonthPick = CREATEOBJECT("monthpick")
+IF TYPE("loMonthPick") <> "O"
+	RETURN
+ENDIF
+loMonthPick.Show
+*************************
+SELECT Member.agent, Claim.policy_no, Claim.client_name, Claim.plan,;
+  Claim.notify_date,;
+  IIF(Claim.scharge=0,Claim.fcharge,Claim.scharge) AS charge,;
+  IIF(Claim.sbenfpaid=0,Claim.fbenfpaid,Claim.sbenfpaid) AS benf_paid,;
+  IIF(EMPTY(Claim.return_date), Claim.fax_date, Claim.return_date) AS paid_date,;
+  Claim.exgratia,;
+  IIF(EMPTY(Claim.snote),Claim.fnote,Claim.snote) AS notes;
+ FROM  cims!claim INNER JOIN cims!Member ;
+   ON  LEFT(Claim.customer_id,3)+Claim.policy_no = Member.tpacode+Member.policy_no;
+ WHERE Member.tpacode = M.cfundcode;
+   AND MONTH(Claim.notify_date) = M.nmonth;
+   AND YEAR(Claim.notify_date) = M.nyear;
+ ORDER BY Member.agent;
+ INTO CURSOR Claimbyagen
+REPORT FORM e:\hips_src\report\claimbyagent.frx PREVIEW

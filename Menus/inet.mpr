@@ -1,0 +1,50 @@
+*****************************************************************************************
+* Program....:	inet
+* Version....:	1.01
+* Author.....:  Bernard Bout
+*
+* Date.......: 08/05/2003 11:12:07 AM
+* Notice.....:	Copyright (c) 2003
+
+* Change No..:  
+* Compiler...:	VFP7 SP1
+* Purpose....:	Adds a menu item for the VFP Browser
+* Changes....:
+*****************************************************************************************
+DEFINE PAD bbBrow OF _MSYSMENU PROMPT "Internet" COLOR SCHEME 3 ;
+	KEY ALT+I, ""
+ON PAD bbBrow OF _MSYSMENU ACTIVATE POPUP internet
+
+DEFINE POPUP internet MARGIN RELATIVE SHADOW COLOR SCHEME 4
+DEFINE BAR 1 OF internet PROMPT "Reload Browser"
+DEFINE BAR 2 OF internet PROMPT "GoTo"
+DEFINE BAR 3 OF internet PROMPT "Quit Browser"
+* You will need to change the paths to point to the directory where you copy this file
+ON SELECTION BAR 1 OF internet DO "\VFP7\TOOLS\INETBROWSER\add browser2screen.prg"
+ON SELECTION BAR 2 OF internet ;
+	DO browto ;
+	IN LOCFILE("\VFP7\TOOLS\INETBROWSER\INET" ,"MPX;MPR|FXP;PRG" ,"WHERE is INET?")
+ON SELECTION BAR 3 OF internet _Screen.removeobject("myBrowse")
+
+
+*       *********************************************************
+*       *                                                         
+*       * browto ON SELECTION BAR 1 OF POPUP internet        
+*       *                                                         
+*       * Procedure Origin:                                       
+*       *                                                         
+*       * From Menu:  INET.MPR,            Record:    5           
+*       * Called By:  ON SELECTION BAR 1 OF POPUP internet        
+*       * Prompt:     GoTo                                        
+*       * Snippet:    1                                           
+*       *                                                         
+*       *********************************************************
+*
+PROCEDURE browto
+IF VARTYPE(_Screen.myBrowse) = "O"
+	bb=INPUTBOX("Type in the URL to Browse to","Browse to...")
+	IF NOT EMPTY(bb)
+		_Screen.myBrowse.olecontrol1.navigate(bb)
+	ENDIF
+ENDIF
+*EOF inet

@@ -1,0 +1,63 @@
+WebStyle
+Version : 1.2 (1.2) Oct  1 1998
+WixPath : C:\PROGRAM FILES\XARA\WEBSTYLE\templates/headings/multimetal.wix
+WixFileName : templates/headings/multimetal.wix
+Template : 0
+Text : HBC Per-Certification System
+Font : Roland
+GraphicType : 2
+Bold : 0
+Italic : 0
+TextAspectRatio : 100
+DrawingWidth : 0
+DrawingHeight : 0
+PixelWidth : 397
+PixelHeight : 23
+AspectLock : 1
+ExportType : 0
+ExportQuality : 0
+ExportDither : 2
+ExportPalette : 1
+ExportBpp : 4
+TransThreshold : 254
+JPEGQuality : 30
+GIFPaletteSize : 16
+Transparent : 0
+Interlaced : 0
+ModelType : 1
+DisplayType : 1
+InputType : 0
+NumberOfColours : 2
+CurrentColourIndex : 2
+SimpleColourIndexMax : 2
+TexReplacementColour : 16711680
+TexReplacementFlag : 0
+ColProp-Value : 10053171
+ColProp-Name : BackGround
+ColProp-Question : Background color
+ColProp-WixIndex : 0
+ColProp-Value : 65382
+ColProp-Name : Metal
+ColProp-Question : Text color
+ColProp-WixIndex : 0
+NumberOfTextures : 1
+CurrentTextureIndex : 0
+TextureProp-FileName : 
+TextureProp-Name : 
+TextureProp-Question : Background
+TextureProp-WixIndex : 0
+ShadowDarkness01 : 0.65
+ShadowBlurrinessPixels : 7
+ShadowPositionXPixels : 4
+ShadowPositionYPixels : 5
+ShadowPositionXScale : 0.166667
+ShadowPositionYScale : 0.222222
+ShadowTiltDegrees : 0
+ShadowScale01 : 1
+ShadowType : 1
+ShadowOn : 1
+ShadowColour : 3342336
+ColourButtonState : 0
+TextButtonState : 0
+HaveGotConstrainedObject : 0
+CurrentConstrainedWidth : 0

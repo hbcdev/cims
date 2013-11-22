@@ -1,0 +1,14 @@
+SELECT Claim.notify_no, Claim.notify_date, Claim.claim_no,;
+  Claim.claim_type, Claim.policy_no, Claim.plan, Claim.client_name,;
+  Claim.effective, Claim.expried, Claim.prov_name, Claim.admis_date,;
+  Claim.disc_date, Claim.illness1, Claim.illness2, Claim.fcharge,;
+  Claim.fdiscount, Claim.fbenfpaid, Claim.fnopaid, Claim.fremain,;
+  Claim.fnote, Claim.scharge, Claim.sdiscount, Claim.sbenfpaid,;
+  Claim.snopaid, Claim.sremain, Claim.snote, Claim.exgratia, Claim.anote,;
+  Claim.result, Claim.return_date, Claim.pvno, Claim.paid_date,;
+  Claim.paid_to, Claim.chqno;
+ FROM cims!claim;
+ WHERE Claim.fundcode = "KTA";
+   AND LEFT(result,1) <> "C";
+ ORDER BY Claim.result;
+ INTO TABLE "\\hbcnt\apps\report\kta\kta paid claim status\update_paid_claim.dbf"

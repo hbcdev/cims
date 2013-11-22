@@ -1,0 +1,166 @@
+#Define COLOR_BLUE								708
+Error in line 532: Constant is already created with #DEFINE.
+#Define COLOR_GREEN								707
+Error in line 564: Constant is already created with #DEFINE.
+#Define COLOR_RED								706
+Error in line 610: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_ALGERIA						0x5
+Error in line 1844: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_BAHRAIN						0xf
+Error in line 1846: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_EGYPT						0x3
+Error in line 1848: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_IRAQ							0x2
+Error in line 1850: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_JORDAN						0xb
+Error in line 1852: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_KUWAIT						0xd
+Error in line 1854: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_LEBANON						0xc
+Error in line 1856: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_LIBYA						0x4
+Error in line 1858: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_MOROCCO						0x6
+Error in line 1860: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_OMAN							0x8
+Error in line 1862: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_QATAR						0x10
+Error in line 1864: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_SAUDI_ARABIA					0x1
+Error in line 1866: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_SYRIA						0xa
+Error in line 1868: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_TUNISIA						0x7
+Error in line 1870: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_UAE							0xe
+Error in line 1872: Constant is already created with #DEFINE.
+#Define SUBLANG_ARABIC_YEMEN						0x9
+Error in line 1874: Constant is already created with #DEFINE.
+#Define SUBLANG_CHINESE_HONGKONG					0x3
+Error in line 1880: Constant is already created with #DEFINE.
+#Define SUBLANG_CHINESE_SIMPLIFIED					0x2
+Error in line 1884: Constant is already created with #DEFINE.
+#Define SUBLANG_CHINESE_SINGAPORE					0x4
+Error in line 1886: Constant is already created with #DEFINE.
+#Define SUBLANG_CHINESE_TRADITIONAL					0x1
+Error in line 1888: Constant is already created with #DEFINE.
+#Define SUBLANG_DEFAULT								0x1
+Error in line 1894: Constant is already created with #DEFINE.
+#Define SUBLANG_DUTCH								0x1
+Error in line 1896: Constant is already created with #DEFINE.
+#Define SUBLANG_DUTCH_BELGIAN						0x2
+Error in line 1898: Constant is already created with #DEFINE.
+#Define SUBLANG_ENGLISH_AUS							0x3
+Error in line 1900: Constant is already created with #DEFINE.
+#Define SUBLANG_ENGLISH_BELIZE						0xa
+Error in line 1902: Constant is already created with #DEFINE.
+#Define SUBLANG_ENGLISH_CAN							0x4
+Error in line 1904: Constant is already created with #DEFINE.
+#Define SUBLANG_ENGLISH_CARIBBEAN					0x9
+Error in line 1906: Constant is already created with #DEFINE.
+#Define SUBLANG_ENGLISH_EIRE						0x6
+Error in line 1908: Constant is already created with #DEFINE.
+#Define SUBLANG_ENGLISH_JAMAICA						0x8
+Error in line 1910: Constant is already created with #DEFINE.
+#Define SUBLANG_ENGLISH_NZ							0x5
+Error in line 1912: Constant is already created with #DEFINE.
+#Define SUBLANG_ENGLISH_SOUTH_AFRICA				0x7
+Error in line 1916: Constant is already created with #DEFINE.
+#Define SUBLANG_ENGLISH_TRINIDAD					0xb
+Error in line 1918: Constant is already created with #DEFINE.
+#Define SUBLANG_ENGLISH_UK							0x2
+Error in line 1920: Constant is already created with #DEFINE.
+#Define SUBLANG_ENGLISH_US							0x1
+Error in line 1922: Constant is already created with #DEFINE.
+#Define SUBLANG_FRENCH								0x1
+Error in line 1926: Constant is already created with #DEFINE.
+#Define SUBLANG_FRENCH_BELGIAN						0x2
+Error in line 1928: Constant is already created with #DEFINE.
+#Define SUBLANG_FRENCH_CANADIAN						0x3
+Error in line 1930: Constant is already created with #DEFINE.
+#Define SUBLANG_FRENCH_LUXEMBOURG					0x5
+Error in line 1932: Constant is already created with #DEFINE.
+#Define SUBLANG_FRENCH_SWISS						0x4
+Error in line 1936: Constant is already created with #DEFINE.
+#Define SUBLANG_GERMAN								0x1
+Error in line 1938: Constant is already created with #DEFINE.
+#Define SUBLANG_GERMAN_AUSTRIAN						0x3
+Error in line 1940: Constant is already created with #DEFINE.
+#Define SUBLANG_GERMAN_LIECHTENSTEIN				0x5
+Error in line 1942: Constant is already created with #DEFINE.
+#Define SUBLANG_GERMAN_LUXEMBOURG					0x4
+Error in line 1944: Constant is already created with #DEFINE.
+#Define SUBLANG_GERMAN_SWISS						0x2
+Error in line 1946: Constant is already created with #DEFINE.
+#Define SUBLANG_ITALIAN								0x1
+Error in line 1948: Constant is already created with #DEFINE.
+#Define SUBLANG_ITALIAN_SWISS						0x2
+Error in line 1950: Constant is already created with #DEFINE.
+#Define SUBLANG_KOREAN								0x1
+Error in line 1954: Constant is already created with #DEFINE.
+#Define SUBLANG_NEUTRAL								0x0
+Error in line 1964: Constant is already created with #DEFINE.
+#Define SUBLANG_NORWEGIAN_BOKMAL					0x1
+Error in line 1966: Constant is already created with #DEFINE.
+#Define SUBLANG_NORWEGIAN_NYNORSK					0x2
+Error in line 1968: Constant is already created with #DEFINE.
+#Define SUBLANG_PORTUGUESE							0x2
+Error in line 1970: Constant is already created with #DEFINE.
+#Define SUBLANG_PORTUGUESE_BRAZILIAN				0x1
+Error in line 1972: Constant is already created with #DEFINE.
+#Define SUBLANG_SERBIAN_CYRILLIC					0x3
+Error in line 1976: Constant is already created with #DEFINE.
+#Define SUBLANG_SERBIAN_LATIN						0x2
+Error in line 1978: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH								0x1
+Error in line 1980: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_ARGENTINA					0xb
+Error in line 1982: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_BOLIVIA						0x10
+Error in line 1984: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_CHILE						0xd
+Error in line 1986: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_COLOMBIA					0x9
+Error in line 1988: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_COSTA_RICA					0x5
+Error in line 1990: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_DOMINICAN_REPUBLIC			0x7
+Error in line 1992: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_ECUADOR						0xc
+Error in line 1994: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_EL_SALVADOR					0x11
+Error in line 1996: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_GUATEMALA					0x4
+Error in line 1998: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_HONDURAS					0x12
+Error in line 2000: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_MEXICAN						0x2
+Error in line 2002: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_MODERN						0x3
+Error in line 2004: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_NICARAGUA					0x13
+Error in line 2006: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_PANAMA						0x6
+Error in line 2008: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_PARAGUAY					0xf
+Error in line 2010: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_PERU						0xa
+Error in line 2012: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_PUERTO_RICO					0x14
+Error in line 2014: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_URUGUAY						0xe
+Error in line 2016: Constant is already created with #DEFINE.
+#Define SUBLANG_SPANISH_VENEZUELA					0x8
+Error in line 2018: Constant is already created with #DEFINE.
+#Define SUBLANG_SWEDISH								0x1
+Error in line 2020: Constant is already created with #DEFINE.
+#Define SUBLANG_SWEDISH_FINLAND						0x2
+Error in line 2022: Constant is already created with #DEFINE.
+#Define SUBLANG_SYS_DEFAULT							0x2
+Error in line 2024: Constant is already created with #DEFINE.
+#DEFINE CRLF		CHR(13) + CHR(10)
+Error in line 42: Constant is already created with #DEFINE.
+#DEFINE CR			CHR(13)
+Error in line 44: Constant is already created with #DEFINE.
+#DEFILE DAYMINTUE 86400
+Error in line 58: Syntax error.
