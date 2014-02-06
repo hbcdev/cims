@@ -1,6 +1,6 @@
 *       *********************************************************
 *       *                                                         
-*       * 30/09/2013             AIMS.MPR               09:26:40  
+*       * 02/12/2013             AIMS.MPR               08:27:43  
 *       *                                                         
 *       *********************************************************
 *       *                                                         
@@ -40,32 +40,32 @@ DEFINE PAD _msm_file OF _MSYSMENU PROMPT "\<File" COLOR SCHEME 3 ;
 	NEGOTIATE  LEFT, NONE ;
 	KEY ALT+F, "" ;
 	MESSAGE "Creates, opens, saves, prints files or quits Visual FoxPro"
-DEFINE PAD _3w40k8qrh OF _MSYSMENU PROMPT "Client Infomation" COLOR SCHEME 3 ;
+DEFINE PAD _3xv0i4xll OF _MSYSMENU PROMPT "Client Infomation" COLOR SCHEME 3 ;
 	KEY ALT+I, "ALT+I" ;
 	MESSAGE "ข้อมูลผู้เอาประกัน"
-DEFINE PAD _3w40k8qri OF _MSYSMENU PROMPT "Appointment" COLOR SCHEME 3 ;
+DEFINE PAD _3xv0i4xlm OF _MSYSMENU PROMPT "Appointment" COLOR SCHEME 3 ;
 	KEY ALT+A, ""
 DEFINE PAD percert OF _MSYSMENU PROMPT "\<Claim" COLOR SCHEME 3 ;
 	NEGOTIATE  MIDDLE, MIDDLE ;
 	KEY ALT+C, "" ;
 	SKIP FOR INLIST(oApp.cUserLevel, 5, 6, 7) ;
 	MESSAGE "Pre-Certification"
-DEFINE PAD _3w40k8qrj OF _MSYSMENU PROMPT "\<Report" COLOR SCHEME 3 ;
+DEFINE PAD _3xv0i4xln OF _MSYSMENU PROMPT "\<Report" COLOR SCHEME 3 ;
 	KEY ALT+R, ""
-DEFINE PAD _3w40k8qrk OF _MSYSMENU PROMPT "\<Web" COLOR SCHEME 3 ;
+DEFINE PAD _3xv0i4xlo OF _MSYSMENU PROMPT "\<Web" COLOR SCHEME 3 ;
 	KEY ALT+W, ""
-DEFINE PAD _3w40k8qrl OF _MSYSMENU PROMPT "\<Exit Program" COLOR SCHEME 3 ;
+DEFINE PAD _3xv0i4xlp OF _MSYSMENU PROMPT "\<Exit Program" COLOR SCHEME 3 ;
 	KEY ALT+E, "" ;
 	MESSAGE "ออกจากโปรแกรม"
 ON PAD _msm_file OF _MSYSMENU ACTIVATE POPUP _mfile
-ON SELECTION PAD _3w40k8qrh OF _MSYSMENU oApp.doform("client_infoSQL")
-ON SELECTION PAD _3w40k8qri OF _MSYSMENU oApp.doform("appointment")
+ON SELECTION PAD _3xv0i4xll OF _MSYSMENU oApp.doform("client_infoSQL")
+ON SELECTION PAD _3xv0i4xlm OF _MSYSMENU oApp.doform("appointment")
 ON PAD percert OF _MSYSMENU ACTIVATE POPUP hc
-ON PAD _3w40k8qrj OF _MSYSMENU ACTIVATE POPUP report
-ON PAD _3w40k8qrk OF _MSYSMENU ACTIVATE POPUP web
-ON SELECTION PAD _3w40k8qrl OF _MSYSMENU ;
-	DO _3w40k8qrm ;
-	IN LOCFILE("\HIPS_SRC\MENUS\AIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is AIMS?")
+ON PAD _3xv0i4xln OF _MSYSMENU ACTIVATE POPUP report
+ON PAD _3xv0i4xlo OF _MSYSMENU ACTIVATE POPUP web
+ON SELECTION PAD _3xv0i4xlp OF _MSYSMENU ;
+	DO _3xv0i4xlq ;
+	IN LOCFILE("\CIMS\MENUS\AIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is AIMS?")
 
 DEFINE POPUP _mfile MARGIN RELATIVE SHADOW COLOR SCHEME 4
 DEFINE BAR 1 OF _mfile PROMPT "\<New..." ;
@@ -124,8 +124,8 @@ ON SELECTION BAR 5 OF _mfile oApp.oToolBar.CmdSave.Click()
 ON SELECTION BAR 6 OF _mfile oApp.oToolBar.CmdUndo.Click()
 ON SELECTION BAR 8 OF _mfile RUN /N1 fxsclnt.exe
 ON SELECTION BAR 9 OF _mfile ;
-	DO _3w40k8qrn ;
-	IN LOCFILE("\HIPS_SRC\MENUS\AIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is AIMS?")
+	DO _3xv0i4xlr ;
+	IN LOCFILE("\CIMS\MENUS\AIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is AIMS?")
 ON SELECTION BAR 13 OF _mfile DO FORM form\sendmemo
 ON SELECTION BAR 15 OF _mfile Activate Window calculator
 ON SELECTION BAR 16 OF _mfile Activate Window calendar
@@ -188,8 +188,8 @@ ON SELECTION BAR 9 OF report oApp.DoForm("claimquery")
 ON SELECTION BAR 10 OF report oApp.DoForm("claimupload")
 ON SELECTION BAR 12 OF report Do progs\kta_cover
 ON SELECTION BAR 13 OF report ;
-	DO _3w40k8qrx ;
-	IN LOCFILE("\HIPS_SRC\MENUS\AIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is AIMS?")
+	DO _3xv0i4xm1 ;
+	IN LOCFILE("\CIMS\MENUS\AIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is AIMS?")
 ON SELECTION BAR 15 OF report DO FORM form\reportfilter
 
 DEFINE POPUP dailyrepor MARGIN RELATIVE SHADOW COLOR SCHEME 4
@@ -256,7 +256,7 @@ ON SELECTION BAR 4 OF web do "progs\del browser2screen"
 
 *       *********************************************************
 *       *                                                         
-*       * _3W40K8QRM  ON SELECTION PAD                            
+*       * _3XV0I4XLQ  ON SELECTION PAD                            
 *       *                                                         
 *       * Procedure Origin:                                       
 *       *                                                         
@@ -267,14 +267,14 @@ ON SELECTION BAR 4 OF web do "progs\del browser2screen"
 *       *                                                         
 *       *********************************************************
 *
-PROCEDURE _3w40k8qrm
+PROCEDURE _3xv0i4xlq
 DO progs\ProgEnd	
 CLEAR EVENT
 
 
 *       *********************************************************
 *       *                                                         
-*       * _3W40K8QRN  ON SELECTION BAR 9 OF POPUP _mfile          
+*       * _3XV0I4XLR  ON SELECTION BAR 9 OF POPUP _mfile          
 *       *                                                         
 *       * Procedure Origin:                                       
 *       *                                                         
@@ -285,7 +285,7 @@ CLEAR EVENT
 *       *                                                         
 *       *********************************************************
 *
-PROCEDURE _3w40k8qrn
+PROCEDURE _3xv0i4xlr
 LOCAL lcOldError
 lcOldError = ON('ERROR')
 ON ERROR *
@@ -295,7 +295,7 @@ ON ERROR &lcOldError
 
 *       *********************************************************
 *       *                                                         
-*       * _3W40K8QRX  ON SELECTION BAR 13 OF POPUP report         
+*       * _3XV0I4XM1  ON SELECTION BAR 13 OF POPUP report         
 *       *                                                         
 *       * Procedure Origin:                                       
 *       *                                                         
@@ -306,7 +306,7 @@ ON ERROR &lcOldError
 *       *                                                         
 *       *********************************************************
 *
-PROCEDURE _3w40k8qrx
+PROCEDURE _3xv0i4xm1
 PUBLIC gdStartDate, ;
 	gdEndDate
 

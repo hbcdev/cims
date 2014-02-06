@@ -1,0 +1,199 @@
+Visual Class Library e:\cims\class\notify.vcx has the following errors:
+    Unknown NEWDATENO - Undefined
+    Unknown GETICD10TEXT - Undefined
+    Unknown GETBENEFIT - Undefined
+    Unknown NEWPROVID - Undefined
+    Unknown GETPAMEDICAL - Undefined
+    Unknown GETBENFPERIOD - Undefined
+    Unknown GETMCCOVER - Undefined
+    Unknown APP_FINDNOTIFYNO - Undefined
+    Unknown FINDINSURED - Undefined
+    Unknown REMAINFEDPAID - Undefined
+    Unknown REMAINFEDUSED - Undefined
+    Unknown REMAINFEDDPAID - Undefined
+    Unknown AGGREGATEBAL - Undefined
+    Unknown REMAINIPD - Undefined
+    Unknown REMAINOPD - Undefined
+    Proc./Func. SAVEPAPERIOD - Undefined
+    Proc./Func. SAVEHAPERIOD - Undefined
+    Unknown CLAIMCHECKLIST - Undefined
+    Unknown GETBENEFITCOVER - Undefined
+    Unknown GETICD9TEXT - Undefined
+    Unknown GETEFFECTIVEY - Undefined
+    Unknown REMAINGRACE - Undefined
+    Unknown REMAINWAIT - Undefined
+    Unknown REMAINEXCLUSIONWAIT - Undefined
+    Unknown GETSUMLINE - Undefined
+    Unknown SUMBENFGRP - Undefined
+    Unknown EDITNOTATION - Undefined
+    Unknown GETEFFCOVER - Undefined
+    Unknown CHECKDUPCLAIM - Undefined
+    Unknown GETPOLICYID - Undefined
+
+Form e:\cims\form\rv01_entry.scx has the following errors:
+    Unknown NEWFUNDDATENO - Undefined
+
+Form e:\cims\form\pv01_entry.scx has the following errors:
+    Unknown NEWDATENO - Undefined
+    Unknown NEWFUNDDATENO - Undefined
+    Unknown GETCLAIMSTATUS - Undefined
+
+Form e:\cims\form\pv_wt.scx has the following errors:
+    Unknown NEWID - Undefined
+
+Form e:\cims\form\pv_smart.scx has the following errors:
+    Unknown NEWID - Undefined
+
+Form e:\cims\form\smg_datareturn.scx has the following errors:
+    Unknown GETSMGMEMBER - Undefined
+
+Form e:\cims\form\returnclaimbybatch.scx has the following errors:
+    Unknown CLAIMCHECKLIST - Undefined
+    Unknown GETSMGMEMBER - Undefined
+    Unknown FIRSTCHR - Undefined
+    Unknown CHECKACTIVECARD - Undefined
+
+Program e:\cims\progs\lotpaymentreport.prg has the following errors:
+    Unknown FIRSTCHR - Undefined
+
+Form e:\cims\form\pv_payment.scx has the following errors:
+    Unknown NEWID - Undefined
+    Unknown FIRSTCHR - Undefined
+
+Program e:\cims\progs\smg_monthly_report.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Visual Class Library e:\cims\class\fimsmain.vcx has the following errors:
+    Unknown GETUSERINFO - Undefined
+
+Program e:\cims\progs\lot2excel.prg has the following errors:
+    Unknown FIRSTCHR - Undefined
+
+Program e:\cims\progs\claimnopaid.prg has the following errors:
+    Report CLAIMNOPAID - Undefined
+
+Program e:\cims\progs\query_ace.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+    Unknown CHECKCAT - Undefined
+
+Program e:\cims\progs\pa_monthly_report.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_bki_egat.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_bki_tcc.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_nsi_hs.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+    Unknown MESSAGEALERT - Undefined
+
+Program e:\cims\progs\query_dvs_ctac.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_dvs_srimarem.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_dvs_scg.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_dvs_sosuco.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_dvs_ttc.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_dvs_734.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_hs_tic.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+    Unknown CHECKCAT - Undefined
+
+Program e:\cims\progs\falcon_fee.prg has the following errors:
+    Unknown GETPREMIUM - Undefined
+
+Form e:\cims\form\claimtranfer.scx has the following errors:
+    Unknown GETTYPECLAIM - Undefined
+    Unknown GETFIELDTRANSFER - Undefined
+    Unknown GETDATETIME2DATE - Undefined
+    Unknown GETINDIPOLICY - Undefined
+    Unknown GETCLAIMTRANSFERWHERE - Undefined
+
+Program e:\cims\progs\pol2excel1.prg has the following errors:
+    Unknown CHECKFLD - Undefined
+
+Program e:\cims\progs\pol2excel.prg has the following errors:
+    Unknown CHECKFLD - Undefined
+
+Program e:\cims\progs\batch2excel.prg has the following errors:
+    Unknown CHECKFLD - Undefined
+
+Form e:\cims\form\cims01_client_info.scx has the following errors:
+    Unknown REMAINFEDPAID - Undefined
+    Unknown REMAINFEDUSED - Undefined
+    Unknown REMAINWAIT - Undefined
+    Unknown REMAINEXCLUSIONWAIT - Undefined
+    Unknown HOLIDAYS - Undefined
+    Unknown GETDUEDATE - Undefined
+    Unknown GETPLANDESC - Undefined
+
+Form e:\cims\form\tims_membersadd.scx has the following errors:
+    Unknown NEWID - Undefined
+    Unknown GETTPAPLANID - Undefined
+    Unknown ABANK - Undefined
+
+Form e:\cims\form\tims_memberadd.scx has the following errors:
+    Unknown NEWID - Undefined
+    Unknown GETTPAPLANID - Undefined
+    Unknown ABANK - Undefined
+
+Form e:\cims\form\appointment_add.scx has the following errors:
+    Unknown NEWDATENO - Undefined
+    Unknown NEWID - Undefined
+
+Form e:\cims\form\provadd.scx has the following errors:
+    Unknown NEWPROVID - Undefined
+
+Form e:\cims\form\cims02_precode.scx has the following errors:
+    Unknown GETPERIODFEE - Undefined
+
+Form e:\cims\form\client_info.scx has the following errors:
+    Unknown NEWDATENO - Undefined
+    Unknown GETMCCOVER - Undefined
+    Unknown REMAINWAIT - Undefined
+    Unknown REMAINEXCLUSIONWAIT - Undefined
+    Unknown GETPOLICYID - Undefined
+    Unknown HOLIDAYS - Undefined
+    Unknown GETDUEDATE - Undefined
+    Unknown GETPLANDESC - Undefined
+    Unknown GETWARNING - Undefined
+    Unknown GETNOTIFYBYPOLICY - Undefined
+    Unknown GETCLAIMBYPOLICY - Undefined
+    Unknown GETPAPERIOD - Undefined
+    Unknown CHECKADJCARD - Undefined
+    Unknown GETCLAIMBYNATID - Undefined
+    Unknown CHECKBLACKLIST - Undefined
+    Unknown GETEDCPREAUTHBYPOLICY - Undefined
+    Unknown GETEDCPAYMENTBYPOLICY - Undefined
+    Unknown GETCUSTBYPOLICYID - Undefined
+    Unknown GETCUSTBYNATID - Undefined
+    Unknown GETPAPERIODITEMS - Undefined
+    Unknown GETPAPERIODLINES - Undefined
+    Unknown GETPRODUCTCOVER - Undefined
+    Unknown VOIDCLAIMPAYMENT - Undefined
+
+Program e:\cims\progs\lot2excel_client.prg has the following errors:
+    Unknown FIRSTCHR - Undefined
+
+Form e:\cims\form\calllog.scx has the following errors:
+    Unknown NEWDATENO - Undefined
+
+Visual Class Library e:\cims\class\cimsui.vcx has the following errors:
+    Unknown NEWDATENO - Undefined
+    Unknown FINDINSURED - Undefined
+    Unknown GETBENEFITCOVER - Undefined
+    Unknown GETPOLICYID - Undefined
+    Unknown GETCLAIMLINEBYNOTIFYNO - Undefined
+

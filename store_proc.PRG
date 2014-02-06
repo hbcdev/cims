@@ -1,0 +1,11719 @@
+function messageAlert(cText, nType, cTitle, cSubject)
+
+oMgr = CREATEOBJECT("VFPAlert.AlertManager",)
+oAlert = oMgr.NewAlert()
+oAlert.Alert(cText, nType+4096+8192+16384, cTitle, cSubject)
+oMgr = null
+
+return ""
+********************************
+function connectSQL()
+
+local lnDSNLess, ;
+lnConn
+	
+if 'WACHARAKIAT' $ id()
+	lcDSNLess="driver={SQL Server Native Client 11.0};server=database.hbc-ad.local;Trusted_Connection=Yes;Database=CimsDB"
+else
+	lcDSNLess="driver={SQL Server Native Client 10.0};server=database.hbc-ad.local;Trusted_Connection=Yes;Database=CimsDB"
+ENDIF
+
+lnConn = Sqlstringconnect(lcDSNLess)
+return lnConn
+***************************************************
+FUNCTION NewID(tcAlias,tcKeyCode)
+	LOCAL lcAlias, ;
+		lcID, ;
+		lcKeycode,;
+		lcOldReprocess, ;
+		lnOldArea
+	lcKeyCode = ""
+	lnOldArea = SELECT()
+	IF PARAMETERS() < 1
+		lcAlias = ALLT(UPPER(ALIAS()))
+	ELSE
+		IF PARAMETERS() < 2
+			lcAlias = ALLT(UPPER(tcAlias))
+		ELSE
+			lcAlias = ALLT(UPPER(tcAlias))
+			lcKeyCode = ALLT(UPPER(tcKeyCode))
+		ENDIF	
+	ENDIF
+	*
+	lcID = ""
+	lcOldReprocess = SET('REPROCESS')
+	*-- Lock until user presses Esc
+	SET REPROCESS TO AUTOMATIC
+	IF USED("SETUP")
+		USE IN setup
+	ENDIF
+	USE cims!Setup IN 0
+	SELECT setup
+	IF EMPTY(lcKeyCode)
+		IF SEEK(lcAlias,"setup","keyname")
+			IF RLOCK()
+				lnValue = setup.value + 1
+				REPLACE setup.value WITH lnValue, ;
+					setup.keyno WITH lnValue
+			ENDIF
+		ELSE
+			APPEND BLANK
+			IF RLOCK()
+				REPLACE setup.keyname WITH lcAlias, setup.keyvalue WITH lcKeyCode, setup.value WITH 1
+			ENDIF
+		ENDIF
+	ELSE
+		IF SEEK(lcAlias+lcKeyCode,"setup","keyvalue")
+			IF RLOCK()
+				lnValue = setup.keyno + 1
+				REPLACE setup.value WITH lnValue, ;
+					setup.keyno WITH lnValue
+			ENDIF
+		ELSE
+			APPEND BLANK
+			IF RLOCK()
+				REPLACE setup.keyname WITH lcAlias, setup.keyvalue WITH lcKeyCode, ;
+					setup.value WITH 1, setup.keyno WITH 1
+			ENDIF
+		ENDIF
+	ENDIF	
+	DO CASE
+	CASE lcAlias = "FUND"
+		lcID = setup.value
+	CASE lcAlias = "PLAN"
+		lcID = STRTRAN(STR(setup.keyno,4)," ","0")
+	OTHERWISE		
+		lcID = STRTRAN(STR(setup.keyno,7)," ","0")
+	ENDCASE
+	UNLOCK
+	IF USED("SETUP")
+		USE IN setup
+	ENDIF	
+	*******************
+	SELECT (lnOldArea)
+	SET REPROCESS TO lcOldReprocess
+	RETURN lcID
+	*
+ENDFUNC
+************************************************************************
+* NewDateNo
+*  Pass  tcAlias = Alias
+*		 tdDate = Date to create new no	 
+*  Return  lcID = New no for date
+************************************************************************
+FUNCTION NewDateNO(tcAlias, tdDate, tcPolType)
+	LOCAL lcAlias, ;
+		lcID, ;
+		lcOldReprocess, ;
+		lnOldArea, ;
+		ldCurYM,;
+		lcCurYM
+		
+	ldCurYM = DATE()
+	lnOldArea = SELECT()
+	IF EMPTY(tcAlias) AND EMPTY(tdDate)
+		RETURN ""
+	ENDIF 	
+	lcAlias = ALLT(UPPER(tcAlias))
+	IF TYPE("tdDate") = "T"
+		ldCurYM = TTOD(tdDate)
+	ELSE
+		ldCurYM = tdDate
+	ENDIF
+	IF EMPTY(tcPolType)
+		lcPolType = ""
+	ELSE 
+		IF tcPolType # "D"
+			lcPolType = ""
+		ELSE 
+			lcPolType = tcPolType			
+		ENDIF 
+	ENDIF 			
+	*************************	
+	lcID = ""
+	lnWidth = 6
+	*
+	IF UPPER(lcAlias) = "CLAIM"
+		lcCurYM = RIGHT(STR(YEAR(ldCurYM),4),2) + STRTRAN(STR(MONTH(ldCurYM),2)," ","0")	
+	ELSE 
+		lcCurYM = STR(YEAR(ldCurYM),4) + STRTRAN(STR(MONTH(ldCurYM),2)," ","0")	
+	ENDIF 	
+	*
+	IF !EMPTY(lcPolType)
+		lnWidth = 5		
+		lcCurYM = lcPolType+SUBSTR(lcCurYM, 3)
+	ENDIF 	
+	
+	lcOldReprocess = SET('REPROCESS')
+	*-- Lock until user presses Esc
+	SET REPROCESS TO AUTOMATIC
+	IF USED("SETUP")
+		USE IN setup
+	ENDIF
+	USE cims!Setup IN 0
+	SELECT setup
+	IF SEEK(lcAlias+lcCurYM,"setup","keyvalue")
+		IF RLOCK()
+				lnValue = setup.keyno+ 1
+				REPLACE setup.value WITH lnValue, ;
+					setup.keyno WITH lnValue
+		ENDIF
+	ELSE
+		APPEND BLANK
+		IF RLOCK()
+			REPLACE setup.keyname WITH lcAlias, setup.keyvalue WITH lcCurYM, ;
+				setup.value WITH 1, setup.keyno WITH 1
+		ENDIF
+	ENDIF
+	lcID = lcCurYM+STRTRAN(STR(setup.keyno,lnWidth)," ","0")
+	UNLOCK
+	IF USED("SETUP")
+		USE IN setup
+	ENDIF
+	*******************
+	SELECT (lnOldArea)
+	SET REPROCESS TO lcOldReprocess
+	RETURN lcID
+ENDFUNC
+************************************************************************
+* NewDateNo
+*  Pass  tcAlias = Alias
+*		 tdDate = Date to create new no	 
+*  Return  lcID = New no for date
+************************************************************************
+FUNCTION NewFundDateNO(tcAlias, tdDate, tcFundCode)
+	LOCAL lcAlias, ;
+		lcID, ;
+		lcOldReprocess, ;
+		lnOldArea, ;
+		ldCurYM,;
+		lcCurYM
+		
+	ldCurYM = DATE()
+	lnOldArea = SELECT()
+	IF PARAMETERS() < 1
+		lcAlias = ALLT(UPPER(ALIAS()))
+	ELSE
+		IF PARAMETERS() < 2
+			lcAlias = ALLT(UPPER(tcAlias))
+		ELSE
+			lcAlias = ALLT(UPPER(tcAlias))
+			IF TYPE("tdDate") = "T"
+				ldCurYM = TTOD(tdDate)
+			ELSE
+				ldCurYM = tdDate
+			ENDIF				
+		ENDIF	
+	ENDIF
+	IF EMPTY(tcFundCode)
+		tcFundCode = ""
+	ENDIF
+		
+	lcID = ""
+	lcCurYM = STR(YEAR(ldCurYM),4) + STRTRAN(STR(MONTH(ldCurYM),2)," ","0")
+	lcOldReprocess = SET('REPROCESS')
+	*-- Lock until user presses Esc
+	SET REPROCESS TO AUTOMATIC
+	IF USED("SETUP")
+		USE IN setup
+	ENDIF
+	USE cims!Setup IN 0
+	SELECT setup
+	IF SEEK(lcAlias+tcFundcode+lcCurYM,"setup","keyvalue")
+		IF RLOCK()
+				lnValue = setup.keyno + 1
+				REPLACE setup.value WITH lnValue, ;
+					setup.keyno WITH lnValue
+		ENDIF
+	ELSE
+		APPEND BLANK
+		IF RLOCK()
+			REPLACE setup.keyname WITH lcAlias, setup.keyvalue WITH tcFundCode+lcCurYM, ;
+				 setup.value WITH 1, setup.keyno WITH 1
+		ENDIF
+	ENDIF
+	lcID = lcCurYM+STRTRAN(STR(setup.keyno,4)," ","0")
+	UNLOCK
+	IF USED("SETUP")
+		USE IN setup
+	ENDIF	
+	*******************
+	SELECT (lnOldArea)
+	SET REPROCESS TO lcOldReprocess
+	RETURN lcID
+ENDFUNC
+**********************************
+FUNCTION Holidays(tdStart, tdEnd)
+*
+IF EMPTY(tdStart) 
+	RETURN -1
+ENDIF 
+IF tdStart > tdEnd
+	RETURN tdEnd-tdStart
+ENDIF 	
+*
+lnSelect = SELECT()
+llClosed = .F.
+IF !USED("holidays")
+	USE cims!holidays SHARED IN 0 ORDER holiday
+	llClosed = .T.
+ENDIF 	
+SELECT holidays
+IF RECCOUNT() = 0
+	RETURN .F.
+ENDIF 
+***************************
+lnStop = 0
+ldDate = tdStart
+DO WHILE ldDate <= tdEnd
+	lnYear = YEAR(ldDate)
+	lnMont = MONTH(ldDate)
+	lnDay = DAY(ldDate)
+	lnDayofWeek = DOW(ldDate,2)
+	************************************	
+	ldHoliday = DATE(lnYear,lnMont, lnDay)
+	IF DOW(ldHoliday,2) > 5  && เสาร์-อาทิตย์
+		lnStop = lnStop + 1
+	ELSE
+		IF SEEK(STR(lnMont,2)+STR(lnDay,2)+STR(lnDayofWeek,2), "holidays", "holiday")
+			lnStop = lnStop + 1
+		ENDIF 
+	ENDIF 	 
+	ldDate = ldDate + 1
+ENDDO 	
+IF llClosed
+	USE IN holidays
+ENDIF 	
+SELECT (lnSelect)
+RETURN lnStop
+*********************************************
+FUNCTION IsHoliday(tdDate)
+*
+IF EMPTY(tdDate) 
+	RETURN .F.
+ENDIF 
+*
+llRetVal = .F.
+lnSelect = SELECT()
+llClosed = .F.
+IF !USED("holidays")
+	USE cims!holidays SHARED IN 0 ORDER holiday
+	llClosed = .T.
+ENDIF 	
+SELECT holidays
+IF RECCOUNT() = 0
+	RETURN .F.
+ENDIF 
+*****************
+lnYear = YEAR(tdDate)
+lnMont = MONTH(tdDate)
+lnDay = DAY(tdDate)
+lnDayofWeek = DOW(tdDate,2)
+**********************************	
+ldHoliday = DATE(lnYear,lnMont, lnDay)
+IF lnDayofWeek > 5  && เสาร์-อาทิตย์
+	llRetVal = .T.
+ELSE
+	IF SEEK(STR(lnMont,2)+STR(lnDay,2)+STR(lnDayofWeek,2), "holidays", "holiday")
+		llRetVal = .T.
+	ELSE 	
+		llRetVal = IIF(HOUR(tdDate) > 17, .T., IIF(HOUR(tdDate) < 8, .T., .F.))
+	ENDIF 
+ENDIF 	 
+IF llClosed
+	USE IN holidays
+ENDIF 	
+SELECT (lnSelect)
+RETURN llRetVal
+*
+*********************************************
+FUNCTION RemainYearVisit(tcFundCode, tcPolicyNo, tcPlanID)
+IF PARAMETER() < 3
+	RETURN ""
+ENDIF
+LOCAL lnArea,;
+	lcYearVisit
+lnArea = SELECT()
+lcYearVisit = ""
+SELECT renew;
+FROM cims!member;
+WHERE tpacode = tcFundCode;
+	AND policy_no = tcPolicyNo;
+	AND plan_id = tcPlanID;
+INTO CURSOR curYear
+IF _TALLY > 0
+	lcYearVisit = ALLTRIM(STR(curYear.renew,3))
+ENDIF
+SELECT (lnArea)
+RETURN lcYearVisit
+******************************************
+*  NewProvID
+* 	Pass :   tcAlias, tcType
+*   				tcType 6 = PPO , 7 = OON (Hospital) , 8 = OON (Cninic)
+*	Return lcID
+******************************************
+FUNCTION NewProvID(tcAlias,tcType)
+LOCAL lcType, ;
+	lcAlias, ;
+	lcID, ;
+	lcOldReprocess, ;
+	lnOldArea
+lnOldArea = SELECT()
+DO CASE
+CASE PARAMETERS() = 0
+	lcAlias = ALLTRIM(UPPER(Alias()))
+	lcType = "6"
+CASE PARAMETERS() = 1
+	lcAlias = ALLTRIM(UPPER(tcAlias))
+	lcType = "6"
+CASE PARAMETERS() = 2
+	lcAlias = IIF(EMPTY(tcAlias),ALLTRIM(UPPER(Alias())),ALLTRIM(UPPER(tcAlias)))
+	IF INLIST(tcType, "N", "O")
+		lcType = ICASE(tcType = "N", "6", tcType = "O", "8", "")
+	ELSE 
+		lcType = tcType	
+	ENDIF 	
+ENDCASE
+lcID = ""
+lcOldReprocess = SET('REPROCESS')
+*-- Lock until user presses Esc
+SET REPROCESS TO AUTOMATIC
+IF !USED("SETUP")
+	USE cims!Setup IN 0 
+ENDIF
+SELECT setup
+IF SEEK(lcAlias+lcType,"setup","keyvalue")
+	IF RLOCK()
+		REPLACE setup.value WITH setup.value+1, ;
+			keyno WITH setup.keyno+1
+	ENDIF
+ELSE
+	APPEND BLANK
+	IF RLOCK()
+		REPLACE keyname WITH lcAlias, ;
+			setup.keyvalue WITH lcType, ;
+			setup.value WITH 1, ;
+			setup.keyno WITH 1
+	ENDIF
+ENDIF		
+lcID = STR(setup.value,7)
+lcID = lcType+STRTRAN(lcID," ","0")
+UNLOCK
+IF USED("SETUP")
+	USE IN setup
+ENDIF
+*******************
+SELECT (lnOldArea)
+SET REPROCESS TO lcOldReprocess
+RETURN lcID
+ENDFUNC
+**********************************
+*  CheckPACover
+*  Pass : plan_id, Indication
+*  Return .T. = Cover  .F. = no cover
+**********************************
+FUNCTION CheckCover(tcPlanID, tcIndication)
+
+LOCAL llClose,;
+	llRetVal,;
+	lnArea
+IF PARAMETER() < 1
+	RETURN .F.
+ENDIF
+lnArea = SELECT()
+llClose = .F.	
+llRetVal = .F.
+cPlanID = tcPlanID
+nType = 0
+ntreatment = 0
+IF !USED("benefit")
+	USE cims!benefit IN 0
+	llClose = .T.
+ELSE
+	=REQUERY("benefit")
+ENDIF
+IF _TALLY > 0
+	IF tcIndication = "PMC"
+		tcIndication = "ME"
+	ENDIF 	
+	SELECT benefit
+	LOCATE FOR ALLTRIM(tcIndication) $ ALLTRIM(cat_code)
+	llRetVal = FOUND()	
+ENDIF
+IF llClose
+	USE IN benefit
+ENDIF
+SELECT (lnArea)
+RETURN llRetVal
+******************************************
+*  GetSurgicalFee
+* 	Pass :   tcItemcode ,tnFundID
+*	Return lnFeeRate
+******************************************
+FUNCTION GetSurgicalFee(tcItemCode,tnFundID)
+	LOCAL lcFundFee
+	IF PARAMETER() < 1
+		RETURN 0
+	ENDIF
+	IF !USED("surgical_fee")
+		USE cims!surgical_fee IN 0
+	ENDIF
+	lcFundFee = STR(tnFundID)+tcItemCode
+	IF SEEK(lcFundFee,"surgical_fee","fundfee")
+		RETURN surgical_fee.fee
+	ELSE
+		RETURN 0
+	ENDIF
+ENDFUNC
+************************************************************************
+* ตรวจสอบจำนวนเงินที่โรงพยาบาลเรียกเก็บ เกินกว่า ยอดเงินคงเหลือ
+* ส่งค่าคืน lnPaid = จำนวนเงินที่ไม่สามารถเรียกร้องได้ /ยอดเงินที่ลูกค้าจ่าย
+************************************************************************
+FUNCTION SumCusPaid
+	LOCAL lnTotalPaid,;
+		lnBenfCover,;
+		lnLeft,;
+		lnPaid
+	IF USED("claim_line")
+		lnBenfCover = IIF(claim_line.total_fee=0, claim_line.benf_cover, claim_line.benf_cover * (claim_line.total_fee/100))
+		IF claim_line.service_type = "D"
+			lnTotalPaid = claim_line.prov_charge
+			lnLeft = (lnBenfCover * claim_line.total_admis) - claim_line.benefit_paid
+		ELSE
+			lnTotalPaid = claim_line.prov_charge
+			lnLeft = lnBenfCover - claim_line.benefit_paid
+		ENDIF		
+		IF lnLeft >= lnTotalPaid
+			lnPaid = 0
+		ELSE			
+			lnPaid = lnTotalPaid - lnLeft
+		ENDIF	
+	ELSE
+		lnPaid = 0	
+	ENDIF	
+	RETURN lnPaid
+ENDFUNC
+****************************************************
+* ตรวจสอบจำนวนเงินที่โรงพยาบาลเรียกเก็บ เกินกว่า ยอดเงินคงเหลือ
+* ส่งค่าคืน lnPaid = จำนวนเงินที่สามารถเรียกร้องได้ /ยอดเงินที่บริษัทจ่าย
+*****************************************************
+FUNCTION SumTpaPaid
+LOCAL lnTotalPaid,;
+	lnBenfCover,;
+	lnLeft,;
+	lnPaid
+IF USED("claim_line")
+	lnBenfCover = IIF(claim_line.total_fee=0, claim_line.benf_cover, claim_line.benf_cover * (claim_line.total_fee/100))
+	IF claim_line.service_type = "D"
+		lnTotalPaid = claim_line.prov_charge
+		lnLeft = (lnBenfCover * claim_line.total_admis) - claim_line.benefit_paid
+	ELSE
+		lnTotalPaid = claim_line.prov_charge
+		lnLeft = lnBenfCover - claim_line.benefit_paid
+	ENDIF		
+	IF lnLeft >= lnTotalPaid
+		lnPaid = lnTotalPaid
+	ELSE			
+		lnPaid = lnLeft
+	ENDIF	
+ELSE
+	lnPaid = 0	
+ENDIF	
+RETURN lnPaid
+ENDFUNC
+
+******************************************
+* ค้นหา item ที่ต้องการใช้ในแต่ละ category
+* Return .T.  = has item , .F. = not item
+******************************************
+FUNCTION GetItemList
+LPARAMETER tcItemGrp
+LOCAL lcItemgrp,;
+	lcItem,;
+	lcSurgical,;
+	lnArea	
+IF PARAMETER() < 1
+	RETURN .F.
+ENDIF		
+lnArea = SELECT(0)	
+lcItemGrp = ""
+lcSurgical = ''
+tcItemGrp = ALLTRIM(tcItemGrp)
+DO WHILE !EMPTY(tcItemGrp)
+	lcItem = SUBSTR(tcItemGrp,1,5)	
+	lcItemGrp = lcItemGrp + [item.item_grp = "] + lcItem +["]
+	tcItemGrp = SUBSTR(tcItemGrp,6)
+	IF ! EMPTY(tcItemGrp)
+	 	lcItemGrp = lcItemGrp + [ .OR. ]
+	ENDIF	
+ENDDO
+IF USED("itemlist")
+	USE IN  itemlist
+ENDIF	
+IF !EMPTY(lcItemGrp)
+	SELECT item.description, item.item_code FROM cims!item ORDER BY item_code WHERE &lcItemGrp INTO TABLE ItemList
+ENDIF	
+SELECT (lnArea)
+IF USED("itemList")
+	IF !EOF("itemList")
+		RETURN .T.	
+	ENDIF
+ENDIF
+RETURN .F.
+ENDFUNC
+*********************************************
+* คำนวณ ยอดจ่ายสินไหมแบบ FED
+*	Pass     :  tcCustID = รหัสลูกค้า
+*	Return :  ผลรวมของจำนวนวันที่เข้ารับการรักษา
+********************************************
+FUNCTION RemainFedPaid(tcPolicyNo, tcPlanID, tdEffective, tnType)
+LOCAL lnSrvUsed,;
+	lnSumOPD,;
+	ldExpried,;
+	lnArea
+IF PARAMETER() < 4
+	RETURN -1
+ENDIF
+lnArea = SELECT(0)
+lnSumOpd = 0
+IF tnType = 0
+	SELECT SUM(IIF(sbenfpaid=0,fbenfpaid, sbenfpaid)) AS total_paid;
+	FROM FORCE cims!claim;
+	WHERE policy_no = tcPolicyNo;
+		AND plan_id = tcPlanID;
+		AND effective = tdEffective;
+	GROUP BY policy_no, plan_id, effective;	
+	INTO CURSOR curSumFed
+ELSE
+	SELECT SUM(IIF(sbenfpaid=0,fbenfpaid, sbenfpaid)) AS total_paid;
+	FROM FORCE cims!claim;
+	WHERE policy_no = tcPolicyNo;
+		AND plan_id = tcPlanID;
+		AND effective = tdEffective;
+		AND claim_type = tnType;
+	GROUP BY policy_no, plan_id, effective;	
+	INTO CURSOR curSumFed
+ENDIF	
+IF _TALLY > 0
+	lnSumOpd = curSumFed.total_paid
+ENDIF
+USE IN curSumFed
+SELECT (lnArea)
+RETURN lnSumOPD
+*********************************************
+* คำนวณ ยอดส่วนแรกรับผิดที่ใช้ไป แบบ FED
+********************************************
+FUNCTION RemainFedUsed(tcPolicyNo, tcPlanID, tdEffective)
+LOCAL lnSrvUsed,;
+	lnSumOPD,;
+	ldExpried,;
+	lnArea
+IF PARAMETER() < 3
+	RETURN -1
+ENDIF
+lnArea = SELECT(0)
+lnSumOpd = 0
+SELECT SUM(B.deduc) AS total_paid;
+FROM cims!claim A INNER JOIN cims!claim_line B;
+	ON A.claim_id = B.claim_id;
+WHERE A.policy_no = tcPolicyNo;
+	AND A.plan_id = tcPlanID;
+	AND A.effective = tdEffective;
+GROUP BY A.policy_no, A.plan_id, A.effective;
+INTO CURSOR curFedBal
+IF _TALLY > 0
+	lnSumOpd = curFedBal.total_paid
+ENDIF
+USE IN curFedBal
+SELECT (lnArea)
+RETURN lnSumOPD
+*********************************************
+* คำนวณ ยอดส่วนแรกรับผิดที่ใช้ไป แบบ FED
+********************************************
+FUNCTION RemainFedDpaid(tcPolicyNo, tcPlanID, tdEffective)
+LOCAL lnSrvUsed,;
+	lnSumOPD,;
+	ldExpried,;
+	lnArea
+IF PARAMETER() < 3
+	RETURN -1
+ENDIF
+lnArea = SELECT(0)
+lnSumOpd = 0
+SELECT SUM(B.dpaid) AS total_paid;
+FROM cims!claim A INNER JOIN cims!claim_line B;
+	ON A.claim_id = B.claim_id;
+WHERE A.policy_no = tcPolicyNo;
+	AND A.plan_id = tcPlanID;
+	AND A.effective = tdEffective;
+GROUP BY A.policy_no, A.plan_id, A.effective;
+INTO CURSOR curFedBal
+IF _TALLY > 0
+	lnSumOpd = curFedBal.total_paid
+ENDIF
+USE IN curFedBal
+SELECT (lnArea)
+RETURN lnSumOPD
+*********************************************
+* คำนวณ จำนวนวันที่เข้ารับการรักษา แบบ OPD 
+*	Pass     :  tcCustID = รหัสลูกค้า
+*	Return :  ผลรวมของจำนวนวันที่เข้ารับการรักษา
+********************************************
+FUNCTION GetOPD(tcFundcode, tcPolicyNo, tnPersonNo, tcPlanID, tdEffective)
+LOCAL lnSrvUsed,;
+	lnSumOPD,;
+	ldExpried,;
+	lnArea
+IF PARAMETER() < 1
+	RETURN -1
+ENDIF
+lnArea = SELECT(0)
+lnSumOpd = 0
+SELECT MAX(visit_no) AS max_visit ;
+FROM cims!claim ;
+WHERE fundcode = tcFundcode ;
+	AND policy_no = tcPolicyNo ;
+	AND family_no = tnPersonNo ;
+	AND plan_id = tcPlanID ;
+	AND TTOD(effective) = TTOD(tdEffective) ;
+	AND ALLTRIM(service_type) = "OPD" ;
+INTO CURSOR curMaxVisit
+IF _TALLY > 0
+	lnSumOpd = curMaxVisit.max_visit
+ENDIF	
+*USE IN curMaxVisit
+SELECT (lnArea)
+RETURN lnSumOPD
+*********************************************
+* คำนวณ จำนวนวันที่เข้ารับการรักษา แบบ OPD 
+*	Pass     :  tcCustID = รหัสลูกค้า
+*	Return :  ผลรวมของจำนวนวันที่เข้ารับการรักษา
+********************************************
+FUNCTION GetOPD1(tcFundcode, tcPolicyNo, tnPersonNo, tcPlan, tdEffective)
+LOCAL lnSrvUsed,;
+	lnSumOPD,;
+	ldExpried,;
+	lnArea
+IF PARAMETER() < 1
+	RETURN -1
+ENDIF
+lnArea = SELECT(0)
+lnSumOpd = 0
+SELECT notify_no, policy_no, family_no, plan_id, effective, visit_no ;
+FROM cims!claim ;
+WHERE fundcode = tcFundcode ;
+	AND policy_no = tcPolicyNo ;
+	AND family_no = tnPersonNo ;
+	AND ALLTRIM(plan_id) = ALLTRIM(tcPlan) ;
+	AND service_type = "OPD" ;
+ORDER BY visit_no DESC ;
+INTO CURSOR curMaxVisit
+IF _TALLY > 0
+	IF curmaxvisit.effective = tdeffective
+		lnSumOpd = curMaxVisit.max_visit
+	ENDIF 	
+ENDIF	
+*USE IN curMaxVisit
+SELECT (lnArea)
+RETURN lnSumOPD
+*********************************************
+* คำนวณ จำนวนวันที่เข้ารับการรักษา แบบ OPD 
+*	Pass     :  tcCustID = รหัสลูกค้า
+*	Return :  ผลรวมของจำนวนวันที่เข้ารับการรักษา
+********************************************
+FUNCTION RemainOPD(tcFundCode, tcPolicyNo, tnPersonNo, tcPlan)
+LOCAL lnSrvUsed,;
+	lnSumOPD,;
+	ldExpried,;
+	lnArea
+IF PARAMETER() < 1
+	RETURN -1
+ENDIF
+lnArea = SELECT(0)
+lnSumOpd = 0
+
+SELECT effective_y AS effective,expiry;
+FROM FORCE cims!member;
+WHERE tpacode = tcFundCode ;
+	AND policy_no = tcPolicyNo ;
+	AND family_no = tnPersonNo ;
+	AND plan = tcPlan ;
+INTO CURSOR curClientList
+IF _TALLY > 0
+	IF EMPTY(curClientList.effective)
+		RETURN 0
+	ENDIF
+	ldEffective = curClientList.effective
+	lcFundCode = LEFT(tcPolicyNo,3)
+	lcPolNo = SUBSTR(tcPolicyNo,4)
+	*
+	SELECT MAX(visit_no) AS max_visit ;
+	FROM FORCE cims!claim;
+	WHERE fundcode  = tcFundCode ;
+	AND policy_no = tcPolicyNo ;
+	AND family_no = tnFamilyNo ;
+	AND plan = tcPlan ;
+	AND service_type = "OPD" ;
+	AND TTOD(effective) = ldEffective ;
+	GROUP BY fundcode, policy_no, family_no, plan, effective ;	 
+	INTO CURSOR curMaxVisit
+	
+	IF _TALLY > 0
+		lnSumOpd = curMaxVisit.max_visit
+	ENDIF	
+	USE IN curMaxVisit
+ENDIF
+USE IN curClientList	
+SELECT (lnArea)
+RETURN lnSumOPD
+*********************************************
+* คำนวณ จำนวนวันที่เข้ารับการรักษา แบบ IPD 
+*	Pass     :  tcCustID = รหัสลูกค้า
+*	Return :  ผลรวมของจำนวนวันที่เข้ารับการรักษา
+********************************************
+FUNCTION RemainIPD(tcFollowUp)
+LOCAL lnSrvUsed,;
+	lnSumOPD,;
+	lnArea
+IF PARAMETER() < 1
+	RETURN -1
+ENDIF
+lnArea = SELECT(0)
+SELECT MAX(visit_no) AS max_visit ;
+FROM FORCE cims!claim ;
+WHERE claim.claim_type = 2 ;
+	AND followup = tcFollowUp ;
+INTO CURSOR curMaxVisit
+IF _TALLY > 0
+	lnSumOpd = curMaxVisit.max_visit+1
+ELSE
+	lnSumOpd = 2
+ENDIF		
+USE IN curMaxVisit
+SELECT (lnArea)
+RETURN IIF(ISNULL(lnSumOPD), 2, lnSumOPD)
+*********************************************
+* ค้นหา จำนวนครั้งของ followup
+*	Pass     : tcFollowup = Notify No to followup
+*	Return :  lnMaxVisit = Max Visit no
+********************************************
+FUNCTION RemainPaDisability(tcFollowUp)
+LOCAL lnMaxVisit,;
+	lnArea
+IF PARAMETER() < 1
+	RETURN -1
+ENDIF
+lnMaxVisit = 0
+lnArea = SELECT(0)
+SELECT visit_no;
+FROM FORCE cims!claim;
+WHERE notify_no = tcFollowUp;
+INTO CURSOR curVisit
+IF _TALLY > 0
+	SELECT MAX(visit_no) AS max_visit ;
+	FROM FORCE cims!claim;
+	WHERE followup = tcFollowUp;
+	INTO CURSOR curMaxVisit
+	IF _TALLY > 0
+		lnMaxVisit = curMaxVisit.max_visit+1
+	ELSE
+		lnMaxVisit = 2
+	ENDIF	
+ELSE
+	lnMaxVisit = 1
+ENDIF		
+USE IN curMaxVisit
+SELECT (lnArea)
+RETURN lnMaxVisit
+*********************************************
+* หา ค่ารักษาพยาบาลคงเหลือใน disability 
+*	Pass     :  tcFollowUp
+*	Return :  lnBenfBal = ยอดเงินคงเหลือ
+********************************************
+FUNCTION RemainPaBenf(tcFollowUp)
+LOCAL lnBenfBal,;
+	lnArea
+IF PARAMETER() < 1
+	RETURN -1
+ENDIF
+lnArea = SELECT(0)
+lnBenfBal = 0
+SELECT benf_cover - iif(sbenfpaid=0,fbenfpaid,sbenfpaid) AS benf_bal;
+FROM FORCE cims!claim;
+WHERE claim.notify_no = tcFollowUp AND claim.visit_no = 1;
+INTO CURSOR curBenfBal
+IF _TALLY > 0
+	lnBenfBal = curBenfBal.benf_bal
+	****
+	SELECT SUM(sbenfpaid) AS TotalPaid;
+	FROM FORCE cims!claim;
+	WHERE claim.followup = tcFollowUp;
+	INTO CURSOR curSumPaid
+	IF _TALLY > 0
+		lnBenfBal = lnBenfBal - curSumPaid.TotalPaid
+	ENDIF
+ENDIF		
+USE IN curBenfBal
+USE IN curSumPaid
+SELECT (lnArea)
+RETURN lnBenfBal
+**********************************************
+*Get Claim Type-- 
+*
+*********************************************
+FUNCTION GetClaimType(tnClaimType, tcClaimWith)
+IF PARAMETERS() <> 2
+	RETURN ""
+ENDIF
+IF tnClaimType = 0
+	RETURN ""
+ENDIF 
+LOCAL lnArea,;
+	lcValue
+lnArea = SELECT()
+lcValue = ""
+IF INLIST(tcClaimWith, "A", "P")
+	SELECT shortname FROM cims!service_type WHERE for <> "H" INTO CURSOR _service
+ELSE
+	SELECT shortname FROM cims!service_type WHERE for <> "A" INTO CURSOR _service
+ENDIF
+SELECT _service
+IF tnClaimType <= RECCOUNT() 
+	GO tnClaimType
+	lcValue = _service.shortname
+ELSE
+	lcValue = ""
+ENDIF		
+*************
+USE IN _service
+SELECT (lnArea)
+RETURN lcValue
+**********************************************
+*Get Type Claim -- 
+*
+*********************************************
+FUNCTION GetTypeClaim(tcFundcode, tnTypeClaim)
+IF PARAMETERS() <> 2
+	RETURN ""
+ENDIF
+LOCAL lnArea,;
+	lcValue
+lcValue = ""	
+lnArea = SELECT()
+USE cims!treatment_type IN 0 AGAIN ALIAS treatment
+DO CASE
+CASE tcFundCode = "PAI"
+	DO CASE
+	CASE tnTypeClaim = 1
+		lcValue = "อบ."
+	CASE tnTypeClaim = 2
+		lcValue = "จยย."
+	CASE tnTypeClaim = 3
+		lcValue = "ฆจ."
+	CASE tnTypeClaim = 4
+		lcValue = "จร."
+	OTHER
+		lcValue = "อบ."
+	ENDCASE	
+CASE tcFundCode = "SIC"
+	DO CASE
+	CASE tnTypeClaim = 1
+		lcValue = "อบ."
+	CASE tnTypeClaim = 2
+		lcValue = "จยย."
+	CASE tnTypeClaim = 3
+		lcValue = "ฆจ."
+	OTHER
+		lcValue = "อบ."
+	ENDCASE		
+ENDCASE
+*IF EMPTY(lcValue)
+*	IF SEEK(tnTypeClaim, "treatment", "code")
+*		lcValue = treatment.description
+*	ENDIF	
+*ENDIF
+USE IN treatment
+SELECT (lnArea)
+RETURN lcValue
+**********************************************
+*Get Cause -- ตารางภัยเพิ่ม
+*
+*********************************************
+FUNCTION GetCause(tcFundCode,tcPolicyNo,tnFamilyNo)
+IF PARAMETERS() < 3
+	RETURN ""
+ENDIF
+LOCAL lnArea,;
+	llCloseCause
+lnArea = SELECT()	
+*******************
+USE cims!cause AGAIN ALIAS PaCause
+CREATE CURSOR Cause_cover (code C(10), description C(50))
+**************************************************
+SELECT cause1,cause2,cause3,cause4,;
+	cause5,cause6,cause7,cause8,cause9,cause10,cause11,cause12;
+FROM cims!member;
+WHERE tpacode = tcFundCode AND;
+	policy_no = tcPolicyNo AND;
+	!EMPTY(cause1);
+INTO CURSOR curPaMember
+IF _TALLY = 0
+	SELECT cause1,cause2,cause3,cause4,cause5;
+	FROM cims!dependants;
+	WHERE tpacode = tcFundCode AND;
+		policy_no = tcPolicyNo AND;
+		person_no = tnFamilyNo;
+	INTO CURSOR curPaMember
+ENDIF
+IF _TALLY > 0
+	SELECT curPaMember
+	FOR i = 1 TO FCOUNT()
+		lcCause = "cause"+ALLTRIM(STR(i,2))
+		lcCode = &lcCause
+		IF !EMPTY(lcCode)
+			IF SEEK(tcFundCode+lcCode, "paCause", "cause_code")
+				lcDesc = pacause.description
+			ELSE
+				lcDesc = ""	
+			ENDIF	
+			APPEND BLANK IN cause_cover
+			REPLACE cause_cover.code WITH lcCode,;
+				cause_cover.description WITH lcDesc
+		ENDIF
+	ENDFOR
+ENDIF
+SELECT (lnArea)
+USE IN pacause
+IF RECCOUNT("cause_cover") = 0
+	RETURN ""
+ELSE
+	RETURN "cause_cover"
+ENDIF		
+***********************************
+FUNCTION GetStatus(tcPlanID, tdEffective, tdExpried, tdAdmit)
+IF PARAMETER() < 3
+	RETURN ""
+ENDIF
+*********************	
+LOCAL lcStatus,;
+	ldWait,;
+	ldGrace,;
+	ldExcl,;
+	lnArea
+	
+lnArea = SELECT(0)
+lcStatus = "A"
+IF EMPTY(tdAdmit)
+	tdAdmit = DATE()
+ENDIF	
+*****************
+SELECT product.wait, product.grace, product.exclusion_wait;
+FROM cims!plan INNER JOIN cims!product;
+	ON plan.prod_id = product.fundcode+product.prod_id;
+WHERE plan.plan_id = tcPlanID;
+INTO CURSOR curProduct
+*****************************
+IF _TALLY = 0
+	ldWait = TTOD(tdEffective)+30
+	ldGrace = TTOD(tdExpried)+31
+	ldExcl = TTOD(tdEffective)+120 
+ELSE
+	ldWait = TTOD(tdEffective)+curProduct.wait
+	ldGrace = TTOD(tdExpried)+curProduct.grace
+	ldExcl = TTOD(tdEffective)+curProduct.exclusion_wait
+ENDIF
+*************************************
+DO CASE
+CASE tdAdmit  <= ldWait 
+	lcStatus = "W"
+CASE tdAdmit <= ldExcl
+	lcStatus = "E"
+CASE tdAdmit > tdExpried AND tdAdmit <= ldGrace 	
+	lcStatus = "G"
+CASE tdAdmit  > ldGrace
+	lcStatus = "T"
+OTHER	
+	lcStatus = "A"	
+ENDCASE
+USE IN curProduct
+SELECT (lnArea)
+RETURN lcStatus
+ENDFUNC
+
+*********************************************************
+FUNCTION GetIcd9text(tcIcd9)
+IF PARAMETER() = 0
+	RETURN ""
+ENDIF
+LOCAL lnArea,;
+	lcRetText
+lcRettext = ""
+lnArea = SELECT(0)
+SELECT description ;
+FROM cims!icd9;
+WHERE code = tcIcd9;
+INTO CURSOR curIcd9
+IF _TALLY > 0
+	lcRetText = curIcd9.description
+ENDIF
+USE IN curIcd9
+SELECT (lnArea)
+RETURN lcRetText
+***********************************
+FUNCTION GetIcd10text(tcIcd10)
+IF PARAMETER() = 0
+	RETURN ""
+ENDIF
+LOCAL lnArea,;
+	lcRetVal
+lcRettext = ""
+lnArea = SELECT(0)
+SELECT description ;
+FROM cims!icd10;
+WHERE code = tcIcd10;
+INTO CURSOR curIcd10
+IF _TALLY > 0
+	lcRetText = curIcd10.description
+ELSE 
+	IF !USED("icd10old")	
+		USE (ADDBS(DATAPATH)+"icd10old") IN 0
+	ENDIF 
+	IF SEEK(tcIcd10, "icd10old","code")
+		lcRetText = icd10old.descriptio
+	ENDIF
+	USE IN icd10old 		
+ENDIF
+USE IN curIcd10
+SELECT (lnArea)
+RETURN lcRetText
+***********************************
+FUNCTION GetDrgText(tcDrg)
+IF PARAMETER() = 0
+	RETURN ""
+ENDIF
+LOCAL lnArea,;
+	lcRetVal
+lcRettext = ""
+lnArea = SELECT(0)
+SELECT definition ;
+FROM cims!drg;
+WHERE drg = tcDrg;
+INTO CURSOR curDrg
+IF _TALLY > 0
+	lcRetText = curDrg.definition
+ENDIF
+USE IN curDrg
+SELECT (lnArea)
+RETURN lcRetText
+***********************************
+FUNCTION GetClaimStatus(tnSendTo, tnPaidType, tnSendBy)
+IF PARAMETER() = 0
+	RETURN ""
+ENDIF
+LOCAL lcSendType,;
+	lcStatus
+
+*lcSendType = STR(tnSendTo,1)+STR(tnPaidtype,1)
+lcSendType = tnSendTo
+DO CASE
+CASE lcSendType = 1 && fund
+	lcStatus = "P3"
+CASE lcSendType = 2 && Agent
+	lcStatus = "P2"	
+CASE lcSendType = 3 && Client
+	lcStatus = "P1"	
+CASE lcSendType = 4 && Hospital
+	lcStatus = "P5"	
+OTHERWISE 
+	lcStatus = "P1"	
+ENDCASE
+**********************************
+IF tnPaidType = 4
+	DO CASE
+	CASE lcSendType = 3 && Client
+		lcStatus = "P61"	
+	CASE lcSendType = 4 && Hospital
+		lcStatus = "P62"	
+	OTHERWISE 
+		lcStatus = "P6"	
+	ENDCASE
+ENDIF 
+***********************************
+RETURN lcStatus
+*********************************************
+* Get Policydate
+*	Pass     :    Policy No
+*	Return :    policy Date 
+********************************************
+FUNCTION GetPolicyDate(tcPolicyNo, tcPlanID, tdEffective)
+IF PARAMETER() < 3
+	RETURN {}
+ENDIF
+LOCAL lnArea,;
+	ldPolicyDate
+lnArea = SELECT()
+ldPolicyDate = {}
+*****************************
+SELECT effective;
+FROM cims!member;
+WHERE policy_no = tcPolicyNo;
+	AND plan_id = tcPlanID;
+	AND effective_y = tdEffective;
+INTO CURSOR curPolicyDate
+*****************************
+IF _TALLY > 0
+	ldPolicyDate = curPolicyDate.effective
+ENDIF
+USE IN curPolicyDate
+SELECT (lnArea)
+RETURN ldPolicyDate
+ENDFUNC
+******************************************************************
+FUNCTION getYearCover(tcFundCode, ttEffective, ttExpiry, ttAccDate)
+
+IF EMPTY(tcFundcode) AND EMPTY(ttEffective) AND EMPTY(ttExpiry)
+	RETURN null
+ENDIF 
+IF YEAR(ttAccDate) < 2000
+	RETURN null
+ENDIF 
+
+IF EMPTY(ttAccDate) 
+	ttAccDate = DATETIME()
+ENDIF 
+
+loRetVal = CREATEOBJECT("Empty")
+=ADDPROPERTY(loRetVal, "Effective", {})
+=ADDPROPERTY(loRetVal, "Expiry", {})
+
+lnCoverY = year(ttExpiry) - year(ttEffective)
+if lnCoverY > 1
+	ltExpDate = ttExpiry
+	ltEffDate =  DATETIME(YEAR(gomonth(ltExpDate,-12)), MONTH(gomonth(ltExpDate,-12)), DAY(gomonth(ltExpDate,-12)), HOUR(ttEffective), MINUTE(ttEffective))
+	do while not ttAccDate > ltEffDate and ttAccDate < ltExpDate
+		ltExpDate = DATETIME(YEAR(gomonth(ltExpDate,-12)), MONTH(gomonth(ltExpDate,-12)), DAY(gomonth(ltExpDate,-12)), HOUR(ttEffective), MINUTE(ttEffective))			
+		ltEffDate = DATETIME(YEAR(gomonth(ltExpDate,-12)), MONTH(gomonth(ltExpDate,-12)), DAY(gomonth(ltExpDate,-12)), HOUR(ttEffective), MINUTE(ttEffective))			
+	enddo  
+else
+	ltEffDate = ttEffective
+	ltExpDate = ttExpiry	
+endif 	
+
+loRetVal.effective = ltEffDate
+loRetVal.Expiry = ltExpDate
+
+RETURN loRetVal
+ENDFUNC 
+***********************************************************
+FUNCTION GetEffectiveY(tdEffective, tnRenew)
+IF PARAMETER() < 2
+	RETURN {}
+ENDIF
+IF EMPTY(tdEffective)
+	RETURN {}
+ELSE
+	IF tnRenew <=1
+		RETURN DATETIME(YEAR(tdEffective),MONTH(tdEffective), DAY(tdEffective),00,00)
+	ELSE 
+		tnRenew = tnrenew - 1
+		RETURN DATETIME(YEAR(tdEffective)+tnRenew,MONTH(tdEffective), DAY(tdEffective),00,00)
+	ENDIF 			
+ENDIF	
+*********************************************
+FUNCTION GetExpriedY(tdEffective)
+IF PARAMETER() < 2
+	RETURN {}
+ENDIF
+IF EMPTY(tdEffective)
+	RETURN {}
+ELSE
+	RETURN DATETIME(YEAR(tdEffective)+1, MONTH(tdEffective), DAY(tdEffective), 00, 00)
+ENDIF	
+********************************************
+* find customer period time for this admis
+*	Pass     :    tcCustID = รหัสลูกค้า
+*				 tdAdmis  = วันที่เข้า รพ.	
+*	Return :    .T. = has period 
+*				.F. = no period
+********************************************
+FUNCTION GetPeriod(tcCustID,tdAdmis)
+LOCAL lnArea,;
+	llHasPeriod
+	
+lnArea = SELECT(0)
+SELECT a.notify_no, a.customer_id,  b.cat_code, b.dueperiod, b.tpa_paid ;
+	FROM FORCE claim a, claim_line b;
+	ORDER BY b.dueperiod, b.cat_id ;
+	WHERE a.claim_id = b.claim_id AND a.customer_id = tcCustID AND ;
+		 b.dueperiod >= tdAdmis AND a.claim_type = 2;
+	INTO CURSOR cCustDue
+IF USED("cCustDue")
+	llHasPeriod = !EOF("cCustDue")
+*	USE IN cCustDue
+ELSE
+	llHasPeriod = .F.
+ENDIF	
+SELECT (lnArea)
+RETURN llHasPeriod
+*********************************************
+* find customer followup time for this admis
+*	Pass     :    tcCustID = รหัสลูกค้า
+*				 tdAdmis  = วันที่เข้า รพ.	
+*	Return :    .T. = has period 
+*				.F. = no period
+********************************************
+FUNCTION GetFollowUp(tcCustID,tdAdmis)
+LOCAL lnArea,;
+	llHasFollowUp
+	
+lnArea = SELECT(0)
+SELECT a.notify_no, a.customer_id,  b.cat_code, b.duefollowup, b.tpa_paid ;
+	FROM FORCE claim a, claim_line b;
+	ORDER BY b.duefollowup, b.cat_id ;
+	WHERE a.customer_id = tcCustID AND b.duefollowup >= tdAdmis AND a.claim_type = 1 AND !EMPTY(duefollowup);
+	INTO CURSOR cCustDue
+IF USED("cCustDue")
+	llHasFollowUp = !EOF("cCustDue")
+*	USE IN cCustDue
+ELSE
+	llHasFollowUp = .F.
+ENDIF	
+SELECT (lnArea)
+RETURN llHasFollowUp
+*********************************************
+* RemainWait
+*	Pass     :    tcPlanID = รหัสลูกค้า
+*	Return :    waitting Date 
+********************************************
+FUNCTION RemainWait(tcPlanID,tdEffective)
+
+	IF PARAMETER() < 2
+		RETURN {}
+	ENDIF
+	cPlanID = tcPlanID
+	IF !USED("prodbycode")
+		USE cims!prodbycode IN 0
+	ELSE
+		=REQUERY("prodbycode")
+	ENDIF
+	IF !EOF("prodbycode")
+		RETURN IIF(prodbycode.wait = 0, {}, TTOD(tdEffective)+prodbycode.wait)
+	ELSE
+		RETURN TTOD(tdEffective)+30
+	ENDIF			
+ENDFUNC
+*********************************************
+* RemainWait
+*	Pass     :    tcPlanID = รหัสลูกค้า
+*	Return :    waitting Date 
+********************************************
+FUNCTION RemainExclusionWait(tcPlanID,tdEffective)
+IF PARAMETER() < 2
+	RETURN {}
+ENDIF
+LOCAL lnArea,;
+	ldWait,;
+	ldExcl
+lnArea = SELECT(0)
+*****************************
+SELECT product.wait, product.grace, product.exclusion_wait;
+FROM cims!plan INNER JOIN cims!product;
+	ON plan.prod_id = product.fundcode+product.prod_id;
+WHERE plan.plan_id = tcPlanID;
+INTO CURSOR curProduct
+*****************************
+IF _TALLY = 0
+	ldWait = TTOD(tdEffective)+30
+	ldExcl = TTOD(tdEffective)+120 
+ELSE
+	ldWait = TTOD(tdEffective)+curProduct.wait
+	ldExcl = IIF(curProduct.exclusion_wait = 0, {}, TTOD(tdEffective)+curProduct.exclusion_wait)
+ENDIF
+USE IN curProduct
+SELECT (lnArea)
+RETURN ldExcl
+ENDFUNC
+*********************************************
+* RemainGrace
+*	Pass     :    tcPlanID = รหัสลูกค้า
+*	Return :    waitting Date 
+********************************************
+FUNCTION RemainGrace(tcPlanID,tdExpiry)
+	IF PARAMETER() < 2
+		RETURN {}
+	ENDIF
+	cPlanID = tcPlanID
+	IF !USED("prodbycode")
+		USE cims!prodbycode IN 0
+	ELSE
+		=REQUERY("prodbycode")
+	ENDIF
+	IF !EOF("prodbycode")
+		RETURN IIF(prodbycode.grace = 0, {}, TTOD(tdExpiry)+prodbycode.grace)
+	ELSE
+		RETURN TTOD(tdExpiry)+31
+	ENDIF			
+ENDFUNC
+*********************************************
+* FirstChr
+*	Pass     :    ประโยคภาษาไทย
+*	Return :    thai char
+********************************************
+FUNCTION FirstChr(tcChr)
+LOCAL lcChr,;
+	lcRetChr	
+	IF PARAMETER() = 0
+		RETURN ""
+	ENDIF
+	IF INLIST(LEFT(tcChr,1), "เ", "แ", "โ", "ไ", "ใ")
+		lcChr = SUBSTR(tcChr,2,1)
+	ELSE
+		lcChr = LEFT(tcChr,1)
+	ENDIF
+	RETURN lcChr
+ENDFUNC			
+**********************************
+*  GetUserGroup
+*  Pass : username
+*  Return Group of User 
+**********************************
+FUNCTION GetUserGroup(tcUserName)
+
+LOCAL lcGroup,;
+	lnArea
+IF PARAMETER() < 1
+	RETURN ""
+ENDIF
+tcUserName = getUserName()
+lnArea = SELECT(0)
+SELECT group;
+FROM FORCE cims!users;
+WHERE username = tcUserName;
+INTO ARRAY laUser
+IF _TALLY > 0
+	lcGroup = laUser[1]
+ELSe
+	lcGroup = ""
+ENDIF
+SELECT (lnArea)
+RETURN lcGroup
+ENDFUNC
+**********************************
+*  CheckPassWord
+*  Pass : username
+*  Return .T.
+**********************************
+FUNCTION CheckPassWord(tcUserID, tcPassWord)
+IF PARAMETERS() = 0
+	RETURN .F.
+ENDIF
+llCorrect = .F.
+USE cims!users ORDER userid AGAIN ALIAS _users IN 0
+IF SEEK(LEFT(UPPER(tcUserID),8), "_users", "userid")
+	IF ALLTRIM(tcPassword) == ALLTRIM(_users.password)
+		llCorrect = .T.
+	ENDIF
+ENDIF
+USE IN _users
+RETURN llCorrect
+**********************************
+*  GetUserFullName 
+*  Pass : username
+*  Return User full name (if found) OR "" 
+**********************************
+FUNCTION GetUserFullName(tcUserName)
+
+LOCAL llClose,;
+	lcFullName,;
+	lnArea
+IF PARAMETER() < 1
+	RETURN ""
+ENDIF
+
+llClose = .F.	
+lnArea = SELECT(0)
+IF !USED("users")
+	USE cims!users IN 0
+	llClose = .T.
+ELSE
+	SELECT users
+ENDIF
+IF SEEK(LEFT(UPPER(tcUserName),8),"users","userID")
+	lcFullName = users.fullname
+ELSE
+	lcFullName = ""
+ENDIF
+IF llClose
+	USE IN users
+ENDIF
+SELECT (lnArea)
+RETURN lcFullName
+**********************************
+*  GetUserLevel
+*  Pass : username
+*  Return User full name (if found) OR "" 
+**********************************
+FUNCTION RetUserLevel(tcUserName)
+
+LOCAL llClose, ;
+	lcLevel, ;
+	lnArea
+IF PARAMETER() < 1
+	RETURN 0
+ENDIF
+
+
+llClose = !USED("users")
+lcLevel = 0
+tcUserName = getUserName()
+*
+SELECT level ;
+FROM cims!users ;
+WHERE username = tcUserName ;
+INTO ARRAY laUsers
+IF _TALLY > 0
+	lcLevel = laUsers[1]
+ENDIF
+IF llClose
+	USE IN users
+ENDIF 	
+
+*!*	llClose = .F.	
+*!*	lnArea = SELECT(0)
+*!*	IF !USED("users")
+*!*		USE cims!users IN 0
+*!*		llClose = .T.
+*!*	ELSE
+*!*		SELECT users
+*!*	ENDIF
+*!*	IF SEEK(tcUserName,"users","userID")
+*!*		lcLevel = users.level
+*!*	ELSE
+*!*		lcLevel = 0
+*!*	ENDIF
+*!*	IF llClose
+*!*		USE IN users
+*!*	ENDIF
+*!*	SELECT(lnArea)
+RETURN lcLevel
+***********************************
+FUNCTION getPlanID(tcPlan)
+IF PARAMETER() = 0
+	RETURN ""
+ENDIF
+LOCAL lnArea,;
+	lcRetVal
+
+lcRetVal = ""	
+lnArea = SELECT()
+SELECT plan_id, same_as;
+FROM cims!plan;
+WHERE title  = ALLTRIM(tcPlan);
+INTO ARRAY laPlan
+IF _TALLY > 0
+	IF EMPTY(laPlan[2])
+		lcRetVal = laPlan[1]
+	ELSE	
+		lcRetVal = laPlan[2]
+	ENDIF
+ENDIF 	
+SELECT (lnArea)
+RETURN lcRetVal
+**********************************
+FUNCTION GetPlanDesc(tcPlanID)
+IF PARAMETER() = 0
+	RETURN ""
+ENDIF
+LOCAL lnArea,;
+	lcRetVal
+	
+lnArea = SELECT()
+
+SELECT description;
+FROM cims!plan;
+WHERE plan_id  = tcPlanID;
+INTO CURSOR _curList
+IF _TALLY > 0
+	lcRetVal = ALLTRIM(_curList.description)
+ELSE	
+	lcRetVal = ""
+ENDIF
+USE IN _curList
+SELECT (lnArea)
+RETURN lcRetVal
+***********************************
+FUNCTION getPlanTitle(tcPlanTitle)
+IF PARAMETER() = 0
+	RETURN ""
+ENDIF
+LOCAL lnArea,;
+	lcRetVal
+	
+lnArea = SELECT()
+
+SELECT description;
+FROM cims!plan;
+WHERE title  = tcPlanTitle;
+INTO CURSOR _curList
+IF _TALLY > 0
+	lcRetVal = ALLTRIM(_curList.description)
+ELSE	
+	lcRetVal = ""
+ENDIF
+USE IN _curList
+SELECT (lnArea)
+RETURN lcRetVal
+***********************************
+FUNCTION GetMainGrpServ(tcPlanID, tnType, tcGroup)
+IF PARAMETER() = 0
+	RETURN 0
+ENDIF	
+***************************
+LOCAL lnRetVal,;
+	lnArea
+	
+lnArea = SELECT()
+lnRetVal = 0
+****************
+cPlanID = tcPlanID
+nType = tnType
+USE cims!benefit AGAIN IN 0 ALIAS _benefit
+IF _TALLY > 0
+	SELECT _benefit
+	LOCATE FOR LEFT(cat_group,1) = tcGroup
+	IF FOUND()
+		lnRetVal = _benefit.lm_code_4
+	ENDIF
+ENDIF
+USE IN _benefit
+SELECT (lnArea)
+RETURN lnRetVal
+*************************************************
+FUNCTION GetMainGrpBenf(tcPlanID, tnType, tcGroup, tcClass)
+IF PARAMETER() = 0
+	RETURN 0
+ENDIF	
+***************************
+LOCAL lnRetVal,;
+	lnArea
+	
+lnArea = SELECT()
+lnRetVal = 0
+****************
+cPlanID = tcPlanID
+nType = tnType
+USE cims!benefit AGAIN IN 0 ALIAS _benefit
+IF _TALLY > 0
+	SELECT _benefit
+	LOCATE FOR LEFT(cat_group,1) = tcGroup
+	IF FOUND()
+		IF EMPTY(tcClass)
+			lnRetVal = _benefit.benefit
+		ELSE
+			lnRetVal = _benefit.benefit1
+		ENDIF	
+	ENDIF
+ENDIF
+USE IN _benefit
+SELECT (lnArea)
+RETURN lnRetVal	
+***********************************
+FUNCTION GetAdmit(tcFundCode, tcPolicyNo, tdAdmit)
+IF PARAMETER() < 3
+	RETURN ""
+ENDIF
+LOCAL lnArea,;
+	lcRetVal
+lnArea = SELECT()	
+*************
+SELECT notify_no, claim_type, prov_name;
+FROM cims!claim;
+WHERE fundcode = tcFundCode;
+	AND policy_no = tcPolicyNo;
+	AND TTOD(admis_date) = TTOD(tdAdmit);
+INTO CURSOR curMoreClaim
+IF _TALLY > 0
+	lcRetVal = curMoreClaim.notify_no
+ELSE
+	lcRetVal = ""
+ENDIF		
+USE IN curMoreClaim
+SELECT (lnArea)
+RETURN lcRetVal	
+********************************
+FUNCTION GetAdmitDate(tcFundCode, tcPolicyNo, tnFamilyNo, tdAdmit)
+IF PARAMETER() < 3
+	RETURN ""
+ENDIF
+LOCAL lnArea,;
+	lcRetVal
+lnArea = SELECT()	
+*************
+SELECT notify_no, claim_type, prov_name;
+FROM cims!claim;
+WHERE fundcode = tcFundCode;
+	AND policy_no = tcPolicyNo;
+	AND family_no = tnFamilyNo;
+	AND TTOD(admis_date) = TTOD(tdAdmit);
+INTO CURSOR curMoreClaim
+IF _TALLY > 0
+	lcRetVal = curMoreClaim.notify_no
+ELSE
+	lcRetVal = ""
+ENDIF		
+USE IN curMoreClaim
+SELECT (lnArea)
+RETURN lcRetVal	
+********************************
+FUNCTION GetClaimHistory(tcFundcode, tcPolicyNo)
+IF PARAMETER() < 2
+	RETURN -1
+ENDIF	
+LOCAL lcRetVal
+lnRetVal = -1
+IF !EMPTY(tcPolicyNo) AND !EMPTY(tcFundcode)
+	a = SECOND()
+	SELECT Claim.notify_no, Claim.notify_date, Claim.claim_id,;
+	  Claim.claim_date, Claim.doc_date, Claim.type_claim, Claim.claim_type,;
+	  Claim.followup, Claim.policy_no, Claim.plan_id, Claim.claim_no,;
+	  Claim.refno, Claim.ref_date, Claim.prov_id, Claim.admis_date,;
+	  Claim.disc_date, Claim.an_no, Claim.hn_no, Claim.doctor_note,;
+	  Claim.attending, Claim.consultants, Claim.diag_plan, Claim.illness1,;
+	  Claim.illness2, Claim.illness3, Claim.sender, Claim.prov_dep,;
+	  Claim.fcharge, Claim.fbenfpaid, Claim.fremain, Claim.fnote, Claim.scharge,;
+	  Claim.sbenfpaid, Claim.sremain, Claim.snote, Claim.abenfpaid,;
+	  Claim.aremain, Claim.anote, Claim.fax_by, Claim.fax_date,;
+	  Claim.assessor_by, Claim.assessor_date, Claim.audit_by, Claim.audit_date,;
+	  Claim.result, Claim.pvno, Claim.paid_date, Claim.paid_to, Claim.chqno,;
+	  Claim.bank, Claim.payment_type, Claim.status, Claim.visit_no,;
+	  Claim.claim_with, Claim.fundcode, Claim.policy_holder, Claim.family_no,;
+	  Claim.person_no, Claim.plan, Claim.client_name, Claim.effective,;
+	  Claim.expried, Claim.prov_name, Claim.prov_class, Claim.drg, Claim.icd9_1,;
+	  Claim.icd9_2, Claim.icd9_3, Claim.benf_cover, Claim.sday, Claim.sdiscount,;
+	  Claim.exgratia, Claim.return_date, Claim.prov_pending;
+	 FROM FORCE cims!claim;
+	 WHERE Claim.fundcode = tcfundcode AND Claim.policy_no = tcPolicyNo;
+	 ORDER BY Claim.notify_no;
+	 INTO CURSOR curClaimHistory
+	 WAIT WINDOW "Total : "+STR(SECOND() - a,5,2) NOWAIT
+	 IF _TALLY > 0
+	 	lnRetVal = _TALLY
+	 ENDIF	
+ENDIF
+RETURN lnRetVal
+**********************************
+FUNCTION GetPreCert(tcFundcode, tcPolicyNo)
+IF PARAMETER() < 2
+	RETURN -1
+ENDIF	
+LOCAL lcRetVal
+lnRetVal = -1
+IF !EMPTY(tcPolicyNo) AND !EMPTY(tcFundcode)
+	a = SECOND()
+	SELECT Notify.refno, Notify.notify_no, Notify.notify_date, Notify.policy_no,;
+	  Notify.family_no, Notify.admis_date, Notify.prov_name, Notify.illness,;
+	  Notify.comment, Notify.status, Notify.notify_type, Notify.treatment_type,;
+	  Notify.recieve_date, Notify.opdcnt, Notify.person_no, Notify.client_name,;
+	  Notify.policy_name, Notify.basic_diag,  Notify.treatre_plan,  Notify.notify_notes,;
+	  Notify.record_by, Notify.cancel_by, Notify.notify_with, Notify.coverage,;
+	  Notify.plan, Notify.effective, Notify.expried, Notify.prov_class, Notify.note2ins;
+	 FROM FORCE cims!Notify;
+	 WHERE LEFT(Notify.customer_id,3) = tcFundCode AND;
+	 	Notify.policy_no = tcPolicyNO;
+	 ORDER BY Notify.notify_no;
+	 INTO CURSOR curPrecert
+	 WAIT WINDOW "Total : "+STR(SECOND() - a,5,2) NOWAIT	 
+	 IF _TALLY > 0
+	 	lnRetVal = _TALLY
+	 ENDIF	
+ENDIF
+RETURN lnRetVal
+
+***********************************
+**__RI_HEADER!@ Do NOT REMOVE or MODIFY this line!!!! @!__RI_HEADER**
+procedure RIDELETE
+local llRetVal
+llRetVal=.t.
+ IF (ISRLOCKED() and !deleted()) OR !RLOCK()
+    llRetVal=.F.
+  ELSE
+    IF !deleted()
+      DELETE
+      IF CURSORGETPROP('BUFFERING') > 1
+      	=TABLEUPDATE()
+      ENDIF
+      llRetVal=pnerror=0
+    ENDIF not already deleted
+  ENDIF
+  UNLOCK RECORD (RECNO())
+RETURN llRetVal
+
+procedure RIUPDATE
+lparameters tcFieldName,tcNewValue,tcCascadeParent
+local llRetVal
+llRetVal=.t.
+ IF ISRLOCKED() OR !RLOCK()
+    llRetVal=.F.
+  ELSE
+    IF EVAL(tcFieldName)<>tcNewValue
+      PRIVATE pcCascadeParent
+      pcCascadeParent=upper(iif(type("tcCascadeParent")<>"C","",tcCascadeParent))
+      REPLACE (tcFieldName) WITH tcNewValue
+      IF CURSORGETPROP('BUFFERING') > 1
+      	=TABLEUPDATE()
+      ENDIF
+      llRetVal=pnerror=0
+    ENDIF values don't already match
+  ENDIF it's locked already, or I was able to lock it
+  UNLOCK RECORD (RECNO())
+return llRetVal
+
+procedure rierror
+parameters tnErrNo,tcMessage,tcCode,tcProgram
+local lnErrorRows,lnXX
+lnErrorRows=alen(gaErrors,1)
+if type('gaErrors[lnErrorRows,1]')<>"L"
+  dimension gaErrors[lnErrorRows+1,alen(gaErrors,2)]
+  lnErrorRows=lnErrorRows+1
+endif
+gaErrors[lnErrorRows,1]=tnErrNo
+gaErrors[lnErrorRows,2]=tcMessage
+gaErrors[lnErrorRows,3]=tcCode
+gaErrors[lnErrorRows,4]=""
+lnXX=1
+do while !empty(program(lnXX))
+  gaErrors[lnErrorRows,4]=gaErrors[lnErrorRows,4]+","+;
+  program(lnXX)
+  lnXX=lnXX+1
+enddo
+gaErrors[lnErrorRows,5]=pcParentDBF
+gaErrors[lnErrorRows,6]=pnParentRec
+gaErrors[lnErrorRows,7]=pcParentID
+gaErrors[lnErrorRows,8]=pcParentExpr
+gaErrors[lnErrorRows,9]=pcChildDBF
+gaErrors[lnErrorRows,10]=pnChildRec
+gaErrors[lnErrorRows,11]=pcChildID
+gaErrors[lnErrorRows,12]=pcChildExpr
+return tnErrNo
+
+
+PROCEDURE riopen
+PARAMETERS tcTable,tcOrder
+
+LOCAL lcCurWkArea,lcNewWkArea,lnInUseSpot,lnOccurs,lnOccurance
+lnInUseSpot=0
+lnOccurs = OCCURS(UPPER(tcTable)+"*",UPPER(pcRIcursors))
+FOR lnOccurance = 1 TO lnOccurs
+	lnInUseSpot=ATC(tcTable+"*",pcRIcursors,lnOccurance)
+	IF ISDIGIT(SUBSTR(pcRIcursors,lnInUseSpot-1,1)) OR;
+		 EMPTY(SUBSTR(pcRIcursors,lnInUseSpot-1,1))
+		EXIT
+	ENDIF
+	lnInUseSpot=0
+ENDFOR
+
+IF lnInUseSpot=0
+  lcCurWkArea=select()
+  SELECT 0
+  lcNewWkArea=select()
+  IF NOT EMPTY(tcOrder)
+    USE (tcTable) AGAIN ORDER (tcOrder) ;
+      ALIAS ("__ri"+LTRIM(STR(SELECT()))) share
+  ELSE
+    USE (tcTable) AGAIN ALIAS ("__ri"+LTRIM(STR(SELECT()))) share
+  ENDIF
+  if pnerror=0
+    pcRIcursors=pcRIcursors+upper(tcTable)+"?"+STR(SELECT(),5)
+  else
+    lcNewWkArea=0
+  endif something bad happened while attempting to open the file
+ELSE
+  lcNewWkArea=val(substr(pcRIcursors,lnInUseSpot+len(tcTable)+1,5))
+  pcRIcursors = strtran(pcRIcursors,upper(tcTable)+"*"+str(lcNewWkArea,5),;
+    upper(tcTable)+"?"+str(lcNewWkArea,5))
+  IF NOT EMPTY(tcOrder)
+    SET ORDER TO (tcOrder) IN (lcNewWkArea)
+  ENDIF sent an order
+  if pnerror<>0
+    lcNewWkArea=0
+  endif something bad happened while setting order
+ENDIF
+RETURN (lcNewWkArea)
+
+
+PROCEDURE riend
+PARAMETERS tlSuccess
+local lnXX,lnSpot,lcWorkArea
+IF tlSuccess
+  END TRANSACTION
+ELSE
+  SET DELETED OFF
+  ROLLBACK
+  SET DELETED ON
+ENDIF
+IF EMPTY(pcRIolderror)
+  ON ERROR
+ELSE
+  ON ERROR &pcRIolderror.
+ENDIF
+FOR lnXX=1 TO occurs("*",pcRIcursors)
+  lnSpot=atc("*",pcRIcursors,lnXX)+1
+  USE IN (VAL(substr(pcRIcursors,lnSpot,5)))
+ENDFOR
+IF pcOldCompat = "ON"
+	SET COMPATIBLE ON
+ENDIF
+IF pcOldDele="OFF"
+  SET DELETED OFF
+ENDIF
+IF pcOldExact="ON"
+  SET EXACT ON
+ENDIF
+IF pcOldTalk="ON"
+  SET TALK ON
+ENDIF
+do case
+  case empty(pcOldDBC)
+    set data to
+  case pcOldDBC<>DBC()
+    set data to (pcOldDBC)
+endcase
+RETURN .T.
+
+
+PROCEDURE rireuse
+* rireuse.prg
+PARAMETERS tcTableName,tcWkArea
+pcRIcursors = strtran(pcRIcursors,upper(tcTableName)+"?"+str(tcWkArea,5),;
+  upper(tcTableName)+"*"+str(tcWkArea,5))
+RETURN .t.
+
+********************************************************************************
+** "Referential integrity delete trigger for" Category
+PROCEDURE __RI_DELETE_Category
+LOCAL llRetVal
+llRetVal = .t.
+PRIVATE pcParentDBF,pnParentRec,pcChildDBF,pnChildRec,pcParentID,pcChildID
+PRIVATE pcParentExpr,pcChildExpr
+STORE "" TO pcParentDBF,pcChildDBF,pcParentID,pcChildID,pcParentExpr,pcChildExpr
+STORE 0 TO pnParentRec,pnChildRec
+IF _triggerlevel=1
+  BEGIN TRANSACTION
+  PRIVATE pcRIcursors,pcRIwkareas,pcRIolderror,pnerror,;
+  pcOldDele,pcOldExact,pcOldTalk,pcOldCompat,PcOldDBC
+  pcOldTalk=SET("TALK")
+  SET TALK OFF
+  pcOldDele=SET("DELETED")
+  pcOldExact=SET("EXACT")
+  pcOldCompat=SET("COMPATIBLE")
+  SET COMPATIBLE OFF
+  SET DELETED ON
+  SET EXACT OFF
+  pcRIcursors=""
+  pcRIwkareas=""
+  pcRIolderror=ON("error")
+  pnerror=0
+  ON ERROR pnerror=rierror(ERROR(),message(),message(1),program())
+  IF TYPE('gaErrors(1)')<>"U"
+    release gaErrors
+  ENDIF
+  PUBLIC gaErrors(1,12)
+  pcOldDBC=DBC()
+  SET DATA TO ("CIMS")
+ENDIF first trigger
+LOCAL lcParentID && parent's value to be sought in child
+LOCAL lcChildWkArea && child work area handle returned by riopen
+LOCAL lcParentWkArea
+LOCAL llDelHeaderarea
+LOCAL lcStartArea
+lcStartArea=select()
+llRetVal=.t.
+lcParentWkArea=select()
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE CAT_ID TO lcParentID,pcParentID
+pcParentExpr="CAT_ID"
+lcChildWkArea=riopen("plan2cat","cat_id")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE CAT_ID=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=CAT_ID
+  pcChildExpr="CAT_ID"
+  llRetVal=ridelete()
+ENDSCAN get all of the plan2cat records
+=rireuse("plan2cat",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+IF _triggerlevel=1
+  do riend with llRetVal
+ENDIF at the end of the highest trigger level
+SELECT (lcStartArea)
+RETURN llRetVal
+** "End of Referential integrity Delete trigger for" Category
+********************************************************************************
+
+********************************************************************************
+procedure __RI_UPDATE_Category
+** "Referential integrity update trigger for" Category
+LOCAL llRetVal
+llRetVal = .t.
+PRIVATE pcParentDBF,pnParentRec,pcChildDBF,pnChildRec,pcParentID,pcChildID
+PRIVATE pcParentExpr,pcChildExpr
+STORE "" TO pcParentDBF,pcChildDBF,pcParentID,pcChildID,pcParentExpr,pcChildExpr
+STORE 0 TO pnParentRec,pnChildRec
+IF _triggerlevel=1
+  BEGIN TRANSACTION
+  PRIVATE pcRIcursors,pcRIwkareas,pcRIolderror,pnerror,;
+  pcOldDele,pcOldExact,pcOldTalk,pcOldCompat,PcOldDBC
+  pcOldTalk=SET("TALK")
+  SET TALK OFF
+  pcOldDele=SET("DELETED")
+  pcOldExact=SET("EXACT")
+  pcOldCompat=SET("COMPATIBLE")
+  SET COMPATIBLE OFF
+  SET DELETED ON
+  SET EXACT OFF
+  pcRIcursors=""
+  pcRIwkareas=""
+  pcRIolderror=ON("error")
+  pnerror=0
+  ON ERROR pnerror=rierror(ERROR(),message(),message(1),program())
+  IF TYPE('gaErrors(1)')<>"U"
+    release gaErrors
+  ENDIF
+  PUBLIC gaErrors(1,12)
+  pcOldDBC=DBC()
+  SET DATA TO ("CIMS")
+ENDIF first trigger
+LOCAL lcParentID && parent's value to be sought in child
+LOCAL lcOldParentID && previous parent id value
+LOCAL lcChildWkArea && child work area handle returned by riopen
+LOCAL lcChildID && child's value to be sought in parent
+LOCAL lcOldChildID && old child id value
+LOCAL lcParentWkArea && parentwork area handle returned by riopen
+LOCAL lcStartArea
+lcStartArea=select()
+llRetVal=.t.
+lcParentWkArea=select()
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("CAT_ID")
+pcParentID=lcOldParentID
+pcParentExpr="CAT_ID"
+lcParentID=CAT_ID
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("plan2cat")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR CAT_ID=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=CAT_ID
+    pcChildExpr="CAT_ID"
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("CAT_ID",lcParentID,"CATEGORY")
+  ENDSCAN get all of the plan2cat records
+  =rireuse("plan2cat",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+IF _triggerlevel=1
+  do riend with llRetVal
+ENDIF at the end of the highest trigger level
+SELECT (lcStartArea)
+RETURN llRetVal
+** "End of Referential integrity Update trigger for" Category
+********************************************************************************
+
+********************************************************************************
+** "Referential integrity delete trigger for" Fund
+PROCEDURE __RI_DELETE_Fund
+LOCAL llRetVal
+llRetVal = .t.
+PRIVATE pcParentDBF,pnParentRec,pcChildDBF,pnChildRec,pcParentID,pcChildID
+PRIVATE pcParentExpr,pcChildExpr
+STORE "" TO pcParentDBF,pcChildDBF,pcParentID,pcChildID,pcParentExpr,pcChildExpr
+STORE 0 TO pnParentRec,pnChildRec
+IF _triggerlevel=1
+  BEGIN TRANSACTION
+  PRIVATE pcRIcursors,pcRIwkareas,pcRIolderror,pnerror,;
+  pcOldDele,pcOldExact,pcOldTalk,pcOldCompat,PcOldDBC
+  pcOldTalk=SET("TALK")
+  SET TALK OFF
+  pcOldDele=SET("DELETED")
+  pcOldExact=SET("EXACT")
+  pcOldCompat=SET("COMPATIBLE")
+  SET COMPATIBLE OFF
+  SET DELETED ON
+  SET EXACT OFF
+  pcRIcursors=""
+  pcRIwkareas=""
+  pcRIolderror=ON("error")
+  pnerror=0
+  ON ERROR pnerror=rierror(ERROR(),message(),message(1),program())
+  IF TYPE('gaErrors(1)')<>"U"
+    release gaErrors
+  ENDIF
+  PUBLIC gaErrors(1,12)
+  pcOldDBC=DBC()
+  SET DATA TO ("CIMS")
+ENDIF first trigger
+LOCAL lcParentID && parent's value to be sought in child
+LOCAL lcChildWkArea && child work area handle returned by riopen
+LOCAL lcParentWkArea
+LOCAL llDelHeaderarea
+LOCAL lcStartArea
+lcStartArea=select()
+llRetVal=.t.
+lcParentWkArea=select()
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE FUND_ID TO lcParentID,pcParentID
+pcParentExpr="FUND_ID"
+lcChildWkArea=riopen("Member","fund_id")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE FUND_ID=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=FUND_ID
+  pcChildExpr="FUND_ID"
+  llRetVal=ridelete()
+ENDSCAN get all of the Member records
+=rireuse("Member",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE FUND_ID TO lcParentID,pcParentID
+pcParentExpr="FUND_ID"
+lcChildWkArea=riopen("Surgical_fee","fund_id")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE FUND_ID=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=FUND_ID
+  pcChildExpr="FUND_ID"
+  llRetVal=ridelete()
+ENDSCAN get all of the Surgical_fee records
+=rireuse("Surgical_fee",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE FUND_ID TO lcParentID,pcParentID
+pcParentExpr="FUND_ID"
+lcChildWkArea=riopen("Template","fund_id")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE FUND_ID=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=FUND_ID
+  pcChildExpr="FUND_ID"
+  llRetVal=ridelete()
+ENDSCAN get all of the Template records
+=rireuse("Template",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE FUND_ID TO lcParentID,pcParentID
+pcParentExpr="FUND_ID"
+lcChildWkArea=riopen("Pay_map","fund_id")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE FUND_ID=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=FUND_ID
+  pcChildExpr="FUND_ID"
+  llRetVal=ridelete()
+ENDSCAN get all of the Pay_map records
+=rireuse("Pay_map",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE FUND_ID TO lcParentID,pcParentID
+pcParentExpr="FUND_ID"
+lcChildWkArea=riopen("Product","fund_id")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE FUND_ID=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=FUND_ID
+  pcChildExpr="FUND_ID"
+  llRetVal=ridelete()
+ENDSCAN get all of the Product records
+=rireuse("Product",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE FUND_ID TO lcParentID,pcParentID
+pcParentExpr="FUND_ID"
+lcChildWkArea=riopen("Notify","fund_id")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE FUND_ID=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=FUND_ID
+  pcChildExpr="FUND_ID"
+  llRetVal=ridelete()
+ENDSCAN get all of the Notify records
+=rireuse("Notify",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+IF _triggerlevel=1
+  do riend with llRetVal
+ENDIF at the end of the highest trigger level
+SELECT (lcStartArea)
+RETURN llRetVal
+** "End of Referential integrity Delete trigger for" Fund
+********************************************************************************
+
+********************************************************************************
+procedure __RI_UPDATE_Fund
+** "Referential integrity update trigger for" Fund
+LOCAL llRetVal
+llRetVal = .t.
+PRIVATE pcParentDBF,pnParentRec,pcChildDBF,pnChildRec,pcParentID,pcChildID
+PRIVATE pcParentExpr,pcChildExpr
+STORE "" TO pcParentDBF,pcChildDBF,pcParentID,pcChildID,pcParentExpr,pcChildExpr
+STORE 0 TO pnParentRec,pnChildRec
+IF _triggerlevel=1
+  BEGIN TRANSACTION
+  PRIVATE pcRIcursors,pcRIwkareas,pcRIolderror,pnerror,;
+  pcOldDele,pcOldExact,pcOldTalk,pcOldCompat,PcOldDBC
+  pcOldTalk=SET("TALK")
+  SET TALK OFF
+  pcOldDele=SET("DELETED")
+  pcOldExact=SET("EXACT")
+  pcOldCompat=SET("COMPATIBLE")
+  SET COMPATIBLE OFF
+  SET DELETED ON
+  SET EXACT OFF
+  pcRIcursors=""
+  pcRIwkareas=""
+  pcRIolderror=ON("error")
+  pnerror=0
+  ON ERROR pnerror=rierror(ERROR(),message(),message(1),program())
+  IF TYPE('gaErrors(1)')<>"U"
+    release gaErrors
+  ENDIF
+  PUBLIC gaErrors(1,12)
+  pcOldDBC=DBC()
+  SET DATA TO ("CIMS")
+ENDIF first trigger
+LOCAL lcParentID && parent's value to be sought in child
+LOCAL lcOldParentID && previous parent id value
+LOCAL lcChildWkArea && child work area handle returned by riopen
+LOCAL lcChildID && child's value to be sought in parent
+LOCAL lcOldChildID && old child id value
+LOCAL lcParentWkArea && parentwork area handle returned by riopen
+LOCAL lcStartArea
+lcStartArea=select()
+llRetVal=.t.
+lcParentWkArea=select()
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("FUND_ID")
+pcParentID=lcOldParentID
+pcParentExpr="FUND_ID"
+lcParentID=FUND_ID
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("Member")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR FUND_ID=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=FUND_ID
+    pcChildExpr="FUND_ID"
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("FUND_ID",lcParentID,"FUND")
+  ENDSCAN get all of the Member records
+  =rireuse("Member",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("FUND_ID")
+pcParentID=lcOldParentID
+pcParentExpr="FUND_ID"
+lcParentID=FUND_ID
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("Surgical_fee")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR FUND_ID=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=FUND_ID
+    pcChildExpr="FUND_ID"
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("FUND_ID",lcParentID,"FUND")
+  ENDSCAN get all of the Surgical_fee records
+  =rireuse("Surgical_fee",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("FUND_ID")
+pcParentID=lcOldParentID
+pcParentExpr="FUND_ID"
+lcParentID=FUND_ID
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("Template")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR FUND_ID=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=FUND_ID
+    pcChildExpr="FUND_ID"
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("FUND_ID",lcParentID,"FUND")
+  ENDSCAN get all of the Template records
+  =rireuse("Template",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("FUND_ID")
+pcParentID=lcOldParentID
+pcParentExpr="FUND_ID"
+lcParentID=FUND_ID
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("Pay_map")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR FUND_ID=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=FUND_ID
+    pcChildExpr="FUND_ID"
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("FUND_ID",lcParentID,"FUND")
+  ENDSCAN get all of the Pay_map records
+  =rireuse("Pay_map",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("FUND_ID")
+pcParentID=lcOldParentID
+pcParentExpr="FUND_ID"
+lcParentID=FUND_ID
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("Product")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR FUND_ID=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=FUND_ID
+    pcChildExpr="FUND_ID"
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("FUND_ID",lcParentID,"FUND")
+  ENDSCAN get all of the Product records
+  =rireuse("Product",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("FUND_ID")
+pcParentID=lcOldParentID
+pcParentExpr="FUND_ID"
+lcParentID=FUND_ID
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("Notify")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR FUND_ID=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=FUND_ID
+    pcChildExpr="FUND_ID"
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("FUND_ID",lcParentID,"FUND")
+  ENDSCAN get all of the Notify records
+  =rireuse("Notify",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+IF _triggerlevel=1
+  do riend with llRetVal
+ENDIF at the end of the highest trigger level
+SELECT (lcStartArea)
+RETURN llRetVal
+** "End of Referential integrity Update trigger for" Fund
+********************************************************************************
+
+********************************************************************************
+** "Referential integrity delete trigger for" Plan
+PROCEDURE __RI_DELETE_Plan
+LOCAL llRetVal
+llRetVal = .t.
+PRIVATE pcParentDBF,pnParentRec,pcChildDBF,pnChildRec,pcParentID,pcChildID
+PRIVATE pcParentExpr,pcChildExpr
+STORE "" TO pcParentDBF,pcChildDBF,pcParentID,pcChildID,pcParentExpr,pcChildExpr
+STORE 0 TO pnParentRec,pnChildRec
+IF _triggerlevel=1
+  BEGIN TRANSACTION
+  PRIVATE pcRIcursors,pcRIwkareas,pcRIolderror,pnerror,;
+  pcOldDele,pcOldExact,pcOldTalk,pcOldCompat,PcOldDBC
+  pcOldTalk=SET("TALK")
+  SET TALK OFF
+  pcOldDele=SET("DELETED")
+  pcOldExact=SET("EXACT")
+  pcOldCompat=SET("COMPATIBLE")
+  SET COMPATIBLE OFF
+  SET DELETED ON
+  SET EXACT OFF
+  pcRIcursors=""
+  pcRIwkareas=""
+  pcRIolderror=ON("error")
+  pnerror=0
+  ON ERROR pnerror=rierror(ERROR(),message(),message(1),program())
+  IF TYPE('gaErrors(1)')<>"U"
+    release gaErrors
+  ENDIF
+  PUBLIC gaErrors(1,12)
+  pcOldDBC=DBC()
+  SET DATA TO ("CIMS")
+ENDIF first trigger
+LOCAL lcParentID && parent's value to be sought in child
+LOCAL lcChildWkArea && child work area handle returned by riopen
+LOCAL lcParentWkArea
+LOCAL llDelHeaderarea
+LOCAL lcStartArea
+lcStartArea=select()
+llRetVal=.t.
+lcParentWkArea=select()
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE PLAN_ID TO lcParentID,pcParentID
+pcParentExpr="PLAN_ID"
+lcChildWkArea=riopen("Plan_premium","plan_id")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE PLAN_ID=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=PLAN_ID
+  pcChildExpr="PLAN_ID"
+  llRetVal=ridelete()
+ENDSCAN get all of the Plan_premium records
+=rireuse("Plan_premium",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE PLAN_ID TO lcParentID,pcParentID
+pcParentExpr="PLAN_ID"
+lcChildWkArea=riopen("plan2cat","plan_id")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE PLAN_ID=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=PLAN_ID
+  pcChildExpr="PLAN_ID"
+  llRetVal=ridelete()
+ENDSCAN get all of the plan2cat records
+=rireuse("plan2cat",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+IF _triggerlevel=1
+  do riend with llRetVal
+ENDIF at the end of the highest trigger level
+SELECT (lcStartArea)
+RETURN llRetVal
+** "End of Referential integrity Delete trigger for" Plan
+********************************************************************************
+
+********************************************************************************
+procedure __RI_UPDATE_Plan
+** "Referential integrity update trigger for" Plan
+LOCAL llRetVal
+llRetVal = .t.
+PRIVATE pcParentDBF,pnParentRec,pcChildDBF,pnChildRec,pcParentID,pcChildID
+PRIVATE pcParentExpr,pcChildExpr
+STORE "" TO pcParentDBF,pcChildDBF,pcParentID,pcChildID,pcParentExpr,pcChildExpr
+STORE 0 TO pnParentRec,pnChildRec
+IF _triggerlevel=1
+  BEGIN TRANSACTION
+  PRIVATE pcRIcursors,pcRIwkareas,pcRIolderror,pnerror,;
+  pcOldDele,pcOldExact,pcOldTalk,pcOldCompat,PcOldDBC
+  pcOldTalk=SET("TALK")
+  SET TALK OFF
+  pcOldDele=SET("DELETED")
+  pcOldExact=SET("EXACT")
+  pcOldCompat=SET("COMPATIBLE")
+  SET COMPATIBLE OFF
+  SET DELETED ON
+  SET EXACT OFF
+  pcRIcursors=""
+  pcRIwkareas=""
+  pcRIolderror=ON("error")
+  pnerror=0
+  ON ERROR pnerror=rierror(ERROR(),message(),message(1),program())
+  IF TYPE('gaErrors(1)')<>"U"
+    release gaErrors
+  ENDIF
+  PUBLIC gaErrors(1,12)
+  pcOldDBC=DBC()
+  SET DATA TO ("CIMS")
+ENDIF first trigger
+LOCAL lcParentID && parent's value to be sought in child
+LOCAL lcOldParentID && previous parent id value
+LOCAL lcChildWkArea && child work area handle returned by riopen
+LOCAL lcChildID && child's value to be sought in parent
+LOCAL lcOldChildID && old child id value
+LOCAL lcParentWkArea && parentwork area handle returned by riopen
+LOCAL lcStartArea
+lcStartArea=select()
+llRetVal=.t.
+lcParentWkArea=select()
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("PLAN_ID")
+pcParentID=lcOldParentID
+pcParentExpr="PLAN_ID"
+lcParentID=PLAN_ID
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("Plan_premium")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR PLAN_ID=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=PLAN_ID
+    pcChildExpr="PLAN_ID"
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("PLAN_ID",lcParentID,"PLAN")
+  ENDSCAN get all of the Plan_premium records
+  =rireuse("Plan_premium",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("PLAN_ID")
+pcParentID=lcOldParentID
+pcParentExpr="PLAN_ID"
+lcParentID=PLAN_ID
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("plan2cat")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR PLAN_ID=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=PLAN_ID
+    pcChildExpr="PLAN_ID"
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("PLAN_ID",lcParentID,"PLAN")
+  ENDSCAN get all of the plan2cat records
+  =rireuse("plan2cat",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+IF _triggerlevel=1
+  do riend with llRetVal
+ENDIF at the end of the highest trigger level
+SELECT (lcStartArea)
+RETURN llRetVal
+** "End of Referential integrity Update trigger for" Plan
+********************************************************************************
+
+********************************************************************************
+** "Referential integrity delete trigger for" Rv
+PROCEDURE __RI_DELETE_Rv
+LOCAL llRetVal
+llRetVal = .t.
+PRIVATE pcParentDBF,pnParentRec,pcChildDBF,pnChildRec,pcParentID,pcChildID
+PRIVATE pcParentExpr,pcChildExpr
+STORE "" TO pcParentDBF,pcChildDBF,pcParentID,pcChildID,pcParentExpr,pcChildExpr
+STORE 0 TO pnParentRec,pnChildRec
+IF _triggerlevel=1
+  BEGIN TRANSACTION
+  PRIVATE pcRIcursors,pcRIwkareas,pcRIolderror,pnerror,;
+  pcOldDele,pcOldExact,pcOldTalk,pcOldCompat,PcOldDBC
+  pcOldTalk=SET("TALK")
+  SET TALK OFF
+  pcOldDele=SET("DELETED")
+  pcOldExact=SET("EXACT")
+  pcOldCompat=SET("COMPATIBLE")
+  SET COMPATIBLE OFF
+  SET DELETED ON
+  SET EXACT OFF
+  pcRIcursors=""
+  pcRIwkareas=""
+  pcRIolderror=ON("error")
+  pnerror=0
+  ON ERROR pnerror=rierror(ERROR(),message(),message(1),program())
+  IF TYPE('gaErrors(1)')<>"U"
+    release gaErrors
+  ENDIF
+  PUBLIC gaErrors(1,12)
+  pcOldDBC=DBC()
+  SET DATA TO ("CIMS")
+ENDIF first trigger
+LOCAL lcParentID && parent's value to be sought in child
+LOCAL lcChildWkArea && child work area handle returned by riopen
+LOCAL lcParentWkArea
+LOCAL llDelHeaderarea
+LOCAL lcStartArea
+lcStartArea=select()
+llRetVal=.t.
+lcParentWkArea=select()
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE FUNDCODE+RV_NO TO lcParentID,pcParentID
+pcParentExpr="FUNDCODE+RV_NO"
+lcChildWkArea=riopen("rv_cheque","rvno")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE FUNDCODE+RV_NO=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=FUNDCODE+RV_NO
+  pcChildExpr="FUNDCODE+RV_NO"
+  llRetVal=ridelete()
+ENDSCAN get all of the rv_cheque records
+=rireuse("rv_cheque",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE FUNDCODE+RV_NO TO lcParentID,pcParentID
+pcParentExpr="FUNDCODE+RV_NO"
+lcChildWkArea=riopen("rv_lines","rvno")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE FUNDCODE+RV_NO=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=FUNDCODE+RV_NO
+  pcChildExpr="FUNDCODE+RV_NO"
+  llRetVal=ridelete()
+ENDSCAN get all of the rv_lines records
+=rireuse("rv_lines",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+IF _triggerlevel=1
+  do riend with llRetVal
+ENDIF at the end of the highest trigger level
+SELECT (lcStartArea)
+RETURN llRetVal
+** "End of Referential integrity Delete trigger for" Rv
+********************************************************************************
+
+********************************************************************************
+procedure __RI_UPDATE_Rv
+** "Referential integrity update trigger for" Rv
+LOCAL llRetVal
+llRetVal = .t.
+PRIVATE pcParentDBF,pnParentRec,pcChildDBF,pnChildRec,pcParentID,pcChildID
+PRIVATE pcParentExpr,pcChildExpr
+STORE "" TO pcParentDBF,pcChildDBF,pcParentID,pcChildID,pcParentExpr,pcChildExpr
+STORE 0 TO pnParentRec,pnChildRec
+IF _triggerlevel=1
+  BEGIN TRANSACTION
+  PRIVATE pcRIcursors,pcRIwkareas,pcRIolderror,pnerror,;
+  pcOldDele,pcOldExact,pcOldTalk,pcOldCompat,PcOldDBC
+  pcOldTalk=SET("TALK")
+  SET TALK OFF
+  pcOldDele=SET("DELETED")
+  pcOldExact=SET("EXACT")
+  pcOldCompat=SET("COMPATIBLE")
+  SET COMPATIBLE OFF
+  SET DELETED ON
+  SET EXACT OFF
+  pcRIcursors=""
+  pcRIwkareas=""
+  pcRIolderror=ON("error")
+  pnerror=0
+  ON ERROR pnerror=rierror(ERROR(),message(),message(1),program())
+  IF TYPE('gaErrors(1)')<>"U"
+    release gaErrors
+  ENDIF
+  PUBLIC gaErrors(1,12)
+  pcOldDBC=DBC()
+  SET DATA TO ("CIMS")
+ENDIF first trigger
+LOCAL lcParentID && parent's value to be sought in child
+LOCAL lcOldParentID && previous parent id value
+LOCAL lcChildWkArea && child work area handle returned by riopen
+LOCAL lcChildID && child's value to be sought in parent
+LOCAL lcOldChildID && old child id value
+LOCAL lcParentWkArea && parentwork area handle returned by riopen
+LOCAL lcStartArea
+lcStartArea=select()
+llRetVal=.t.
+lcParentWkArea=select()
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("FUNDCODE+RV_NO")
+pcParentID=lcOldParentID
+pcParentExpr="FUNDCODE+RV_NO"
+lcParentID=FUNDCODE+RV_NO
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("rv_cheque")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR FUNDCODE+RV_NO=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=FUNDCODE+RV_NO
+    pcChildExpr="FUNDCODE+RV_NO"
+    llRetVal=riupdate("FUNDCODE",substr(lcParentID,1,3),"Rv")
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("RV_NO",substr(lcParentID,4,10),"Rv")
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+  ENDSCAN get all of the rv_cheque records
+  =rireuse("rv_cheque",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("FUNDCODE+RV_NO")
+pcParentID=lcOldParentID
+pcParentExpr="FUNDCODE+RV_NO"
+lcParentID=FUNDCODE+RV_NO
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("rv_lines")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR FUNDCODE+RV_NO=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=FUNDCODE+RV_NO
+    pcChildExpr="FUNDCODE+RV_NO"
+    llRetVal=riupdate("FUNDCODE",substr(lcParentID,1,3),"Rv")
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("RV_NO",substr(lcParentID,4,10),"Rv")
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+  ENDSCAN get all of the rv_lines records
+  =rireuse("rv_lines",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+IF _triggerlevel=1
+  do riend with llRetVal
+ENDIF at the end of the highest trigger level
+SELECT (lcStartArea)
+RETURN llRetVal
+** "End of Referential integrity Update trigger for" Rv
+********************************************************************************
+
+********************************************************************************
+** "Referential integrity delete trigger for" item_group
+PROCEDURE __RI_DELETE_item_group
+LOCAL llRetVal
+llRetVal = .t.
+PRIVATE pcParentDBF,pnParentRec,pcChildDBF,pnChildRec,pcParentID,pcChildID
+PRIVATE pcParentExpr,pcChildExpr
+STORE "" TO pcParentDBF,pcChildDBF,pcParentID,pcChildID,pcParentExpr,pcChildExpr
+STORE 0 TO pnParentRec,pnChildRec
+IF _triggerlevel=1
+  BEGIN TRANSACTION
+  PRIVATE pcRIcursors,pcRIwkareas,pcRIolderror,pnerror,;
+  pcOldDele,pcOldExact,pcOldTalk,pcOldCompat,PcOldDBC
+  pcOldTalk=SET("TALK")
+  SET TALK OFF
+  pcOldDele=SET("DELETED")
+  pcOldExact=SET("EXACT")
+  pcOldCompat=SET("COMPATIBLE")
+  SET COMPATIBLE OFF
+  SET DELETED ON
+  SET EXACT OFF
+  pcRIcursors=""
+  pcRIwkareas=""
+  pcRIolderror=ON("error")
+  pnerror=0
+  ON ERROR pnerror=rierror(ERROR(),message(),message(1),program())
+  IF TYPE('gaErrors(1)')<>"U"
+    release gaErrors
+  ENDIF
+  PUBLIC gaErrors(1,12)
+  pcOldDBC=DBC()
+  SET DATA TO ("CIMS")
+ENDIF first trigger
+LOCAL lcParentID && parent's value to be sought in child
+LOCAL lcChildWkArea && child work area handle returned by riopen
+LOCAL lcParentWkArea
+LOCAL llDelHeaderarea
+LOCAL lcStartArea
+lcStartArea=select()
+llRetVal=.t.
+lcParentWkArea=select()
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE GROUP_CODE TO lcParentID,pcParentID
+pcParentExpr="GROUP_CODE"
+lcChildWkArea=riopen("item","item_grp")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE ITEM_GRP=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=ITEM_GRP
+  pcChildExpr="ITEM_GRP"
+  llRetVal=ridelete()
+ENDSCAN get all of the item records
+=rireuse("item",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+IF _triggerlevel=1
+  do riend with llRetVal
+ENDIF at the end of the highest trigger level
+SELECT (lcStartArea)
+RETURN llRetVal
+** "End of Referential integrity Delete trigger for" item_group
+********************************************************************************
+
+********************************************************************************
+procedure __RI_UPDATE_item_group
+** "Referential integrity update trigger for" item_group
+LOCAL llRetVal
+llRetVal = .t.
+PRIVATE pcParentDBF,pnParentRec,pcChildDBF,pnChildRec,pcParentID,pcChildID
+PRIVATE pcParentExpr,pcChildExpr
+STORE "" TO pcParentDBF,pcChildDBF,pcParentID,pcChildID,pcParentExpr,pcChildExpr
+STORE 0 TO pnParentRec,pnChildRec
+IF _triggerlevel=1
+  BEGIN TRANSACTION
+  PRIVATE pcRIcursors,pcRIwkareas,pcRIolderror,pnerror,;
+  pcOldDele,pcOldExact,pcOldTalk,pcOldCompat,PcOldDBC
+  pcOldTalk=SET("TALK")
+  SET TALK OFF
+  pcOldDele=SET("DELETED")
+  pcOldExact=SET("EXACT")
+  pcOldCompat=SET("COMPATIBLE")
+  SET COMPATIBLE OFF
+  SET DELETED ON
+  SET EXACT OFF
+  pcRIcursors=""
+  pcRIwkareas=""
+  pcRIolderror=ON("error")
+  pnerror=0
+  ON ERROR pnerror=rierror(ERROR(),message(),message(1),program())
+  IF TYPE('gaErrors(1)')<>"U"
+    release gaErrors
+  ENDIF
+  PUBLIC gaErrors(1,12)
+  pcOldDBC=DBC()
+  SET DATA TO ("CIMS")
+ENDIF first trigger
+LOCAL lcParentID && parent's value to be sought in child
+LOCAL lcOldParentID && previous parent id value
+LOCAL lcChildWkArea && child work area handle returned by riopen
+LOCAL lcChildID && child's value to be sought in parent
+LOCAL lcOldChildID && old child id value
+LOCAL lcParentWkArea && parentwork area handle returned by riopen
+LOCAL lcStartArea
+lcStartArea=select()
+llRetVal=.t.
+lcParentWkArea=select()
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("GROUP_CODE")
+pcParentID=lcOldParentID
+pcParentExpr="GROUP_CODE"
+lcParentID=GROUP_CODE
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("item")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR ITEM_GRP=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=ITEM_GRP
+    pcChildExpr="ITEM_GRP"
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("ITEM_GRP",lcParentID,"ITEM_GROUP")
+  ENDSCAN get all of the item records
+  =rireuse("item",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+IF _triggerlevel=1
+  do riend with llRetVal
+ENDIF at the end of the highest trigger level
+SELECT (lcStartArea)
+RETURN llRetVal
+** "End of Referential integrity Update trigger for" item_group
+********************************************************************************
+
+********************************************************************************
+** "Referential integrity delete trigger for" notify_period
+PROCEDURE __RI_DELETE_notify_period
+LOCAL llRetVal
+llRetVal = .t.
+PRIVATE pcParentDBF,pnParentRec,pcChildDBF,pnChildRec,pcParentID,pcChildID
+PRIVATE pcParentExpr,pcChildExpr
+STORE "" TO pcParentDBF,pcChildDBF,pcParentID,pcChildID,pcParentExpr,pcChildExpr
+STORE 0 TO pnParentRec,pnChildRec
+IF _triggerlevel=1
+  BEGIN TRANSACTION
+  PRIVATE pcRIcursors,pcRIwkareas,pcRIolderror,pnerror,;
+  pcOldDele,pcOldExact,pcOldTalk,pcOldCompat,PcOldDBC
+  pcOldTalk=SET("TALK")
+  SET TALK OFF
+  pcOldDele=SET("DELETED")
+  pcOldExact=SET("EXACT")
+  pcOldCompat=SET("COMPATIBLE")
+  SET COMPATIBLE OFF
+  SET DELETED ON
+  SET EXACT OFF
+  pcRIcursors=""
+  pcRIwkareas=""
+  pcRIolderror=ON("error")
+  pnerror=0
+  ON ERROR pnerror=rierror(ERROR(),message(),message(1),program())
+  IF TYPE('gaErrors(1)')<>"U"
+    release gaErrors
+  ENDIF
+  PUBLIC gaErrors(1,12)
+  pcOldDBC=DBC()
+  SET DATA TO ("CIMS")
+ENDIF first trigger
+LOCAL lcParentID && parent's value to be sought in child
+LOCAL lcChildWkArea && child work area handle returned by riopen
+LOCAL lcParentWkArea
+LOCAL llDelHeaderarea
+LOCAL lcStartArea
+lcStartArea=select()
+llRetVal=.t.
+lcParentWkArea=select()
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE NOTIFY_NO TO lcParentID,pcParentID
+pcParentExpr="NOTIFY_NO"
+lcChildWkArea=riopen("notify_period_lines","notify_no")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE NOTIFY_NO=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=NOTIFY_NO
+  pcChildExpr="NOTIFY_NO"
+  llRetVal=ridelete()
+ENDSCAN get all of the notify_period_lines records
+=rireuse("notify_period_lines",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE NOTIFY_NO TO lcParentID,pcParentID
+pcParentExpr="NOTIFY_NO"
+lcChildWkArea=riopen("Notify_period_items","notify_no")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE NOTIFY_NO=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=NOTIFY_NO
+  pcChildExpr="NOTIFY_NO"
+  llRetVal=ridelete()
+ENDSCAN get all of the Notify_period_items records
+=rireuse("Notify_period_items",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+IF _triggerlevel=1
+  do riend with llRetVal
+ENDIF at the end of the highest trigger level
+SELECT (lcStartArea)
+RETURN llRetVal
+** "End of Referential integrity Delete trigger for" notify_period
+********************************************************************************
+
+********************************************************************************
+procedure __RI_UPDATE_notify_period
+** "Referential integrity update trigger for" notify_period
+LOCAL llRetVal
+llRetVal = .t.
+PRIVATE pcParentDBF,pnParentRec,pcChildDBF,pnChildRec,pcParentID,pcChildID
+PRIVATE pcParentExpr,pcChildExpr
+STORE "" TO pcParentDBF,pcChildDBF,pcParentID,pcChildID,pcParentExpr,pcChildExpr
+STORE 0 TO pnParentRec,pnChildRec
+IF _triggerlevel=1
+  BEGIN TRANSACTION
+  PRIVATE pcRIcursors,pcRIwkareas,pcRIolderror,pnerror,;
+  pcOldDele,pcOldExact,pcOldTalk,pcOldCompat,PcOldDBC
+  pcOldTalk=SET("TALK")
+  SET TALK OFF
+  pcOldDele=SET("DELETED")
+  pcOldExact=SET("EXACT")
+  pcOldCompat=SET("COMPATIBLE")
+  SET COMPATIBLE OFF
+  SET DELETED ON
+  SET EXACT OFF
+  pcRIcursors=""
+  pcRIwkareas=""
+  pcRIolderror=ON("error")
+  pnerror=0
+  ON ERROR pnerror=rierror(ERROR(),message(),message(1),program())
+  IF TYPE('gaErrors(1)')<>"U"
+    release gaErrors
+  ENDIF
+  PUBLIC gaErrors(1,12)
+  pcOldDBC=DBC()
+  SET DATA TO ("CIMS")
+ENDIF first trigger
+LOCAL lcParentID && parent's value to be sought in child
+LOCAL lcOldParentID && previous parent id value
+LOCAL lcChildWkArea && child work area handle returned by riopen
+LOCAL lcChildID && child's value to be sought in parent
+LOCAL lcOldChildID && old child id value
+LOCAL lcParentWkArea && parentwork area handle returned by riopen
+LOCAL lcStartArea
+lcStartArea=select()
+llRetVal=.t.
+lcParentWkArea=select()
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("NOTIFY_NO")
+pcParentID=lcOldParentID
+pcParentExpr="NOTIFY_NO"
+lcParentID=NOTIFY_NO
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("notify_period_lines")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR NOTIFY_NO=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=NOTIFY_NO
+    pcChildExpr="NOTIFY_NO"
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("NOTIFY_NO",lcParentID,"NOTIFY_PERIOD")
+  ENDSCAN get all of the notify_period_lines records
+  =rireuse("notify_period_lines",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("NOTIFY_NO")
+pcParentID=lcOldParentID
+pcParentExpr="NOTIFY_NO"
+lcParentID=NOTIFY_NO
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("Notify_period_items")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR NOTIFY_NO=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=NOTIFY_NO
+    pcChildExpr="NOTIFY_NO"
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("NOTIFY_NO",lcParentID,"NOTIFY_PERIOD")
+  ENDSCAN get all of the Notify_period_items records
+  =rireuse("Notify_period_items",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+IF _triggerlevel=1
+  do riend with llRetVal
+ENDIF at the end of the highest trigger level
+SELECT (lcStartArea)
+RETURN llRetVal
+** "End of Referential integrity Update trigger for" notify_period
+********************************************************************************
+
+********************************************************************************
+** "Referential integrity delete trigger for" pv
+PROCEDURE __RI_DELETE_pv
+LOCAL llRetVal
+llRetVal = .t.
+PRIVATE pcParentDBF,pnParentRec,pcChildDBF,pnChildRec,pcParentID,pcChildID
+PRIVATE pcParentExpr,pcChildExpr
+STORE "" TO pcParentDBF,pcChildDBF,pcParentID,pcChildID,pcParentExpr,pcChildExpr
+STORE 0 TO pnParentRec,pnChildRec
+IF _triggerlevel=1
+  BEGIN TRANSACTION
+  PRIVATE pcRIcursors,pcRIwkareas,pcRIolderror,pnerror,;
+  pcOldDele,pcOldExact,pcOldTalk,pcOldCompat,PcOldDBC
+  pcOldTalk=SET("TALK")
+  SET TALK OFF
+  pcOldDele=SET("DELETED")
+  pcOldExact=SET("EXACT")
+  pcOldCompat=SET("COMPATIBLE")
+  SET COMPATIBLE OFF
+  SET DELETED ON
+  SET EXACT OFF
+  pcRIcursors=""
+  pcRIwkareas=""
+  pcRIolderror=ON("error")
+  pnerror=0
+  ON ERROR pnerror=rierror(ERROR(),message(),message(1),program())
+  IF TYPE('gaErrors(1)')<>"U"
+    release gaErrors
+  ENDIF
+  PUBLIC gaErrors(1,12)
+  pcOldDBC=DBC()
+  SET DATA TO ("CIMS")
+ENDIF first trigger
+LOCAL lcParentID && parent's value to be sought in child
+LOCAL lcChildWkArea && child work area handle returned by riopen
+LOCAL lcParentWkArea
+LOCAL llDelHeaderarea
+LOCAL lcStartArea
+lcStartArea=select()
+llRetVal=.t.
+lcParentWkArea=select()
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE FUNDCODE+PV_NO TO lcParentID,pcParentID
+pcParentExpr="FUNDCODE+PV_NO"
+lcChildWkArea=riopen("Pv_Cheque","pvno")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE FUNDCODE+PV_NO=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=FUNDCODE+PV_NO
+  pcChildExpr="FUNDCODE+PV_NO"
+  llRetVal=ridelete()
+ENDSCAN get all of the Pv_Cheque records
+=rireuse("Pv_Cheque",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+STORE FUNDCODE+PV_NO TO lcParentID,pcParentID
+pcParentExpr="FUNDCODE+PV_NO"
+lcChildWkArea=riopen("pv_notify","pvno")
+IF lcChildWkArea<=0
+  IF _triggerlevel=1
+    DO riend WITH .F.
+  ENDIF at the end of the highest trigger level
+  RETURN .F.
+ENDIF not able to open the child work area
+pcChildDBF=dbf(lcChildWkArea)
+SELECT (lcChildWkArea)
+SEEK lcParentID
+SCAN WHILE FUNDCODE+PV_NO=lcParentID AND llRetVal
+  pnChildRec=recno()
+  pcChildID=FUNDCODE+PV_NO
+  pcChildExpr="FUNDCODE+PV_NO"
+  llRetVal=ridelete()
+ENDSCAN get all of the pv_notify records
+=rireuse("pv_notify",lcChildWkArea)
+IF NOT llRetVal
+  IF _triggerlevel=1
+    DO riend WITH llRetVal
+  ENDIF at the end of the highest trigger level
+  SELECT (lcStartArea)
+  RETURN llRetVal
+ENDIF
+IF _triggerlevel=1
+  do riend with llRetVal
+ENDIF at the end of the highest trigger level
+SELECT (lcStartArea)
+RETURN llRetVal
+** "End of Referential integrity Delete trigger for" pv
+********************************************************************************
+
+********************************************************************************
+procedure __RI_UPDATE_pv
+** "Referential integrity update trigger for" pv
+LOCAL llRetVal
+llRetVal = .t.
+PRIVATE pcParentDBF,pnParentRec,pcChildDBF,pnChildRec,pcParentID,pcChildID
+PRIVATE pcParentExpr,pcChildExpr
+STORE "" TO pcParentDBF,pcChildDBF,pcParentID,pcChildID,pcParentExpr,pcChildExpr
+STORE 0 TO pnParentRec,pnChildRec
+IF _triggerlevel=1
+  BEGIN TRANSACTION
+  PRIVATE pcRIcursors,pcRIwkareas,pcRIolderror,pnerror,;
+  pcOldDele,pcOldExact,pcOldTalk,pcOldCompat,PcOldDBC
+  pcOldTalk=SET("TALK")
+  SET TALK OFF
+  pcOldDele=SET("DELETED")
+  pcOldExact=SET("EXACT")
+  pcOldCompat=SET("COMPATIBLE")
+  SET COMPATIBLE OFF
+  SET DELETED ON
+  SET EXACT OFF
+  pcRIcursors=""
+  pcRIwkareas=""
+  pcRIolderror=ON("error")
+  pnerror=0
+  ON ERROR pnerror=rierror(ERROR(),message(),message(1),program())
+  IF TYPE('gaErrors(1)')<>"U"
+    release gaErrors
+  ENDIF
+  PUBLIC gaErrors(1,12)
+  pcOldDBC=DBC()
+  SET DATA TO ("CIMS")
+ENDIF first trigger
+LOCAL lcParentID && parent's value to be sought in child
+LOCAL lcOldParentID && previous parent id value
+LOCAL lcChildWkArea && child work area handle returned by riopen
+LOCAL lcChildID && child's value to be sought in parent
+LOCAL lcOldChildID && old child id value
+LOCAL lcParentWkArea && parentwork area handle returned by riopen
+LOCAL lcStartArea
+lcStartArea=select()
+llRetVal=.t.
+lcParentWkArea=select()
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("FUNDCODE+PV_NO")
+pcParentID=lcOldParentID
+pcParentExpr="FUNDCODE+PV_NO"
+lcParentID=FUNDCODE+PV_NO
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("Pv_Cheque")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR FUNDCODE+PV_NO=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=FUNDCODE+PV_NO
+    pcChildExpr="FUNDCODE+PV_NO"
+    llRetVal=riupdate("FUNDCODE",substr(lcParentID,1,3),"pv")
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("PV_NO",substr(lcParentID,4,10),"pv")
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+  ENDSCAN get all of the Pv_Cheque records
+  =rireuse("Pv_Cheque",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+SELECT (lcParentWkArea)
+pcParentDBF=dbf()
+pnParentRec=recno()
+lcOldParentID=OLDVAL("FUNDCODE+PV_NO")
+pcParentID=lcOldParentID
+pcParentExpr="FUNDCODE+PV_NO"
+lcParentID=FUNDCODE+PV_NO
+IF lcParentID<>lcOldParentID
+  lcChildWkArea=riopen("pv_notify")
+  IF lcChildWkArea<=0
+    IF _triggerlevel=1
+      DO riend WITH .F.
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN .F.
+  ENDIF not able to open the child work area
+  pcChildDBF=dbf(lcChildWkArea)
+  SELECT (lcChildWkArea)
+  SCAN FOR FUNDCODE+PV_NO=lcOldParentID
+    pnChildRec=recno()
+    pcChildID=FUNDCODE+PV_NO
+    pcChildExpr="FUNDCODE+PV_NO"
+    llRetVal=riupdate("FUNDCODE",substr(lcParentID,1,3),"pv")
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+    llRetVal=riupdate("PV_NO",substr(lcParentID,4,10),"pv")
+    IF NOT llRetVal
+      EXIT
+    ENDIF && not llretval
+  ENDSCAN get all of the pv_notify records
+  =rireuse("pv_notify",lcChildWkArea)
+  IF NOT llRetVal
+    IF _triggerlevel=1
+      DO riend WITH llRetVal
+    ENDIF at the end of the highest trigger level
+    SELECT (lcStartArea)
+    RETURN llRetVal
+  ENDIF
+ENDIF this parent id changed
+IF _triggerlevel=1
+  do riend with llRetVal
+ENDIF at the end of the highest trigger level
+SELECT (lcStartArea)
+RETURN llRetVal
+** "End of Referential integrity Update trigger for" pv
+********************************************************************************
+**__RI_FOOTER!@ Do NOT REMOVE or MODIFY this line!!!! @!__RI_FOOTER**
+**********************************************
+*Get Person No 
+*
+*********************************************
+FUNCTION GetPersonNo(tcFundCode, tcPolicyNo)
+IF PARAMETERS() = 0
+	RETURN 0
+ENDIF
+LOCAL lnArea,;
+	lnPerson
+lnArea = SELECT()
+SELECT MAX(person_no) AS person_no;
+FROM cims!dependants;
+WHERE fundcode = tcFundCode;
+	AND policy_no = tcPolicyNo;
+INTO CURSOR cPerson 
+IF _TALLY > 0
+	lnPerson = IIF(ISNULL(cPerson.person_no), 1, cPerson.person_no+1)	
+ELSE
+	lnPerson = 1
+ENDIF
+USE IN cPerson
+SELECT (lnArea)
+RETURN lnPerson
+*******************************************
+* Recall claim disability at edit to old
+PROCEDURE RecallPeriod
+PARAMETER tcNotifyNo
+LOCAL lnOldCharge,;
+	lnOldPaid,;
+	lnOldOver
+**************************
+IF !SEEK(tcNotifyNo, "notify_period", "notify_no")
+	MESSAGEBOX("ไม่พบ Claim disabilty No. "+tcNotifyNo, 0+48, "Error")
+	RETURN
+ENDIF 	
+*****************************************
+SELECT claim
+IF !EMPTY(claim.fax_by)
+	lnOldCharge = OLDVAL("fcharge")
+	lnOldPaid = OLDVAL("fbenfpaid")
+	lnOldOver = OLDVAL("fremain")
+ELSE
+	lnOldCharge = OLDVAL("scharge")
+	lnOldPaid = OLDVAL("sbenfpaid")
+	lnOldOver = OLDVAL("sremain")
+ENDIF
+******************************************
+SELECT notify_period
+REPLACE notify_period.charge WITH IIF(notify_period.charge = 0, 0, notify_period.charge - lnOldCharge),;
+notify_period.benefit WITH IIF(notify_period.benefit = 0, 0, notify_period.benefit - lnOldPaid),;
+notify_period.over WITH IIF(notify_period.over = 0, 0, notify_period.over- lnOldOver),;
+notify_period.l_user WITH gcUserName,;
+notify_period.l_update WITH DATETIME()
+************************************
+SELECT claim_line
+=SEEK(claim.notify_no, "claim_line", "notify_no")
+DO WHILE claim_line.notify_no = claim.notify_no AND !EOF()
+	IF LEFT(claim_line.cat_id,4) <> "XXXX"
+		IF SEEK(notify_period.notify_no+cat_id,"notify_period_items","notify_cat")
+			IF EMPTY(claim.fax_by)
+				IF notify_period_items.serv_used = 0
+					lnServiceDay = 0
+				ELSE 	
+					IF notify_period_items.per = "D"	
+						lnServiceDay =  notify_period_items.serv_used - IIF(OLDVAL("sservice") <> 0, OLDVAL("sservice"), OLDVAL("sadmis"))
+					ELSE
+						lnServiceDay =  notify_period_items.serv_used - OLDVAL("sadmis")
+					ENDIF
+				ENDIF 	
+				*******************************************************
+				REPLACE notify_period_items.serv_used WITH lnServiceDay, ;
+				notify_period_items.charge WITH IIF(notify_period_items.charge = 0, 0, notify_period_items.charge - OLDVAL("scharge")), ;
+				notify_period_items.benefit WITH IIF(notify_period_items.benefit = 0, 0, notify_period_items.benefit - OLDVAL("spaid")), ;
+				notify_period_items.subservice WITH IIF(notify_period_items.subservice = 0, 0, notify_period_items.subservice - OLDVAL("subservice")), ;
+				notify_period_items.subpaid WITH IIF(notify_period_items.subpaid = 0, 0, notify_period_items.subpaid - OLDVAL("subpaid")), ;
+				notify_period_items.fee_rate WITH IIF(notify_period_items.fee_rate = 0, 0, notify_period_items.fee_rate - OLDVAL("total_fee"))
+			ELSE
+				IF notify_period_items.serv_used = 0
+					lnServiceDay = 0
+				ELSE 	
+					IF notify_period_items.per = "D"	
+						lnServiceDay =  notify_period_items.serv_used - IIF(OLDVAL("fservice") <> 0, OLDVAL("fservice"), OLDVAL("fadmis"))
+					ELSE
+						lnServiceDay =  notify_period_items.serv_used - OLDVAL("fadmis")
+					ENDIF
+				ENDIF 	
+				*******************************************************
+				REPLACE notify_period_items.serv_used WITH lnServiceDay, ;
+				notify_period_items.charge WITH IIF(notify_period_items.charge = 0, 0, notify_period_items.charge - OLDVAL("fcharge")), ;
+				notify_period_items.benefit WITH IIF(notify_period_items.benefit = 0, 0, notify_period_items.benefit - OLDVAL("fpaid")), ;
+				notify_period_items.subservice WITH IIF(notify_period_items.subservice = 0, 0, notify_period_items.subservice - OLDVAL("subservice")), ;
+				notify_period_items.subpaid WITH IIF(notify_period_items.subpaid = 0, 0, notify_period_items.subpaid - OLDVAL("subpaid")), ;
+				notify_period_items.fee_rate WITH IIF(notify_period_items.fee_rate = 0, 0, notify_period_items.fee_rate - OLDVAL("total_fee"))
+			ENDIF	
+		ENDIF
+	ENDIF
+	SELECT claim_line	
+	SKIP
+ENDDO
+SELECT notify_period_lines
+SET ORDER TO notify_clm
+IF SEEK(notify_period.notify_no+claim.claim_id)
+	REPLACE fcharge WITH lnOldCharge,;
+	fpaid WITH lnOldPaid
+ENDIF
+*
+* End RecallPeriod
+****************************************
+FUNCTION GetPeriodLine(tcNotifyNo)
+LOCAL llRetVal,;
+	lnArea
+	
+lnArea = SELECT()	
+SELECT A.notify_no, A.due,	A.visit_no,;
+	A.type AS claim_type, A.admis_date,;
+	A.diags, A.endfollowup,;
+	B.cat_id, B.cat_code, B.description,;
+	B.serv_used AS service_used,;
+	B.benefit AS benf_paid,;
+	IIF(B.per = "D" ,  B.serv_cover - B.serv_used, B.serv_cover)  AS serv_cover,;
+	IIF(B.per = "M" , B.benf_cover - B.benefit, B.benf_cover) AS benf_cover,;
+	IIF(B.per = "M" , B.oon_cover - B.benefit, B.benf_cover) AS oon_cover,;
+	B.per, B.item_grp, B.fee, B.fee_rate, B.group;
+FROM FORCE cims!notify_period A INNER JOIN cims!notify_period_items B;
+  ON A.notify_no = B.notify_no;
+ORDER BY B.group;
+WHERE A.notify_no = tcNotifyNo;
+INTO CURSOR period_Line
+IF _TALLY > 0
+	llRetVal = .T.
+ENDIF
+SELECT (lnArea)
+RETURN llRetVal
+***********************************
+FUNCTION GetPeriodFee(tcNotifyNo)
+LOCAL llRetVal,;
+	lnArea
+	
+IF EMPTY(tcNotifyNo)
+	RETURN .F.
+ENDIF 
+lnArea = SELECT()
+SELECT itemcode, fee, use;
+FROM cims!notify_period_fee;
+WHERE notify_no = tcNotifyNo;
+INTO CURSOR period_Fee
+IF _TALLY > 0
+	llRetVal = .T.
+ENDIF
+SELECT (lnArea)
+RETURN llRetVal
+************************************
+FUNCTION GetProvCover(tcProvClass)
+LOCAL lnBenefit
+lnBenefit = 0
+IF USED("benefit")
+	IF EMPTY(tcProvClass)
+		lnBenefit = benefit.benefit
+	ELSE
+		IF EMPTY(benefit.class)
+			lnBenefit = benefit.benefit		
+		ELSE 
+			IF tcProvClass $ benefit.class
+				lnBenefit = benefit.benefit
+			ELSE
+				lnBenefit = benefit.benefit2
+			ENDIF
+		ENDIF
+	ENDIF	
+ENDIF 
+RETURN lnBenefit
+************************************
+PROCEDURE UpdateMedical
+LPARAMETERS tcFollowUp
+LOCAL lClose,;
+	lnArea,;
+	lnVisitNo
+	
+lnArea = SELECT()
+llUseClaim = USED("claim")
+SELECT fundcode, policy_no, family_no, plan, notify_no, admis_date, visit_no, benf_cover, IIF(EMPTY(fax_by), sbenfpaid, fbenfpaid) AS paid ;
+FROM cims!claim ;
+WHERE followup = tcFollowup OR (notify_no = tcFollowUp AND visit_no = 1);
+ORDER BY admis_date;
+INTO CURSOR curClaimFollowUp ;
+READWRITE 
+**************************
+IF _TALLY > 1
+	lnMedCover = 0
+	IF USED("member")
+		IF SEEK(fundcode+policy_no+ALLTRIM(plan), "member", "pol_plan")
+			lnMedCover = member.overall_limit
+		ENDIF
+	ENDIF 
+	IF lnMedCover = 0
+		IF USED("dependants")
+			IF SEEK(fundcode+policy_no+STR(family_no), "dependants", "person_no")
+				lnMedCover = dependants.medical
+			ENDIF
+		ENDIF 	
+	ENDIF 
+	***************************
+	IF lnMedCover = 0
+		=MESSAGEBOX("ไม่พบวงเงินคุ้มครองของกรมธรรม์ "+curclaimfollowup.policy_no, 0, "Error")
+		RETURN
+	ENDIF 	
+	*********************
+	SELECT curClaimFollowUp
+	GO TOP 
+	lnMedBal = lnMedCover
+	lnVisitNo = 1
+	SCAN
+		REPLACE visit_no WITH lnVisitNo, benf_cover WITH lnMedBal
+		lnMedBal = benf_cover - paid
+		lnVisitNo = lnVisitNo + 1
+	ENDSCAN
+	**********************************
+	IF USED("claim")
+		GO TOP
+		SCAN
+			IF SEEK(notify_no, "claim", "notify_no")
+				REPLACE claim.visit_no WITH visit_no, claim.benf_cover WITH benf_cover
+			ENDIF
+		ENDSCAN
+	ENDIF
+ENDIF
+SELECT (lnArea)
+USE IN curClaimFollowup
+IF !llUseClaim
+	USE IN claim
+ENDIF
+************************************
+*Get Benefit
+PROCEDURE GetBenefit
+PARAMETER tcAlias, tcGroup
+LOCAL 	lnArea, ;
+	llRetVal
+
+lcAlias = IIF(EMPTY(tcAlias), "BENEFIT", tcAlias)
+*
+IF claim.service_type = "DAY"
+	IF RECCOUNT("benefit") = 0
+		cPlanID = claim.plan_id
+		nType = 2
+		=REQUERY("benefit")
+	ENDIF 	
+ENDIF
+*	
+lnArea = SELECT()
+llRetVal = .F.	
+DO CASE 
+CASE claim.claim_with = "D"	
+	DO getDentalBenefit
+OTHERWISE 	
+	SELECT benefit
+	IF !IsTag("cat_id")
+		INDEX ON cat_id TAG cat_id
+	ENDIF 	
+	IF !IsTag("cat_group")
+		INDEX ON cat_group TAG cat_group
+	ENDIF 
+	***********************
+	lnBenefit = 0
+	lcProvClass = ALLTRIM(claim.prov_class)
+	IF USED(lcAlias) AND !EOF(lcAlias)
+		SET ORDER TO 0 IN benefit
+		SELECT (lcAlias)
+		DO CASE 
+		CASE lcAlias = "BENEFIT"
+			DO GetFromBenefit
+		CASE lcAlias = "PERIOD_LINE"
+			IF EMPTY(tcGroup)
+				IF RECCOUNT("period_line") < RECCOUNT("benefit")
+					DO GetFromBenefitByGrp
+				ELSE 
+					DO GetFromPeriod
+				ENDIF 	
+			ELSE
+				DO GetFromPeriodByGrp
+			ENDIF	
+		ENDCASE
+	ENDIF
+ENDCASE 
+llRetVal = SEEK(claim.notify_no, "claim_line", "notify_no")
+RETURN llRetVal
+*************************************
+PROCEDURE getDentalBenefit
+
+cFundCode = claim.fundcode
+cPolicyNo = claim.policy_no
+cPlan = claim.plan
+cTreatment = ALLTRIM(claim.cause_type)
+nType = claim.claim_type
+nTreatment = claim.type_claim
+
+WAIT WINDOW lcAlias+"/"+STR(nType,2)+" "+STR(nTreatment,2) TIMEOUT 2
+
+IF lcAlias <> "PERIOD_LINE"
+	IF claim.fundcode = "CIG"
+		IF USED("pol2itemsbytype")
+			REQUERY("pol2itemsbytype")
+		ELSE 
+			USE cims!pol2itemsbytype IN 0
+		ENDIF 
+		SELECT pol2itemsbytype
+		SCAN 
+			ldPeriod = ICASE(INLIST(cTreatment, "SF"), GOMONTH(claim.disc_date, 6), GOMONTH(claim.effective, 12))			
+			APPEND BLANK IN claim_line
+			REPLACE claim_line.claim_id WITH  claim.claim_id, ;
+				claim_line.notify_no WITH claim.notify_no, ;
+				claim_line.cat_id WITH pol2itemsbytype.cat_id, ;
+				claim_line.cat_code WITH pol2itemsbytype.catcode, ;
+				claim_line.description WITH pol2itemsbytype.catdesc, ;
+				claim_line.benf_cover WITH pol2itemsbytype.benefit, ;
+				claim_line.benefit WITH pol2itemsbytype.benefit, ;
+				claim_line.serv_cover WITH 1, ;
+				claim_line.service_type WITH "Y", ;
+				claim_line.group WITH CHR(64+RECNO()), ;
+				claim_line.item_grp WITH SUBSTR(pol2itemsbytype.catcode, 3,2), ;
+				claim_line.dueperiod WITH ldPeriod, ;
+				claim_line.duefollowup WITH GOMONTH(claim.disc_date, 12), ;
+				claim_line.recno WITH IIF(claim_line.recno = 0, ABS(RECNO()), claim_line.recno),;				
+				claim_line.l_user WITH gcUserName, ;
+				claim_line.l_update WITH DateTime()
+		ENDSCAN 
+		
+	ELSE 
+		IF USED("benefitbytype")
+			=REQUERY("benefitbytype")
+		ELSE 		
+			USE cims!benefitbytype IN 0
+		ENDIF 	
+		SELECT benefitbytype
+		SCAN 
+			WAIT WINDOW cTreatment+"/"+cat_code TIMEOUT 3
+			lnServCover = (benefitbytype.lm_code_4 + benefitbytype.lm_code_5 + benefitbytype.lm_code_6+benefitbytype.lm_code_7 + benefitbytype.lm_code_8 + benefitbytype.lm_code_9)			
+			ldPeriod = ICASE(INLIST(cTreatment, "SF", "ET"), GOMONTH(claim.disc_date, 6), GOMONTH(claim.effective, 12))
+			APPEND BLANK IN claim_line
+			REPLACE claim_line.claim_id WITH  claim.claim_id, ;
+			claim_line.notify_no WITH claim.notify_no, ;
+			claim_line.cat_id WITH benefitbytype.cat_id, ;
+			claim_line.cat_code WITH benefitbytype.cat_code, ;
+			claim_line.description WITH benefitbytype.description, ;
+			claim_line.benf_cover WITH benefitbytype.benefit, ;
+			claim_line.benefit WITH benefitbytype.benefit, ;
+			claim_line.serv_cover WITH lnServCover, ;
+			claim_line.service_type WITH benefitbytype.per, ;
+			claim_line.group WITH benefitbytype.cat_group, ;
+			claim_line.item_grp WITH benefitbytype.item_grp, ;
+			claim_line.dueperiod WITH ldPeriod, ;			
+			claim_line.duefollowup WITH GOMONTH(claim.disc_date, 12), ;
+			claim_line.recno WITH IIF(claim_line.recno = 0, ABS(RECNO()), claim_line.recno),;		
+			claim_line.l_user WITH gcUserName, ;
+			claim_line.l_update WITH DateTime()
+		ENDSCAN 	
+	ENDIF 
+ELSE 
+	IF USED("period_line")
+		SELECT period_line
+		IF RECCOUNT() > 0
+			SCAN
+				IF LEFT(period_line.cat_id,4) <> "XXXX"
+					IF period_line.item_grp = cTreatment
+						APPEND BLANK IN claim_line
+						REPLACE claim_line.claim_id WITH  claim.claim_id, ;
+						claim_line.notify_no WITH claim.notify_no, ;
+						claim_line.cat_id WITH period_line.cat_id, ;
+						claim_line.cat_code WITH period_line.cat_code, ;
+						claim_line.description WITH period_line.description, ;
+						claim_line.service_used WITH period_line.service_used, ;
+						claim_line.benefit_paid WITH period_line.benf_paid, ;
+						claim_line.benf_cover WITH period_line.benf_cover, ;
+						claim_line.benefit WITH period_line.benf_cover, ;
+						claim_line.serv_cover WITH ICASE(SUBSTR(period_line.cat_code, 3, 2) = "SF", 2, SUBSTR(period_line.cat_code, 3, 2) = "ET", 2, 1), ;
+						claim_line.service_type WITH period_line.per, ;
+						claim_line.group WITH CHR(64+RECNO()), ;
+						claim_line.fee WITH period_line.fee, ;
+						claim_line.total_fee WITH period_line.fee_rate, ;
+						claim_line.item_grp WITH period_line.item_grp, ;
+						claim_line.dueperiod WITH period_line.due, ;
+						claim_line.recno WITH IIF(claim_line.recno = 0, ABS(RECNO()), claim_line.recno),;
+						claim_line.l_user WITH gcUserName, ;
+						claim_line.l_update WITH DateTime() IN claim_line
+					ENDIF 	
+				ENDIF				
+			ENDSCAN
+		ENDIF
+	ENDIF 	
+ENDIF 	
+*********************
+PROCEDURE GetFromBenefit
+
+lnBenefit = 0
+lcFxType = ""
+lcProvClass = ALLTRIM(claim.prov_class)
+lcFundCode = claim.fundcode
+lcQuoNo = ALLTRIM(claim.quotation)
+lnSelect = SELECT()
+SELECT benefit
+SET ORDER TO 0
+lnAggregate	 = IIF(RIGHT(ALLTRIM(claim.plan), 1) = "U", benefit.aggregate, benefit.aggregate_oon)
+SCAN
+	lnBenefitCover = GetProvCover(lcProvClass)	
+	IF benefit.per $ "VD"
+		IF claim.service_type = "DAY"
+			* เช็คว่า เป็น Day Case ใช่ไหม ถ้าใช่ ผลประโยชน์ของที่จ่ายเป็นวัน = 0			
+			lnBenefitCover = 0
+		ENDIF 	
+	ENDIF 	
+	lnBenefit = lnBenefitCover	
+	lnServCover = benefit.lm_code_4 + benefit.lm_code_5 + benefit.lm_code_6 + benefit.lm_code_7 + benefit.lm_code_8 + benefit.lm_code_9
+	************************************************************
+	IF claim.fundcode = "AGL"
+		lcCatID = benefit.cat_id
+		SELECT currency_type, benefit_th ;
+		FROM cims!policy2items ;
+		WHERE fundcode = lcFundCode ;
+			AND benefitcode = lcQuoNo ;
+			AND cat_id = lcCatID ;
+		INTO ARRAY laAGL
+		IF _TALLY > 0
+			lnBenefit = laAGL[2]
+*!*				DO CASE 
+*!*				CASE laAGL[1] = "USD"
+*!*					IF laFxRate[1] <> 0
+*!*						lnBenefit = lnBenefit * laFxRate[1]
+*!*						lnAggregate = benefit.aggregate	* laFxRate[1]				
+*!*					ENDIF 				
+*!*				CASE laAGL[1] = "LAK"
+*!*					IF laFxRate[2] <> 0
+*!*						lnBenefit = lnBenefit / laFxRate[2]
+*!*						lnAggregate = benefit.aggregate	/ laFxRate[2]
+*!*					ENDIF 				
+*!*				ENDCASE 
+		ENDIF 	
+		lnAggregateBal = lnAggregate - Aggregatebal(claim.policy_no, claim.family_no, claim.plan_id, claim.notify_no)
+		REPLACE claim.aggregate WITH lnAggregate, claim.dpaid WITH lnAggregateBal
+		lnBenefitcover = lnBenefit
+	ENDIF 
+	******************************************
+	IF !SEEK(claim.notify_no+benefit.cat_id, "claim_line", "not_cat")
+		APPEND BLANK IN claim_line
+	ENDIF 
+	REPLACE claim_line.claim_id WITH  claim.claim_id, ;
+	claim_line.notify_no WITH claim.notify_no, ;
+	claim_line.cat_id WITH benefit.cat_id, ;
+	claim_line.cat_code WITH benefit.cat_code, ;
+	claim_line.description WITH benefit.description, ;
+	claim_line.stdcode WITH benefit.stdcode, ;
+	claim_line.benf_cover WITH lnBenefit, ;
+	claim_line.benefit WITH lnBenefitCover, ;
+	claim_line.serv_cover WITH lnServCover, ;
+	claim_line.service_type WITH benefit.per, ;
+	claim_line.group WITH benefit.cat_group, ;
+	claim_line.fee WITH benefit.fee, ;
+	claim_line.over_respond WITH benefit.over_respond, ;
+	claim_line.copayment WITH benefit.corepond, ;
+	claim_line.item_grp WITH benefit.item_grp, ;
+	claim_line.dueperiod WITH TTOD(claim.disc_date)+benefit.period, ;
+	claim_line.duefollowup WITH TTOD(claim.disc_date)+benefit.followup, ;
+	claim_line.recno WITH IIF(claim_line.recno = 0, ABS(RECNO()), claim_line.recno),;
+	claim_line.l_user WITH gcUserName, ;
+	claim_line.l_update WITH DateTime() IN claim_line
+ENDSCAN
+****************************************
+PROCEDURE GetFromBenefit_old
+
+lnBenefit = 0
+lcFxType = ""
+lcProvClass = ALLTRIM(claim.prov_class)
+lcFundCode = claim.fundcode
+lcQuoNo = ALLTRIM(claim.quotation)
+lnSelect = SELECT()
+SELECT benefit
+SET ORDER TO 0
+SCAN
+	lnBenefit = GetProvCover(lcProvClass)
+	lnBenfcover = lnBenefit
+	lnBenefit = IIF(claim.fundcode = "ACE" AND claim.policy_no = "G0000001" AND claim.service_type = "OPD" AND claim.admis_date >= {^2006-07-01}, lnBenefit, benefit.benefit)
+	lnServCover = (benefit.lm_code_4 + benefit.lm_code_5 + benefit.lm_code_6)
+	IF lnServCover = 0
+		lnServCover = (benefit.lm_code_7 + benefit.lm_code_8 + benefit.lm_code_9)		
+	ENDIF 		
+	*******************************************
+	IF claim.fundcode = "AGL"
+		lnFxYear = YEAR(claim.disc_date)
+		lnFxMonth = MONTH(claim.disc_date)
+		SELECT usd2thb, lak2thb, lak2usd ;
+		FROM cims!exchange_rate ;
+		WHERE fundcode = lcFundCode ;
+			AND fxyear = lnFxYear ;
+			AND fxmonth = lnFxMonth ;
+		INTO ARRAY laFxRate
+		******************************	
+		lcCatID = benefit.cat_id
+		*
+		SELECT currency_type, benefit ;
+		FROM cims!policy2items ;
+		WHERE fundcode = lcFundCode ;
+			AND benefitcode = lcQuoNo ;
+			AND cat_id = lcCatID ;
+		INTO ARRAY laAGL
+		IF _TALLY > 0
+			lnBenefit = laAGL[2]
+			DO CASE 
+			CASE laAGL[1] = "USD"
+				IF laFxRate[1] <> 0
+					lnBenefit = lnBenefit * laFxRate[1]
+					lnAggregate = benefit.aggregate	* laFxRate[1]				
+				ENDIF 				
+			CASE laAGL[1] = "LAK"
+				IF laFxRate[2] <> 0
+					lnBenefit = lnBenefit / laFxRate[2]
+					lnAggregate = benefit.aggregate	/ laFxRate[2]
+				ENDIF 				
+			ENDCASE 
+		ENDIF 	
+		lnAggregateBal = lnAggregate - Aggregatebal(claim.policy_no, claim.family_no, claim.plan_id, claim.notify_no)
+		REPLACE claim.aggregate WITH lnAggregate, claim.dpaid WITH lnAggregateBal
+		lnBenfcover = lnBenefit
+	ENDIF 
+	******************************************
+	IF !SEEK(claim.notify_no+benefit.cat_id, "claim_line", "not_cat")
+		APPEND BLANK IN claim_line
+	ENDIF 
+	REPLACE claim_line.claim_id WITH  claim.claim_id,;
+	claim_line.notify_no WITH claim.notify_no,;
+	claim_line.cat_id WITH benefit.cat_id,;
+	claim_line.cat_code WITH benefit.cat_code,;
+	claim_line.description WITH benefit.description,;
+	claim_line.stdcode WITH benefit.stdcode,;
+	claim_line.benf_cover WITH lnBenefit,;
+	claim_line.benefit WITH lnBenfCover,;
+	claim_line.serv_cover WITH lnServCover,;
+	claim_line.service_type WITH benefit.per,;
+	claim_line.group WITH benefit.cat_group,;
+	claim_line.fee WITH benefit.fee,;
+	claim_line.over_respond WITH benefit.over_respond, ;
+	claim_line.copayment WITH benefit.corepond, ;
+	claim_line.item_grp WITH benefit.item_grp,;
+	claim_line.dueperiod WITH TTOD(claim.disc_date)+benefit.period,;
+	claim_line.duefollowup WITH TTOD(claim.disc_date)+benefit.followup,;
+	claim_line.recno WITH IIF(claim_line.recno = 0, ABS(RECNO()), claim_line.recno),;	
+	claim_line.l_user WITH gcUserName,;
+	claim_line.l_update WITH DateTime() IN claim_line	
+	*claim_line.deductible WITH benefit.deductible
+ENDSCAN	
+
+************************************
+PROCEDURE GetFromBenefitByGrp
+
+lnBenefit = 0
+lcProvClass = ALLTRIM(claim.prov_class)
+SELECT benefit
+SET ORDER TO 0
+SCAN
+	lnPaid = 0
+	lnBenefit = GetProvCover(lcProvClass)
+	lnBenefitCover = lnBenefit	
+	lnBenefit = IIF(claim.fundcode = "ACE" AND claim.policy_no = "G0000001" AND claim.service_type = "OPD" AND claim.admis_date >= {^2006-07-01}, lnBenefit, benefit.benefit)
+	lnServCover = (benefit.lm_code_4 + benefit.lm_code_5 + benefit.lm_code_6)
+	IF lnServCover = 0
+		lnServCover = (benefit.lm_code_7 + benefit.lm_code_8 + benefit.lm_code_9)		
+	ENDIF 	
+	*
+	STORE 0 TO lnPaid, lnServiceUsed
+	SELECT period_line
+	LOCATE FOR LEFT(benefit.cat_group,1) = LEFT(period_line.group,1)
+	IF FOUND()
+		IF LEN(ALLTRIM(period_line.group)) = 1
+			lnPaid = period_line.benf_paid
+		ENDIF 	
+		lnServiceUsed = period_line.service_used		
+		IF period_line.per $ "DV"
+			lnBenefit = lnBenefitCover &&period_line.benf_cover
+			lnServCover = lnServCover - period_line.service_used
+		ELSE 	
+			IF LEN(ALLTRIM(period_line.group)) = 1
+				DO CASE 
+				CASE lcProvClass $ benefit.class
+					lnBenefit = IIF(period_line.fee, period_line.benf_cover, lnBenefitCover - period_line.benf_paid)
+				OTHERWISE 
+					lnPercent = ((benefit.benefit2*100)/benefit.benefit)/100
+					lnBenefit = IIF(period_line.fee, period_line.benf_cover, (benefit.benefit - period_line.benf_paid)*lnPercent)
+				ENDCASE 		
+			ELSE 
+				DO CASE 
+				CASE lcProvClass $ benefit.class
+					lnBenefit = IIF(period_line.fee, period_line.benf_cover, lnBenefitCover)
+				OTHERWISE 
+					lnPercent = ((benefit.benefit2*100)/benefit.benefit)/100
+					lnBenefit = IIF(period_line.fee, period_line.benf_cover, (benefit.benefit)*lnPercent)
+				ENDCASE 		
+			ENDIF 				
+			lnServCover = lnServCover - period_line.service_used
+		ENDIF 			
+	ENDIF 	
+	SELECT benefit
+	******************************************
+	APPEND BLANK IN claim_line
+	REPLACE claim_line.claim_id WITH  claim.claim_id, ;
+	claim_line.notify_no WITH claim.notify_no, ;
+	claim_line.cat_id WITH benefit.cat_id, ;
+	claim_line.cat_code WITH benefit.cat_code, ;
+	claim_line.description WITH benefit.description, ;
+	claim_line.stdcode WITH benefit.stdcode, ;
+	claim_line.service_used WITH lnServiceUsed, ;	
+	claim_line.benefit_paid WITH lnPaid, ;	
+	claim_line.benf_cover WITH IIF(lnBenefit < 0, 0, lnBenefit), ;
+	claim_line.benefit WITH lnBenefitCover, ;
+	claim_line.serv_cover WITH lnServCover, ;
+	claim_line.service_type WITH benefit.per, ;
+	claim_line.group WITH benefit.cat_group, ;
+	claim_line.fee WITH benefit.fee, ;
+	claim_line.over_respond WITH benefit.over_respond, ;
+	claim_line.copayment WITH benefit.corepond, ;
+	claim_line.item_grp WITH benefit.item_grp, ;
+	claim_line.dueperiod WITH TTOD(claim.disc_date)+benefit.period, ;
+	claim_line.duefollowup WITH TTOD(claim.disc_date)+benefit.followup, ;
+	claim_line.recno WITH IIF(claim_line.recno = 0, ABS(RECNO()), claim_line.recno),;	
+	claim_line.l_user WITH gcUserName, ;
+	claim_line.l_update WITH DateTime()
+	
+	*claim_line.deduc WITH benefit.deductible, ;
+	
+ENDSCAN	
+************************************
+PROCEDURE GetFromPeriod
+
+lnBenefit = 0
+lnThisBenefit = 0
+llAsCharge = isAsCharge(claim.fundcode, claim.plan)
+lcProvClass = ALLTRIM(claim.prov_class)
+lnServCover = (benefit.lm_code_4 + benefit.lm_code_5 + benefit.lm_code_6)
+IF lnServCover = 0
+	lnServCover = (benefit.lm_code_7 + benefit.lm_code_8 + benefit.lm_code_9)		
+ENDIF 	
+*
+SELECT period_line
+SUM benf_paid TO lnSumPaid
+
+IF llAsCharge
+	lnBenfCover = claim.benf_cover
+	lnThisBenefit = lnBenfCover - lnSumPaid
+	REPLACE claim.benf_cover WITH lnThisBenefit IN claim
+ELSE 
+	lnBenfCover = GetProvCover(claim.prov_class)
+ENDIF 	
+*
+GO TOP 
+SCAN
+	IF LEFT(period_line.cat_id,4) <> "XXXX"
+		IF SEEK(period_line.cat_id, "benefit", "cat_id")
+			IF period_line.per $ "VD"
+				IF claim.service_type = "DAY"
+					lnBenefit = 0
+					lnServCover = 0
+				ELSE 					
+					lnBenfCover = GetProvCover(lcProvClass)
+					lnBenefit = lnBenfCover
+					lnServCover = lnServCover - period_line.service_used
+					IF benefit.illness AND claim.service_type = "OPD"
+						lnBenefit = lnBenefit - period_line.benf_paid
+					ENDIF 
+				ENDIF 	
+			ELSE
+				IF llAsCharge
+					lnPeriodCover = period_line.benf_cover + period_line.benf_paid
+					IF lnPeriodCover < lnBenfCover
+						lnBenefit = period_line.benf_cover - period_line.benf_paid
+					ELSE 
+						lnBenefit = lnThisBenefit												
+					ENDIF 
+				ELSE 
+					lnBenfCover = GetProvCover(lcProvClass)
+					IF LEN(TRIM(benefit.cat_group)) = 1					
+						DO CASE 
+						CASE lcProvClass $ benefit.class
+							lnBenefit = IIF(period_line.fee, period_line.benf_cover, lnBenfCover - period_line.benf_paid)
+						OTHERWISE 
+							lnPercent = ((benefit.benefit2*100)/benefit.benefit)/100
+							lnBenefit = IIF(period_line.fee, period_line.benf_cover, (benefit.benefit - period_line.benf_paid)*lnPercent)
+						ENDCASE 
+					ELSE 
+						DO CASE 
+						CASE lcProvClass $ benefit.class
+							lnBenefit = IIF(period_line.fee, period_line.benf_cover, lnBenfCover)
+						OTHERWISE 
+							lnPercent = ((benefit.benefit2*100)/benefit.benefit)/100
+							lnBenefit = IIF(period_line.fee, period_line.benf_cover, (benefit.benefit)*lnPercent)
+						ENDCASE 
+					ENDIF 
+				ENDIF 	
+				lnBenefit = IIF(lnBenefit < 0, 0, lnBenefit)
+			ENDIF 	
+			*************************************
+			APPEND BLANK IN claim_line
+			REPLACE claim_line.claim_id WITH  claim.claim_id, ;
+			claim_line.notify_no WITH claim.notify_no, ;
+			claim_line.cat_id WITH period_line.cat_id, ;
+			claim_line.cat_code WITH period_line.cat_code, ;
+			claim_line.description WITH period_line.description, ;
+			claim_line.service_used WITH period_line.service_used, ;
+			claim_line.benefit_paid WITH IIF(LEN(TRIM(benefit.cat_group)) = 1, period_line.benf_paid, 0), ;
+			claim_line.benf_cover WITH IIF(lnBenefit < 0, 0, lnBenefit), ;
+			claim_line.benefit WITH lnBenfCover, ;
+			claim_line.serv_cover WITH IIF(lnServCover < 0, 0, lnServCover), ;
+			claim_line.service_type WITH period_line.per, ;
+			claim_line.group WITH benefit.cat_group, ;
+			claim_line.fee WITH period_line.fee, ;
+			claim_line.over_respond WITH 0, ;
+			claim_line.copayment WITH benefit.corepond, ;
+			claim_line.total_fee WITH period_line.fee_rate, ;
+			claim_line.item_grp WITH period_line.item_grp, ;
+			claim_line.dueperiod WITH period_line.due, ;
+			claim_line.recno WITH IIF(claim_line.recno = 0, ABS(RECNO()), claim_line.recno),;	
+			claim_line.l_user WITH gcUserName, ;
+			claim_line.l_update WITH DateTime()
+		ENDIF 	
+	ENDIF
+ENDSCAN
+**************************************************
+PROCEDURE GetFromPeriod_old
+
+lnBenefit = 0
+lnBenfCover = GetProvCover(claim.prov_class)
+lcProvClass = ALLTRIM(claim.prov_class)
+lnServCover = (benefit.lm_code_4 + benefit.lm_code_5 + benefit.lm_code_6)
+IF lnServCover = 0
+	lnServCover = (benefit.lm_code_7 + benefit.lm_code_8 + benefit.lm_code_9)		
+ENDIF 	
+*
+SELECT period_line
+SCAN
+	IF LEFT(period_line.cat_id,4) <> "XXXX"
+		IF SEEK(period_line.cat_id, "benefit", "cat_id")
+			IF period_line.per $ "VD"
+				lnBenfCover = GetProvCover(lcProvClass)
+				lnBenefit = lnBenfCover
+				lnServCover = lnServCover - period_line.service_used
+				IF benefit.illness AND claim.service_type = "OPD"
+					lnBenefit = lnBenefit - period_line.benf_paid
+				ENDIF 					
+			ENDIF 	
+			*
+			IF claim.fundcode = "KTA" AND RIGHT(ALLTRIM(claim.plan),2) = "S1" AND claim.service_type = "OPD" AND claim.admis_date >= {^2006-01-01 00:00}
+				lnBenfCover = benefit.benefit3
+				lnBenefit = lnBenfCover - period_line.benf_paid
+				lnPercent = 0
+				lnServCover = 1
+			ELSE 
+				IF period_line.per # "D"				
+					lnBenfCover = GetProvCover(lcProvClass)
+					IF LEN(TRIM(benefit.cat_group)) = 1					
+						DO CASE 
+						CASE lcProvClass $ benefit.class
+							lnBenefit = IIF(period_line.fee, period_line.benf_cover, lnBenfCover - period_line.benf_paid)
+						OTHERWISE 
+							lnPercent = ((benefit.benefit2*100)/benefit.benefit)/100
+							lnBenefit = IIF(period_line.fee, period_line.benf_cover, (benefit.benefit - period_line.benf_paid)*lnPercent)
+						ENDCASE 
+					ELSE 
+						DO CASE 
+						CASE lcProvClass $ benefit.class
+							lnBenefit = IIF(period_line.fee, period_line.benf_cover, lnBenfCover)
+						OTHERWISE 
+							lnPercent = ((benefit.benefit2*100)/benefit.benefit)/100
+							lnBenefit = IIF(period_line.fee, period_line.benf_cover, (benefit.benefit)*lnPercent)
+						ENDCASE 
+					ENDIF 
+					lnBenefit = IIF(lnBenefit < 0, 0, lnBenefit)
+					*lnServCover = (benefit.lm_code_4 + benefit.lm_code_5 + benefit.lm_code_6) - period_line.service_used
+				ENDIF 	
+			ENDIF	
+			*************************************
+			APPEND BLANK IN claim_line
+			REPLACE claim_line.claim_id WITH  claim.claim_id, ;
+			claim_line.notify_no WITH claim.notify_no, ;
+			claim_line.cat_id WITH period_line.cat_id, ;
+			claim_line.cat_code WITH period_line.cat_code, ;
+			claim_line.description WITH period_line.description, ;
+			claim_line.service_used WITH period_line.service_used, ;
+			claim_line.benefit_paid WITH IIF(LEN(TRIM(benefit.cat_group)) = 1, period_line.benf_paid, 0), ;
+			claim_line.benf_cover WITH IIF(lnBenefit < 0, 0, lnBenefit), ;
+			claim_line.benefit WITH lnBenfCover, ;
+			claim_line.serv_cover WITH IIF(lnServCover < 0, 0, lnServCover), ;
+			claim_line.service_type WITH period_line.per, ;
+			claim_line.group WITH benefit.cat_group, ;
+			claim_line.fee WITH period_line.fee, ;
+			claim_line.over_respond WITH IIF(claim.policy_no = "00/2006-H0000444-NZH", 80, 0), ;
+			claim_line.copayment WITH benefit.corepond, ;
+			claim_line.total_fee WITH period_line.fee_rate, ;
+			claim_line.item_grp WITH period_line.item_grp, ;
+			claim_line.dueperiod WITH period_line.due, ;
+			claim_line.recno WITH IIF(claim_line.recno = 0, ABS(RECNO()), claim_line.recno),;	
+			claim_line.l_user WITH gcUserName, ;
+			claim_line.l_update WITH DateTime()
+		ENDIF 	
+	ENDIF
+ENDSCAN
+*********************************************
+PROCEDURE GetFromPeriodByGrp
+LOCAL lnBenefit, lnBenfCover,;
+	lnPaid, lnServiceUsed,;
+	lnServCover, lcProvClass
+
+lnBenefit = 0
+lnBenfCover = 0
+lcProvClass = ALLTRIM(claim.prov_class)
+lnDG = 0
+lnLos = 0
+SELECT period_line
+SCAN
+	IF LEFT(period_line.cat_id,4) <> "XXXX"
+		IF SEEK(LEFT(period_line.group,1),"benefit","cat_group")
+			IF period_line.per = "D"
+				lnBenfCover = GetProvCover(lcProvClass)
+				lnBenefit = period_line.benf_cover
+				lnServCover = period_line.serv_cover - period_line.service_used
+			ELSE 	
+				lnBenfCover = GetProvCover(lcProvClass)
+				DO CASE 
+				CASE lcProvClass $ benefit.class
+					lnBenefit = IIF(period_line.fee, period_line.benf_cover, lnBenfCover - period_line.benf_paid)
+				OTHERWISE 
+					lnPercent = ((benefit.benefit2*100)/benefit.benefit)/100
+					lnBenefit = IIF(period_line.fee, period_line.benf_cover, (benefit.benefit - period_line.benf_paid)*lnPercent)
+				ENDCASE 		
+				lnServCover = period_line.serv_cover - period_line.service_used
+			ENDIF 			
+			lnPaid = period_line.benf_paid
+			lnServiceUsed = period_line.service_used
+			*************************************
+			IF claim.notify_no+benefit.cat_id <> claim_line.notify_no+claim_line.cat_id
+				APPEND BLANK IN claim_line
+				lnPaid = period_line.benf_paid
+				lnServiceUsed = period_line.service_used
+			ELSE
+				lnServiceUsed = claim_line.service_used+period_line.service_used
+				lnPaid = claim_line.benefit_paid+period_line.benf_paid
+			ENDIF 
+			****************************************	
+			IF LEFT(benefit.cat_code,2) = "RB"
+				lnLos = period_line.service_used
+			ENDIF 
+			****************************************	
+			IF claim.service_type = "FWP"
+				IF LEFT(benefit.cat_code,2) = "DG"
+					lnBenfCover = period_line.benf_cover * IIF(period_line.service_used = 0, lnLos, period_line.service_used)
+					lnPaid = period_line.benf_paid
+				ENDIF 	
+			ENDIF 	
+			*lnRemain = period_line.benf_cover - lnPaid
+			lnRemain = lnBenfCover - lnPaid
+			lnBenefit = IIF(lnBenfcover <= lnRemain, lnBenfCover, lnRemain)
+			****************************************
+			REPLACE claim_line.claim_id WITH  claim.claim_id, ;
+			claim_line.notify_no WITH claim.notify_no, ;
+			claim_line.cat_id WITH benefit.cat_id, ;
+			claim_line.cat_code WITH benefit.cat_code, ;
+			claim_line.description WITH benefit.description, ;
+			claim_line.service_used WITH lnServiceUsed, ;
+			claim_line.benefit_paid WITH IIF(lnPaid = 0, period_line.benf_paid, lnPaid), ;
+			claim_line.benf_cover WITH IIF(lnBenefit < 0, 0, lnBenefit), ;
+			claim_line.benefit WITH lnBenfCover, ;
+			claim_line.serv_cover WITH IIF(claim.service_type = "FWP" AND LEFT(benefit.cat_code,2) = "DG", 1, lnServCover), ;
+			claim_line.service_type WITH IIF(claim.service_type = "FWP" AND LEFT(benefit.cat_code,2) = "DG", "M", period_line.per), ;
+			claim_line.group WITH benefit.cat_group, ;
+			claim_line.fee WITH period_line.fee, ;
+			claim_line.total_fee WITH period_line.fee_rate, ;
+			claim_line.item_grp WITH period_line.item_grp, ;
+			claim_line.dueperiod WITH period_line.due, ;
+			claim_line.recno WITH IIF(claim_line.recno = 0, ABS(RECNO()), claim_line.recno),;	
+			claim_line.l_user WITH gcUserName, ;
+			claim_line.l_update WITH DateTime()
+			*
+			lnDG = IIF(LEFT(benefit.cat_code,2) = "DG", 1, 0)
+		ENDIF
+	ENDIF	
+ENDSCAN
+******************************************
+FUNCTION CheckFld(tcFundCode)
+IF EMPTY(tcFundCode)
+	RETURN ""
+ENDIF 
+LOCAL lcRetval
+lcRetVal = ""
+DO CASE
+CASE tcFundCode = "SIC"
+	lcRetVal =  "not_no, pol_no, name, surname, eff_date, exp_date, type_clm, clm_type, acc_date,;
+admit, disc, hosp_amt, discount, benf_covr, non_cover, benf_paid, exgratia, over_benf,;
+hosp_name, clm_pstat, ret_date, remark, indication, treatment"
+CASE tcFundCode = "PAI"
+	lcRetVal =  "not_no, pol_no, name, surname, eff_date, exp_date, type_clm, clm_type, acc_date,;
+admit, disc, hosp_amt, discount, benf_covr, non_cover, benf_paid, exgratia, over_benf,;
+hosp_name, clm_pstat, ret_date, remark"
+OTHERWISE 
+	lcRetVal = ""
+ENDCASE 
+RETURN lcRetVal	
+*************************************************************************
+FUNCTION Query2Excel(tcFundCode, tcDbf)
+IF EMPTY(tcFundCode) AND EMPTY(tcDbf)
+	RETURN ""
+ENDIF 
+LOCAL lcRetval
+lcRetVal = ""
+DO CASE
+CASE tcFundCode = "SIC"
+	SELECT not_no, pol_no, name, surname, eff_date, exp_date, type_clm, clm_type, acc_date,;
+		admit, disc, hosp_amt, discount, benf_covr, non_cover, benf_paid, exgratia, over_benf,;
+		hosp_name, clm_pstat, ret_date, remark, indication, treatment;
+	FROM (tcDbf);
+	ORDER BY pol_no, hosp_name;
+	INTO CURSOR curQuery
+OTHERWISE 
+	SELECT *;
+	FROM (tcDbf);
+	INTO CURSOR curQuery
+ENDCASE 
+IF USED("curQuery")
+	IF RECCOUNT("curQuery") > 0
+		RETURN "curQuery"
+	ENDIF 	
+ENDIF 	
+RETURN ""
+**********************************
+*  Getsuper
+*  Pass : username
+*  Return .T. if user is super
+**********************************
+FUNCTION GetSuper(tcUserName)
+
+LOCAL llSuper,;
+	lnArea
+IF PARAMETER() < 1
+	RETURN ""
+ENDIF
+lnArea = SELECT(0)
+SELECT super;
+FROM FORCE cims!users;
+WHERE userid = tcUserName;
+INTO CURSOR curUserList
+IF _TALLY > 0
+	llsuper = curUserList.super
+ELSe
+	llsuper = .F.
+ENDIF		
+USE IN curUserList
+SELECT (lnArea)
+RETURN llSuper
+ENDFUNC
+**********************************
+*  CheckFund
+*  Pass : fundcode
+*  Return .T. if fund allow claim at grace
+**********************************
+FUNCTION checkfund(tcFundCode)
+IF EMPTY(tcFundCode)
+	RETURN .F.
+ELSE 	
+	RETURN INLIST(tcFundCode, "KTA")
+ENDIF 	
+**********************************
+*  CheckProv
+*  Pass : plan_id, provclass, service_type, claim_type
+*  Return .T. if fund allow claim at grace
+**********************************
+FUNCTION checkProv(tcPlanID, tcClass, tcServiceType, tcType)
+IF PARAMETERS() < 3
+	RETURN .F.
+ENDIF 
+*
+IF EMPTY(tcClass)
+	RETURN .T.
+ENDIF 	
+*****************
+llClosed = .F.
+lnSelect = SELECT()
+cPlanId = tcPlanID
+nType = tnType
+IF USED("benefit")
+	=REQUERY("benefit")
+ELSE 
+	USE cims!benefit IN 0 NODATA 
+	llClosed = .T.
+ENDIF 	
+********
+IF EMPTY(benefit.class)
+	RETURN .T.
+ELSE 	
+	IF tcProvClass $ benefit.class
+		RETURN .T.
+	ELSE 
+		RETURN .F.
+	ENDIF 
+ENDIF 			
+IF llClosed
+	USE IN benefit
+ENDIF 
+SELECT (lnSelect)
+*
+***************************************************************
+FUNCTION getPaBal(tcFollowup, tcThisClaim)
+
+IF EMPTY(tcFollowup) AND EMPTY(tcThisClaim)
+	RETURN 0
+ENDIF 	
+
+lnCoverBal = 0
+select acc_date, sum(IIF(EMPTY(claim.fax_by), claim.scharge, claim.fcharge)) AS charge, ;
+	sum(IIF(EMPTY(claim.fax_by),claim.sbenfpaid+claim.abenfpaid, claim.fbenfpaid+claim.exgratia)) AS paid ;
+from cims!claim ;
+where (claim.notify_no = tcFollowUp or claim.followup = tcFollowUp) ;
+	and claim.notify_no < tcThisClaim ;
+group by acc_date ;
+into array laSumClaim
+if _TALLY = 1
+	lnCoverBal = lnMedical - laSumClaim[3]
+endif
+RETURN lnCoverBal
+***************************************************************
+PROCEDURE  SavePaPeriod
+LPARAMETER tcFollowUp, tdAccDate, ltEdit 
+IF PARAMETERS() < 3
+	tcEdit = .T.
+ENDIF 
+*************	
+LOCAL lcNotifyNO,;
+	lnArea,;
+	llClosed
+	
+IF  EMPTY(tcFollowUp)
+	RETURN
+ENDIF
+*************************
+llClosed = .F.
+lnArea = SELECT()	
+lcNotifyNo = tcFollowUp
+lcNotNo = claim.notify_no
+lnMedical = GetPaMedical(claim.fundcode, claim.policy_no, claim.plan, claim.family_no)
+*************************
+IF !USED("claim") AND  !USED("claim_line") AND  !USED("notify_period") AND !USED("notify_period_items") AND !USED("notify_period_lines")
+	WAIT WINDOW "Cannot save period" NOWAIT
+	RETURN
+ENDIF
+************************
+cPlanID = claim.plan_id
+nType = claim.claim_type
+************************
+IF !USED("prodbycode")
+	USE cims!prodbycode IN 0
+ELSE 
+	=REQUERY("prodbycode")	
+ENDIF 
+******************************************************************
+lnPeriod = IIF(prodbycode.period_type = "N", prodbycode.period, 0)
+ldDue = IIF(claim.claim_with = "H", TTOD(claim.expried), TTOD(claim.acc_date )+ IIF(lnPeriod=0, 364, lnPeriod))
+lnDsNo = GetDs(claim.fundcode, claim.policy_no, claim.family_no, claim.plan_id, claim.effective)
+*********************************************
+IF SEEK(tcFollowUp,"notify_period","notify_no")
+	DO UpdatePaPeriod &&WITH lcNotifyNo, lcNotNo, lnPeriod
+ELSE 	
+	DO AddPaPeriod
+ENDIF	
+SELECT (lnArea)
+**********************************************
+*
+PROC AddPaPeriod
+**********************************************
+=WaitWindow("Add New disability Please wait ...", 0)
+SELECT notify_period
+APPEND BLANK
+REPLACE notify_period.customer_id WITH claim.customer_id,;
+notify_period.fundcode WITH Claim.fundcode,;
+notify_period.type WITH claim.claim_type,;
+notify_period.service_type WITH claim.service_type,;
+notify_period.cause_type WITH claim.cause_type,;
+notify_period.excl_type WITH lnDsNo, ;
+notify_period.visit_no WITH claim.visit_no,;
+notify_period.policy_no WITH claim.policy_no,;
+notify_period.family_no WITH claim.family_no,;
+notify_period.effective WITH claim.effective, ;
+notify_period.expired WITH claim.expried, ;
+notify_period.plan_id WITH Claim.plan_id,;
+notify_period.plan WITH Claim.plan,;
+notify_period.notify_no WITH claim.notify_no,;
+notify_period.notify_dat WITH claim.notify_date,;
+notify_period.acc_date WITH claim.acc_date,;
+notify_period.admis_date WITH claim.admis_date,;
+notify_period.disc_date WITH Claim.disc_date,;
+notify_period.diags WITH claim.illness1,;
+notify_period.due WITH ldDue,;
+notify_period.charge WITH IIF(EMPTY(claim.fax_by), claim.scharge, claim.fcharge),;
+notify_period.benefit WITH IIF(LEFT(claim.result,1) $ "CD", 0, IIF(EMPTY(claim.fax_by), claim.sbenfpaid+claim.abenfpaid, claim.fbenfpaid+claim.exgratia)),;
+notify_period.over WITH IIF(EMPTY(claim.fax_by), claim.sremain, claim.fremain),;
+notify_period.l_user WITH gcUserName,;
+notify_period.l_update WITH DATETIME()
+***********************************************
+SELECT notify_period_lines
+APPEND BLANK 
+REPLACE notify_no WITH notify_period.notify_no,;
+claim_id WITH claim.claim_id,;
+not_no WITH claim.notify_no,;
+accdate WITH claim.acc_date,;
+admit WITH claim.admis_date,;
+disc WITH claim.disc_date,;
+icd10 WITH claim.illness1,;
+icd9 WITH claim.icd9_1,;
+prov_id WITH claim.prov_id,;
+prov_name WITH claim.prov_name,;
+fcharge WITH IIF(EMPTY(claim.fax_by), claim.scharge, claim.fcharge),;
+fpaid WITH IIF(LEFT(claim.result,1) $ "DC", 0, IIF(EMPTY(claim.fax_by), claim.sbenfpaid+claim.abenfpaid, claim.fbenfpaid+claim.exgratia)),;
+l_user WITH gcUserName, ;
+l_update WITH DATETIME()
+************************************************************
+SELECT notify_period_items
+APPEND BLANK 
+REPLACE notify_period_items.notify_no WITH notify_period.notify_no,;
+notify_period_items.cat_id WITH claim_line.cat_id,;
+notify_period_items.cat_code WITH "PA",;
+notify_period_items.description WITH "ค่ารักษาพยาบาลเนื่องจากอุบัติเหตุ",;
+notify_period_items.item_grp WITH "PA0001",;
+notify_period_items.benf_cover WITH claim.benf_cover,;
+notify_period_items.serv_used WITH IIF(EMPTY(claim.fax_by), claim.sday, claim.fday),;
+notify_period_items.charge WITH IIF(EMPTY(claim.fax_by), claim.scharge, claim.fcharge),;
+notify_period_items.benefit WITH  IIF(LEFT(claim.result, 1) $ "DC", 0, IIF(EMPTY(claim.fax_by), claim.sbenfpaid+claim.abenfpaid, claim.fbenfpaid+claim.exgratia)),;
+notify_period_items.l_user WITH gcusername, ;
+notify_period_items.l_update WITH DATETIME()
+WAIT CLEAR
+
+**************************************************************
+*Update Period
+PROCEDURE UpdatePaPeriod
+LOCAL lnSelect,;
+	lnCharge,;
+	lnPaid
+	
+llSuscess = .f.	
+lnSelect = SELECT()
+WAIT WINDOW "Medical : "+TRANSFORM(lnMedical, "@Z 9,999,999.99") NOWAIT 
+IF lnMedical = 0
+	IF EMPTY(claim.followup)
+		lcFollowup = claim.notify_no
+		lnMedical = claim.benf_cover
+	ELSE 	
+		lcFollowup = claim.followup
+		IF SEEK(claim.followup, "notify_period_items", "notify_no")
+			lnMedical = notify_period_items.benf_cover
+		ENDIF 	
+	ENDIF 	
+ENDIF 
+***********************************************
+llUpdateLine = .F.
+STORE 0 TO  lnThisCharge, lnThisPaid, lnOldCharge, lnOldPaid
+
+SELECT notify_period_lines
+IF !SEEK(notify_period.notify_no+claim.notify_no, "notify_period_lines", "fw_no")
+	APPEND BLANK 
+	llUpdateLine = .T.	
+endif
+
+IF SEEK(lcNotNo, "claim", "notify_no")
+	REPLACE notify_period_lines.notify_no WITH notify_period.notify_no,;
+	notify_period_lines.claim_id WITH claim.claim_id,;
+	notify_period_lines.not_no WITH claim.notify_no,;
+	notify_period_lines.admit WITH claim.admis_date,;
+	notify_period_lines.disc WITH claim.disc_date,;
+	notify_period_lines.accdate WITH claim.acc_date, ;
+	notify_period_lines.icd10 WITH claim.illness1,;
+	notify_period_lines.icd9 WITH claim.icd9_1,;
+	notify_period_lines.prov_id WITH claim.prov_id, ;
+	notify_period_lines.prov_name WITH claim.prov_name,;
+	notify_period_lines.fcharge WITH IIF(EMPTY(claim.fax_by), claim.scharge, claim.fcharge),;
+	notify_period_lines.fpaid WITH IIF(EMPTY(claim.fax_by), claim.sbenfpaid+claim.abenfpaid, claim.fbenfpaid+claim.exgratia), ;
+	notify_period_lines.l_user WITH gcUserName,;
+	notify_period_lines.l_update WITH DATETIME()
+ENDIF 
+******************************************************
+lcFollowUp = iif(empty(claim.followup), claim.notify_no, claim.followup)
+lnCharge = Notify_period.charge
+lnPaid = Notify_period.benefit
+select acc_date, sum(IIF(EMPTY(claim.fax_by), claim.scharge, claim.fcharge)) AS charge, ;
+	sum(IIF(EMPTY(claim.fax_by),claim.sbenfpaid+claim.abenfpaid, claim.fbenfpaid+claim.exgratia)) AS paid ;
+from cims!claim ;
+where (claim.notify_no = lcFollowUp or claim.followup = lcFollowUp) ;
+group by acc_date ;
+into array laSumClaim
+if _TALLY = 1
+	lncharge = laSumClaim[2]
+	lnPaid = laSumClaim[3]
+endif 	
+update notify_period_items set ;
+	notify_period_items.benf_cover = lnMedical,;
+	notify_period_items.charge = lnCharge, ;
+	notify_period_items.benefit = lnPaid, ;
+	notify_period_items.l_user = gcUserName, ;
+	notify_period_items.l_update = DATETIME() ;
+where notify_period_items.notify_no = lcFollowUp
+****************************************************
+*// Update claim medical cover balance
+lcNotNo = claim.notify_no
+select acc_date, sum(IIF(EMPTY(claim.fax_by), claim.scharge, claim.fcharge)) AS charge, ;
+	sum(IIF(EMPTY(claim.fax_by),claim.sbenfpaid+claim.abenfpaid, claim.fbenfpaid+claim.exgratia)) AS paid ;
+from cims!claim ;
+where (claim.notify_no = lcFollowUp or claim.followup = lcFollowUp) ;
+	and claim.notify_no < lcNotNo ;
+group by acc_date ;
+into array laSumClaim
+if _TALLY = 1
+	lnCoverBal = lnMedical - laSumClaim[3]
+	replace claim.benf_cover with lnCoverBal
+endif
+***************************************************************
+SELECT notify_period
+IF SEEK(notify_no, "claim", "notify_no")
+	REPLACE notify_period.customer_id WITH claim.customer_id,;
+	notify_period.fundcode WITH Claim.fundcode,;
+	notify_period.type WITH claim.claim_type,;
+	notify_period.service_type WITH claim.service_type,;
+	notify_period.cause_type WITH claim.cause_type,;
+	notify_period.visit_no WITH claim.visit_no,;
+	notify_period.policy_no WITH claim.policy_no,;
+	notify_period.family_no WITH claim.family_no,;
+	notify_period.effective WITH claim.effective, ;
+	notify_period.expired WITH claim.expried, ;
+	notify_period.plan_id WITH Claim.plan_id,;
+	notify_period.plan WITH Claim.plan,;
+	notify_period.notify_no WITH claim.notify_no,;
+	notify_period.notify_dat WITH claim.notify_date,;
+	notify_period.acc_date WITH claim.acc_date,;
+	notify_period.admis_date WITH claim.admis_date,;
+	notify_period.disc_date WITH Claim.disc_date,;
+	notify_period.diags WITH claim.illness1,;
+	notify_period.due WITH TTOD(claim.acc_date)+364, ;
+	notify_period.charge WITH lnCharge, ;
+	notify_period.benefit WITH lnPaid, ;
+	notify_period.over WITH lnCharge - lnPaid, ;
+	notify_period.l_user WITH gcUserName, ;
+	notify_period.l_update WITH DATETIME()	
+ENDIF 		
+WAIT CLEAR 
+SELECT (lnSelect)	
+=seek(lcNotNo,"claim", "notify_no")
+
+*End UpdatePaPeriod
+**************************************************************
+*Update Period
+PROCEDURE UpdatePaPeriod_old
+PARAMETERS tcFollowUp, tcNotNo, tnDuePeriod
+
+SET ENGINEBEHAVIOR 70
+IF EMPTY(tcFollowUp) AND EMPTY(tcNotNo)
+	RETURN
+ENDIF	
+IF EMPTY(tnDuePeriod)
+	tnDuePeriod = 0
+ENDIF 	
+*tcNotNo = tcNotNo
+**********************************
+LOCAL lnSelect,;
+	lnCharge,;
+	lnPaid
+********************
+lnMedical = 0
+lnSelect = SELECT()
+IF !SEEK(tcFollowup, "notify_period", "notify_no")
+	MESSAGEBOX("ไม่พบ Claim disabilty No. "+tcNotifyNo, 0+48, "Error")
+	RETURN
+ENDIF 	
+*********************
+IF INLIST(claim.claim_with, "A", "P")
+	lnMedical = GetPaMedical(claim.fundcode, claim.policy_no, claim.plan, claim.family_no)
+ELSE 
+	IF !USED("dependants")
+		USE cims!dependants IN 0
+	ENDIF 	
+	IF SEEK(claim.fundcode+claim.policy_no+STR(claim.family_no)+claim.plan, "dependants", "per_plan")	
+		lnMedical = dependants.medical
+	ENDIF 	
+ENDIF 	
+*	
+WAIT WINDOW "Medical : "+TRANSFORM(lnMedical, "@Z 9,999,999.99") NOWAIT 
+IF lnMedical = 0
+	IF EMPTY(claim.followup)
+		lnMedical = claim.benf_cover
+	ELSE 	
+		IF SEEK(tcFollowup, "notify_period_items", "notify_no")
+			lnMedical = notify_period_items.benf_cover
+		ENDIF 	
+	ENDIF 	
+ENDIF 
+***********************************************
+llUpdateLine = .F.
+STORE 0 TO  lnThisCharge, lnThisPaid, lnOldCharge, lnOldPaid
+
+SELECT notify_period_lines
+IF !SEEK(notify_period.notify_no+tcNotNo, "notify_period_lines", "fw_no")
+	APPEND BLANK 
+	llUpdateLine = .T.	
+ENDIF
+ltAccDate = notify_period.acc_date
+*
+IF SEEK(tcNotNo, "claim", "notify_no")
+	ltAccDate = claim.acc_date
+	*
+	lnOldCharge = fcharge
+	lnOldPaid = fpaid
+	*
+	REPLACE notify_no WITH notify_period.notify_no,;
+	claim_id WITH claim.claim_id,;
+	not_no WITH claim.notify_no,;
+	admit WITH claim.admis_date,;
+	disc WITH claim.disc_date,;
+	accdate WITH claim.acc_date, ;
+	icd10 WITH claim.illness1,;
+	icd9 WITH claim.icd9_1,;
+	prov_id WITH claim.prov_id, ;
+	prov_name WITH claim.prov_name,;
+	fcharge WITH IIF(EMPTY(claim.fax_by), claim.scharge, claim.fcharge),;
+	fpaid WITH IIF(EMPTY(claim.fax_by), claim.sbenfpaid+claim.abenfpaid, claim.fbenfpaid+claim.exgratia), ;
+	l_user WITH gcUserName, l_update WITH DATETIME()
+ENDIF 
+******************************************	
+cNotifyNo = notify_period.notify_no &&tcFollowUp
+IF USED("sumperiodline")
+	REQUERY("sumperiodline")
+ELSE 
+	USE cims!sumperiodline IN 0
+ENDIF 	
+*********************
+lnThisCharge = IIF(EMPTY(claim.fax_by), claim.scharge, claim.fcharge)
+lnThisPaid = IIF(EMPTY(claim.fax_by), claim.sbenfpaid+claim.abenfpaid, claim.fbenfpaid+claim.exgratia)
+**********************
+STORE 0 TO lnCharge, lnPaid
+SELECT sumperiodline
+GO TOP 
+ldDue =  IIF(tnDuePeriod = 0, notify_period.due, TTOD(disc_date)+tnDuePeriod)
+SCAN 
+	REPLACE notify_period_items.benf_cover WITH lnMedical,;
+		notify_period_items.charge WITH sumperiodline.charge, ;
+		notify_period_items.benefit WITH sumperiodline.paid, ;
+		notify_period_items.l_user WITH gcUserName, ;
+		notify_period_items.l_update WITH DATETIME()
+
+*!*		REPLACE notify_period_items.benf_cover WITH lnMedical,;
+*!*			notify_period_items.charge WITH (sumperiodline.charge+lnThisCharge) - lnOldCharge, ;
+*!*			notify_period_items.benefit WITH (sumperiodline.paid+lnThisPaid) - lnOldPaid, ;
+*!*			notify_period_items.l_user WITH gcUserName, ;
+*!*			notify_period_items.l_update WITH DATETIME()
+	*	
+	lnCharge = lnCharge + ((sumperiodline.charge+lnThisCharge) - lnOldCharge)
+	lnPaid = lnPaid + ((sumperiodline.paid+lnThisPaid) - lnOldPaid)
+ENDSCAN 
+***************************************************************
+SELECT notify_period
+IF SEEK(notify_no, "claim", "notify_no")
+	IF EMPTY(claim.followup)
+		REPLACE notify_period.customer_id WITH claim.customer_id,;
+		notify_period.fundcode WITH Claim.fundcode,;
+		notify_period.type WITH claim.claim_type,;
+		notify_period.service_type WITH claim.service_type,;
+		notify_period.cause_type WITH claim.cause_type,;
+		notify_period.visit_no WITH claim.visit_no,;
+		notify_period.policy_no WITH claim.policy_no,;
+		notify_period.family_no WITH claim.family_no,;
+		notify_period.effective WITH claim.effective, ;
+		notify_period.expired WITH claim.expried, ;
+		notify_period.plan_id WITH Claim.plan_id,;
+		notify_period.plan WITH Claim.plan,;
+		notify_period.notify_no WITH claim.notify_no,;
+		notify_period.notify_dat WITH claim.notify_date,;
+		notify_period.acc_date WITH claim.acc_date,;
+		notify_period.admis_date WITH claim.admis_date,;
+		notify_period.disc_date WITH Claim.disc_date,;
+		notify_period.diags WITH claim.illness1,;
+		notify_period.due WITH TTOD(claim.acc_date)+364, ;
+		notify_period.charge WITH lnCharge, ;
+		notify_period.benefit WITH lnPaid, ;
+		notify_period.over WITH lnCharge - lnPaid, ;
+		notify_period.l_user WITH gcUserName, ;
+		notify_period.l_update WITH DATETIME()	
+	ELSE 
+		REPLACE notify_period.acc_date WITH ltAccDate, ;
+		notify_period.due WITH GOMONTH(ltAccDate, 12), ;
+		notify_period.charge WITH lnCharge, ;
+		notify_period.benefit WITH lnPaid, ;
+		notify_period.over WITH lnCharge - lnPaid, ;
+		notify_period.visit_no WITH claim.visit_no, ;
+		notify_period.l_user WITH gcUserName, ;
+		notify_period.l_update WITH DATETIME()
+	ENDIF 	
+ENDIF 		
+IF SEEK(notify_period.notify_no, "notify_period_items", "notify_no")
+	IF notify_period_items.benefit < notify_period.benefit
+		REPLACE notify_period_items.benefit WITH notify_period.benefit
+	ENDIF 	
+ENDIF 	
+	
+********************************
+IF USED("sumperiodline")
+	USE IN sumperiodline
+ENDIF 
+***********************************
+*!*	WAIT WINDOW "Update Medical To Claim " NOWAIT 
+*!*	SELECT notify_period_lines
+*!*	SET ORDER TO notify_no
+*!*	IF SEEK(notify_period.notify_no, "notify_period_lines", "notify_no")
+*!*		lnLine = 0
+*!*		WAIT WINDOW "ผลประโยชน์ค่ารักษาพยาบาลสูงสุด "+TRANSFORM(lnMedical, "@Z 999,999.99")	 NOWAIT 
+*!*		REPLACE claim.benf_cover WITH lnMedical	
+*!*		DO WHILE notify_period.notify_no = notify_no AND !EOF()
+*!*			lnLine = lnLine + 1
+*!*			IF SEEK(not_no, "claim", "notify_no")
+*!*				*IF lnLine > 1
+*!*					REPLACE claim.benf_cover WITH lnMedical
+*!*					WAIT WINDOW claim.notify_no+"="+TRANSFORM(claim.benf_cover, "@Z 999,999.00") NOWAIT 
+*!*				*ENDIF 	
+*!*				lnMedical = lnMedical - fpaid
+*!*			ENDIF 
+*!*			SKIP 
+*!*		ENDDO 
+*!*	ENDIF 			
+*******************************************************
+=SEEK(tcNotNo, "claim", "notify_no")
+SET ENGINEBEHAVIOR 90
+WAIT CLEAR 
+SELECT (lnSelect)	
+*
+*End UpdatePaPeriod
+*
+************************************************
+*	GetPaFollowup
+*
+*	Pass	tcFundCode 
+*			tcPolicyNo
+*			tnPersonNo
+*			tdAccDate
+*
+*	Return	Benefit used  = ยอดจ่ายครั้งก่อน 
+************************************************
+FUNCTION GetPaFollowUp(tcFundCode, tcPolicyNo, tnPersonNo, tdAccDate, tdAdmit)
+IF PARAMETERS() < 4
+	RETURN -1
+ENDIF 
+LOCAL lnRetVal, ;
+	lnSelect
+lnSelect = SELECT()
+*
+SELECT benefit ;
+FROM cims!notify_period ;
+WHERE fundcode = tcFundCode ;
+	AND policy_no = tcPolicyNo ;
+	AND person_no = tnperson_no ;
+	AND acc_date = tdAccDate ;
+	AND due >= TTOD(tdAdmit) ;
+INTO CURSOR curPaFw
+lnRetVal = curPaFw.benefit
+USE IN curPaFw
+SELECT (lnSelect)
+RETURN lnRetVal	
+*
+*****************************************************
+PROCEDURE SaveHaPeriod
+LPARAMETER tcFollowUp, tdDiscDate, tlEdit 
+IF PARAMETERS() < 3
+	tlEdit = .T.
+ENDIF 
+*************	
+LOCAL 	lcNotifyNO,;
+	lnArea,;
+	llClosed
+
+WAIT WINDOW tcFollowup TIMEOUT 1
+IF EMPTY(tcFollowUp)
+	RETURN
+ENDIF
+*************************
+llClosed = .F.
+lnArea = SELECT()	
+lcFollowUp =  tcFollowUp
+lcNotNo = claim.notify_no
+*************************
+IF !USED("claim") AND  !USED("claim_line") AND  !USED("notify_period") AND !USED("notify_period_items") AND !USED("notify_period_lines")
+	WAIT WINDOW "Cannot save period" NOWAIT
+	RETURN
+ENDIF
+WAIT WINDOW "Checking for save disability....." TIMEOUT 1
+***************************************
+cPlanID = claim.plan_id
+nType = claim.claim_type
+************************
+IF !USED("prodbycode")
+	USE cims!prodbycode IN 0
+ELSE 
+	=REQUERY("prodbycode")	
+ENDIF 
+*
+llDisability = .F.
+lnPeriod = prodbycode.period
+IF claim.fundcode = "CIG"
+	lnPeriod = 12
+	lnFollowup = 6
+	lnDuePeriod = 90
+	lnPeriods = lnPeriod
+	llDisability = .T.	
+ELSE 
+	IF !USED("benefit")
+		USE cims!benefit IN 0
+	ELSE
+		=REQUERY("benefit")
+	ENDIF
+	SELECT benefit
+	IF EOF()
+		=MESSAGEBOX("Cannot found benefit table contact administrator(Plan ID "+cPlanID+" Type "+TRANSFORM(nType,"@Z 00"), 0)
+		RETURN
+	ENDIF
+	*******************************
+	IF !IsTag("cat_id","benefit")
+		INDEX ON cat_id TAG cat_id
+	ENDIF	
+	***********************************
+	SELECT benefit
+	GO TOP 
+	lnPeriod = IIF(nType = 2, lnPeriod, benefit.period)
+	lnFollowup = benefit.followup
+	lnDuePeriod = prodbycode.period
+	lnPeriods = lnPeriod
+	llDisability = benefit.illness
+
+ENDIF 	
+*
+IF llDisability
+	DO CASE 
+	CASE claim.fundcode = "ACE"
+		IF claim.claim_with = "T"
+			ldDue = TTOD(claim.disc_date)+lnDuePeriod
+			lnPeriods = lnDuePeriod		
+		ELSE
+			ldDue = TTOD(claim.disc_date) + lnDuePeriod	
+		ENDIF 	
+	CASE claim.fundcode = "CIG"
+		DO CASE 
+		CASE claim.cause_type = "SF"
+			ldDue = GOMONTH(claim.admis_date, 6)
+		OTHERWISE 	
+			ldDue = GOMONTH(claim.admis_date, 12)
+		ENDCASE
+	CASE claim.fundcode = "FAL"
+		DO CASE 
+		CASE claim.claim_with = "P"
+				ldDue = GOMONTH(claim.acc_date, 12)	
+		CASE claim.claim_with = "D"
+			DO CASE 
+			CASE INLIST(claim.cause_type, "SF", "ET")
+				ldDue = GOMONTH(claim.admis_date, 6)
+			OTHERWISE 	
+				ldDue = GOMONTH(claim.admis_date, 12)
+			ENDCASE
+		OTHERWISE 
+			ldDue = TTOD(claim.disc_date)+lnPeriod
+		ENDCASE 
+	CASE claim.fundcode = "BUI"
+			ldDue = TTOD(claim.expried)
+	CASE claim.fundcode = "TIC"	
+		IF SEEK(tcFollowUp,"notify_period","notify_no")
+			ldDue = notify_period.due
+		ELSE 	
+			ldDue = TTOD(claim.disc_date) + lnPeriod
+		ENDIF 	
+	CASE claim.fundcode = "DVS"
+		IF claim.service_type = "ER"		
+			ldDue = IIF(lnPeriod = 0, TTOD(claim.expried), TTOD(claim.acc_date) + lnPeriod)		
+		ELSE 
+			ldDue = IIF(lnPeriod = 0, TTOD(claim.expried), TTOD(claim.disc_date)+IIF(lnPeriod = 1, 0, lnPeriod))
+		ENDIF 	
+	OTHERWISE 
+		IF lnPeriod = 0
+			ldDue = TTOD(claim.expried)
+		ELSE 
+			IF claim.service_type = "ER"
+				ldDue = TTOD(claim.acc_date) + lnPeriod
+			ELSE 
+				ldDue = TTOD(claim.disc_date) + IIF(lnPeriod = 1, 0, lnPeriod)
+			ENDIF 	
+		ENDIF 	
+	ENDCASE 
+	ldFollowup = TTOD(claim.disc_date) + lnFollowUp
+	lcCustDue = claim.customer_id+DTOC(ldDue) 
+	lnDsNo = GetDs(claim.fundcode, claim.policy_no, claim.family_no, claim.plan_id, claim.effective)+1
+	WAIT WINDOW "Disability Due To "+DTOC(ldDue)+" Amount "+TRANSFORM(lnPeriods,"99")+" Days" TIMEOUT .5 AT 25,40
+	********************************************
+	IF SEEK(tcFollowUp,"notify_period","notify_no")
+		ldDue = IIF(INLIST(LEFT(claim.result, 1), "D", "C"), notify_period.due, ldDue)
+		DO UpdateHaPeriod
+	ELSE 		
+		ldDue = IIF(INLIST(LEFT(claim.result, 1), "D", "C"), {}, ldDue)
+		DO AddHaPeriod
+	ENDIF	
+ENDIF 	
+SELECT (lnArea)
+***************************************
+*
+PROCEDURE AddHaPeriod
+***************************************
+=WaitWindow("Add New disability Please wait ...", 0)
+lcPolicyNo = claim.policy_no
+lcCustID = claim.customer_id
+*************************************************************************
+SELECT notify_period
+APPEND BLANK
+REPLACE notify_period.customer_id WITH lcCustID,;
+notify_period.fundcode WITH Claim.fundcode,;
+notify_period.type WITH claim.claim_type,;
+notify_period.service_type WITH claim.service_type,;
+notify_period.cause_type WITH claim.cause_type,;
+notify_period.excl_type WITH lnDsNo, ;
+notify_period.visit_no WITH claim.visit_no,;
+notify_period.policy_no WITH lcPolicyNo,;
+notify_period.family_no WITH claim.family_no,;
+notify_period.effective WITH claim.effective, ;
+notify_period.expired WITH claim.expried, ;
+notify_period.plan_id WITH Claim.plan_id,;
+notify_period.plan WITH Claim.plan,;
+notify_period.notify_no WITH claim.notify_no,;
+notify_period.notify_dat WITH claim.notify_date,;
+notify_period.acc_date WITH claim.acc_date,;
+notify_period.admis_date WITH claim.admis_date,;
+notify_period.disc_date WITH Claim.disc_date,;
+notify_period.diags WITH claim.illness1,;
+notify_period.due WITH ldDue,;
+notify_period.endfollowup WITH ldFollowUp,;
+notify_period.charge WITH IIF(EMPTY(claim.fax_by), claim.scharge, claim.fcharge),;
+notify_period.benefit WITH IIF(EMPTY(claim.fax_by), claim.sbenfpaid+claim.abenfpaid, claim.fbenfpaid+claim.exgratia),;
+notify_period.over WITH IIF(EMPTY(claim.fax_by), claim.sremain, claim.fremain),;
+notify_period.l_user WITH gcUserName,;
+notify_period.l_update WITH DATETIME()
+************************************
+SELECT notify_period_lines
+APPEND BLANK 
+REPLACE notify_no WITH notify_period.notify_no,;
+claim_id WITH claim.claim_id,;
+not_no WITH claim.notify_no,;
+admit WITH claim.admis_date,;
+disc WITH claim.disc_date,;
+accdate WITH claim.acc_date, ;
+icd10 WITH claim.illness1,;
+icd9 WITH claim.icd9_1,;
+prov_id WITH claim.prov_id,;
+prov_name WITH claim.prov_name,;
+fcharge WITH IIF(EMPTY(claim.fax_by), claim.scharge, claim.fcharge),;
+fpaid WITH IIF(EMPTY(claim.fax_by), claim.sbenfpaid+claim.abenfpaid, claim.fbenfpaid+claim.exgratia), ;
+l_user WITH gcUserName, ;
+l_update WITH DATETIME()
+********************************************************
+SELECT claim_line
+SET ORDER TO NOTIFY_NO IN claim_line   && NOTIFY_NO 
+IF SEEK(claim.notify_no, "claim_line")
+	DO WHILE notify_no = claim.notify_no AND !EOF()
+		IF LEFT(claim_line.cat_id,1) <> "X"
+			IF EMPTY(claim.fax_by)
+				lnCharge = claim_line.scharge - claim_line.sdiscount
+				lnPaid = claim_line.spaid+claim_line.apaid && apaid same as exgratia
+				IF claim_line.service_type = "D"	
+					lnServiceDay =  IIF(claim_line.sservice = 0, claim_line.sadmis, claim_line.sservice)
+				ELSE
+					lnServiceDay =  claim_line.sadmis
+				ENDIF				
+			ELSE
+				lnCharge = claim_line.fcharge - claim_line.fdiscount
+				lnPaid = claim_line.fpaid+claim_line.exgratia
+				IF claim_line.service_type = "D"	
+					lnServiceDay =  IIF(claim_line.fservice = 0, claim_line.fadmis, claim_line.fservice)
+				ELSE
+					lnServiceDay =  claim_line.fadmis
+				ENDIF				
+			ENDIF	
+			*******************************
+			IF claim.fundcode = "CIG"
+				lnOonCover = claim_line.benf_cover
+			ELSE 			
+				IF SEEK(cat_id, "benefit", "cat_id")
+					lnOonCover = benefit.benefit2
+				ELSE
+					lnOonCover = benefit.benefit
+				ENDIF
+			ENDIF 	
+			******************************	
+			APPEND BLANK IN notify_period_items
+			REPLACE notify_period_items.notify_no WITH notify_period.notify_no,;
+			notify_period_items.cat_id WITH claim_line.cat_id,;
+			notify_period_items.cat_code WITH claim_line.cat_code,;
+			notify_period_items.description WITH claim_line.description,;
+			notify_period_items.stdcode WITH claim_line.stdcode,;
+			notify_period_items.item_grp WITH claim_line.item_grp,;
+			notify_period_items.fee WITH claim_line.fee,;
+			notify_period_items.fee_rate WITH claim_line.total_fee,;
+			notify_period_items.group WITH claim_line.group,;
+			notify_period_items.benf_cover WITH claim_line.benf_cover,;
+			notify_period_items.oon_cover WITH lnOonCover,;
+			notify_period_items.serv_cover WITH claim_line.serv_cover,;
+			notify_period_items.per WITH claim_line.service_type,;
+			notify_period_items.serv_used WITH lnServiceDay,;
+			notify_period_items.charge WITH lnCharge,;
+			notify_period_items.benefit WITH lnPaid,;
+			notify_period_items.fee_rate WITH claim_line.total_fee, ;
+			notify_period_items.subservice WITH claim_line.subservice, ;
+			notify_period_items.subpaid WITH claim_line.subpaid, ;
+			notify_period_items.l_user WITH gcusername, ;
+			notify_period_items.l_update WITH DATETIME() ;
+			IN notify_period_items
+		ENDIF	
+		SKIP IN claim_line
+	ENDDO
+ENDIF 	
+******************************
+SELECT claim_item_icd9
+SET ORDER TO notify_no
+IF SEEK(claim.notify_no)
+	DO WHILE claim.notify_no = notify_no AND !EOF()
+		APPEND BLANK IN notify_period_fee
+		REPLACE notify_period_fee.notify_no WITH claim.notify_no,;
+		notify_period_fee.claim_id WITH claim.claim_id,;
+		notify_period_fee.itemcode WITH item_code,;
+		notify_period_fee.fee WITH fee,;
+		notify_period_fee.use WITH use,;
+		notify_period_fee.l_user WITH gcUserName,;
+		notify_period_fee.l_update WITH DATETIME()
+		SKIP
+	ENDDO
+ENDIF
+WAIT CLEAR
+***********************************
+*Update Period
+PROCEDURE UpdateHaPeriod
+LOCAL lnCharge,;
+	lnPaid,;
+	lnServiceDay
+SET ENGINEBEHAVIOR 70	
+*********************
+cFollowUp = lcFollowUp
+USE cims!sumline IN 0
+*********************
+WAIT WINDOW "Update claim To period .." AT 25,40 NOWAIT 
+STORE 0 TO lnCharge, lnPaid
+SELECT sumline
+GO TOP 
+SCAN 
+	IF SEEK(notify_period.notify_no+cat_id,"notify_period_items","notify_cat")
+		REPLACE notify_period_items.serv_used WITH admis,;
+		notify_period_items.benf_cover WITH benefit,;
+		notify_period_items.oon_cover WITH 0,;		
+		notify_period_items.charge WITH charge,;
+		notify_period_items.benefit WITH paid+exgratia,;
+		notify_period_items.subservice WITH subservice, ;
+		notify_period_items.subpaid WITH subpaid, ;		
+		notify_period_items.fee_rate WITH total_fee, ;
+		notify_period_items.l_user WITH gcUserName, ;
+		notify_period_items.l_update WITH DATETIME()
+	ELSE
+		APPEND BLANK IN notify_period_items
+		REPLACE notify_period_items.notify_no WITH notify_period.notify_no,;
+		notify_period_items.cat_id WITH cat_id,;
+		notify_period_items.cat_code WITH cat_code,;
+		notify_period_items.description WITH description,;
+		notify_period_items.item_grp WITH item_grp,;
+		notify_period_items.fee WITH fee,;
+		notify_period_items.fee_rate WITH total_fee,;
+		notify_period_items.group WITH group,;
+		notify_period_items.benf_cover WITH benf_cover,;
+		notify_period_items.oon_cover WITH 0,;
+		notify_period_items.serv_cover WITH serv_cover,;
+		notify_period_items.per WITH service_type,;
+		notify_period_items.serv_used WITH admis,;
+		notify_period_items.charge WITH charge,;
+		notify_period_items.benefit WITH paid+exgratia,;
+		notify_period_items.subservice WITH subservice, ;
+		notify_period_items.subpaid WITH subpaid, ;
+		notify_period_items.fee_rate WITH total_fee, ;
+		notify_period_items.l_user WITH gcUserName, ;
+		notify_period_items.l_update WITH DATETIME()
+	ENDIF
+	lnCharge = lnCharge + charge
+	lnPaid = lnPaid + (paid+exgratia)
+ENDSCAN
+*
+SELECT sumline
+GO TOP 
+DO WHILE !EOF()
+	lcGroup = LEFT(group,1)
+	lcCatID = cat_id
+	STORE 0 TO lnServUsed, lnHospCharge, lnBenefit, lnSubPaid, lnSubService, lnItem
+	DO WHILE LEFT(group,1) = lcGroup AND !EOF()
+		lnItem = lnItem + 1
+		lnServUsed = lnServUsed + admis
+		lnHospCharge = lnHospCharge + charge
+		lnBenefit = lnBenefit + (paid+exgratia)
+		lnSubPaid = lnSubPaid + subpaid
+		lnSubService = lnSubService + subservice
+		SKIP 
+	ENDDO
+	IF lnItem > 1
+		IF SEEK(notify_period.notify_no+lcCatID,"notify_period_items","notify_cat")
+			REPLACE notify_period_items.serv_used WITH lnServUsed, ;
+			notify_period_items.charge WITH lnHospCharge, ;
+			notify_period_items.benefit WITH lnBenefit, ;
+			notify_period_items.subservice WITH lnSubService, ;
+			notify_period_items.subpaid WITH lnSubPaid
+		ENDIF 
+	ENDIF 			 
+ENDDO 	
+WAIT WINDOW "Disability Due To "+DTOC(ldDue) TIMEOUT .5 AT 25,40
+*************************************************
+SELECT notify_period
+*
+*!*	DO CASE 
+*!*	CASE fundcode = "TIC"
+*!*		ldDue = notify_period.due
+*!*	CASE fundcode = "BUI"
+*!*		ldDue = TTOD(claim.expried)
+*!*	OTHERWISE 
+*!*		SELECT MAX(disc) ;
+*!*		FROM cims!notify_period_lines ;
+*!*		WHERE notify_no = lcFollowUp ;
+*!*		INTO ARRAY aFollowUp
+*!*		IF _TALLY > 0
+*!*			ldDischarge = aFollowUp[1]
+*!*		ELSE 
+*!*			ldDischarge = notify_period.disc_date	
+*!*		ENDIF 
+*!*		ldDue = ldDischarge + lnDuePeriod	
+*!*	ENDCASE 	
+**********	
+ldDue = IIF(claim.service_type = "ER", IIF(EMPTY(notify_period.due), ldDue, notify_period.due), ldDue)
+*
+IF INLIST(LEFT(claim.result, 1), "D", "C")
+	ldAdmit = notify_period.admis_date
+	ldDischarge = notify_period.disc_date
+	ldDue = IIF(EMPTY(notify_period.due), ldDue, notify_period.due)
+ELSE 
+	IF EMPTY(claim.followup)
+		ldAdmit = claim.admis_date
+		ldDischarge = claim.disc_date
+	ELSE 
+		ldAdmit = IIF(claim.admis_date < notify_period.admis_date, notify_period.admis_date, claim.admis_date)
+		ldDischarge = IIF(claim.disc_date < notify_period.disc_date, notify_period.disc_date, claim.disc_date)
+	ENDIF 	
+ENDIF 	
+*
+WAIT WINDOW "Disability Due To "+DTOC(ldDue)+CHR(13)+CHR(10)+"Due: "+STR(lnDuePeriod,2) TIMEOUT .5 AT 25,40
+*
+IF claim.notify_no = notify_period.notify_no 
+	REPLACE notify_period.customer_id WITH claim.customer_id,;
+	notify_period.fundcode WITH Claim.fundcode,;
+	notify_period.type WITH claim.claim_type,;
+	notify_period.service_type WITH claim.service_type,;
+	notify_period.cause_type WITH claim.cause_type,;
+	notify_period.visit_no WITH claim.visit_no,;
+	notify_period.policy_no WITH claim.policy_no,;
+	notify_period.family_no WITH claim.family_no,;
+	notify_period.effective WITH claim.effective, ;
+	notify_period.expired WITH claim.expried, ;
+	notify_period.plan_id WITH Claim.plan_id,;
+	notify_period.plan WITH Claim.plan,;
+	notify_period.notify_dat WITH claim.notify_date,;
+	notify_period.acc_date WITH claim.acc_date,;
+	notify_period.admis_date WITH ldAdmit,;
+	notify_period.disc_date WITH ldDischarge,;
+	notify_period.diags WITH claim.illness1,;
+	notify_period.charge WITH lnCharge, ;
+	notify_period.benefit WITH lnPaid, ;
+	notify_period.over WITH lnCharge - lnPaid, ;
+	notify_period.due WITH ldDue, ;
+	notify_period.l_user WITH gcUserName, ;
+	notify_period.l_update WITH DATETIME()	
+ELSE 
+	REPLACE notify_period.charge WITH lnCharge, ;
+	notify_period.benefit WITH lnPaid, ;
+	notify_period.over WITH lnCharge - lnPaid, ;
+	notify_period.due WITH ldDue, ; 
+	notify_period.acc_date WITH claim.acc_date,;
+	notify_period.admis_date WITH IIF(claim.service_type = "IPD", ldAdmit, notify_period.admis_date), ;
+	notify_period.disc_date WITH IIF(Claim.service_type = "IPD", ldDischarge, notify_period.disc_date), ;
+	notify_period.diags WITH claim.illness1,;
+	notify_period.l_user WITH gcUserName, ;
+	notify_period.l_update WITH DATETIME()
+ENDIF 	
+*IIF(ldDue < notify_period.due, notify_period.due, ldDue), ;
+**************************************************
+SELECT notify_period_lines
+SET ORDER TO fw_no
+IF !SEEK(notify_period.notify_no+lcNotNo)
+	APPEND BLANK 
+ENDIF
+IF SEEK(lcNotno, "claim", "notify_no")
+	REPLACE notify_no WITH notify_period.notify_no,;
+	claim_id WITH claim.claim_id,;
+	not_no WITH claim.notify_no,;
+	admit WITH claim.admis_date,;
+	disc WITH claim.disc_date,;
+	accdate WITH claim.acc_date, ;
+	icd10 WITH claim.illness1,;
+	icd9 WITH claim.icd9_1,;
+	prov_id WITH claim.prov_id, ;
+	prov_name WITH claim.prov_name,;
+	fcharge WITH IIF(EMPTY(claim.fax_by), claim.scharge, claim.fcharge),;
+	fpaid WITH IIF(EMPTY(claim.fax_by), claim.sbenfpaid+claim.abenfpaid, claim.fbenfpaid+claim.exgratia), ;
+	l_user WITH gcUserName, l_update WITH DATETIME()
+ENDIF 	
+*************************************************************
+SELECT claim_item_icd9
+IF SEEK(lcNotNo, "claim_item_icd9", "notify_no")
+	DO WHILE lcNotNo = notify_no AND !EOF()
+		IF !SEEK(lcFollowUp+claim_item_icd9.item_code, "notify_period_fee", "itemcode")
+			APPEND BLANK IN notify_period_fee
+			REPLACE notify_period_fee.notify_no WITH notify_period.notify_no,;
+			notify_period_fee.claim_id WITH claim.claim_id
+		ENDIF
+		REPLACE notify_period_fee.itemcode WITH item_code,;
+		notify_period_fee.fee WITH fee,;
+		notify_period_fee.use WITH use,;
+		notify_period_fee.l_user WITH gcUserName,;
+		notify_period_fee.l_update WITH DATETIME()
+		SKIP
+	ENDDO
+ENDIF
+USE IN sumline
+SET ENGINEBEHAVIOR 90
+*
+*End UpdateHaPeriod
+********************************************************
+*
+FUNCTION GetDS(tcFundCode, tcPolicyNo, tnPersonNo, tcPlanID, tdEffective)
+IF PARAMETERS() < 5
+	RETURN 0
+ENDIF 
+
+SELECT notify_no ;
+FROM cims!notify_period ;
+WHERE fundcode = tcFundCode ;
+	AND policy_no = tcPolicyNo ;
+	AND family_no = tnPersonNo ;
+	AND plan_id = tcPlanID ;
+	AND effective = tdEffective ;
+INTO ARRAY laDs
+lnRecc = _TALLY
+RETURN IIF(lnRecc = 0, 1, lnRecc)
+**********************************************************
+*Update Period
+PROCEDURE UpdatePeriod
+PARAMETERS tcNotifyNo, tnDuePeriod
+IF PARAMETERS() = 0
+	RETURN
+ENDIF	
+IF EMPTY(tnDuePeriod)
+	tnDuePeriod = 0
+ENDIF 	
+**********************************
+LOCAL lnSumCharge,;
+	lnSumPaid,;
+	lnSumDay,;
+	lnCharge,;
+	lnPaid,;
+	lnServiceDay
+****************
+SELECT notify_period
+IF !SEEK(tcNotifyNo, "notify_period", "notify_no")
+	MESSAGEBOX("ไม่พบ Claim disabilty No. "+tcNotifyNo, 0+48, "Error")
+	RETURN
+ENDIF 	
+*******************
+REPLACE notify_period.charge WITH notify_period.charge+IIF(EMPTY(claim.fax_by), claim.scharge, claim.fcharge), ;
+notify_period.benefit WITH notify_period.benefit+ IIF(EMPTY(claim.fax_by), claim.sbenfpaid+claim.abenfpaid, claim.fbenfpaid+claim.exgratia), ;
+notify_period.over WITH notify_period.over+IIF(EMPTY(claim.fax_by), claim.sremain, claim.fremain), ;
+notify_period.due WITH IIF(tnDuePeriod = 0, TTOD(claim.expried), TTOD(claim.disc_date)+tnDuePeriod), ;
+notify_period.l_user WITH gcUserName, ;
+notify_period.l_update WITH DATETIME()
+************************************
+SELECT claim_line
+IF SEEK(claim.notify_no, "claim_line", "notify_no")
+	DO WHILE notify_no = claim.notify_no AND !EOF()
+		IF LEFT(claim_line.cat_id,4) <> "XXXX"
+			IF EMPTY(claim.fax_by)
+				IF notify_period_items.per = "D"	
+					lnServiceDay =  IIF(claim_line.sservice <> 0, claim_line.sservice, claim_line.sadmis)
+				ELSE
+					lnServiceDay =  claim_line.sadmis
+				ENDIF
+				lnCharge = claim_line.scharge
+				lnPaid = claim_line.spaid
+			ELSE
+				IF notify_period_items.per = "D"	
+					lnServiceDay =  IIF(claim_line.fservice <> 0, claim_line.fservice, claim_line.fadmis)
+				ELSE
+					lnServiceDay =  claim_line.fadmis
+				ENDIF
+				lnCharge = claim_line.fcharge
+				lnPaid = claim_line.fpaid				
+			ENDIF	
+			******************************************************************
+			IF SEEK(notify_period.notify_no+cat_id,"notify_period_items","notify_cat")
+				REPLACE notify_period_items.serv_used WITH notify_period_items.serv_used+lnServiceDay,;
+				notify_period_items.charge WITH notify_period_items.charge+lnCharge,;
+				notify_period_items.benefit WITH notify_period_items.benefit+lnPaid,;
+				notify_period_items.subservice WITH notify_period_items.subservice+claim_line.subservice, ;
+				notify_period_items.subpaid WITH notify_period_items.subpaid+claim_line.subpaid, ;		
+				notify_period_items.fee_rate WITH notify_period_items.fee_rate+claim_line.total_fee, ;
+				notify_period_items.l_user WITH gcUserName, notify_period_items.l_update WITH DATETIME()
+			ELSE
+				APPEND BLANK IN notify_period_items
+				REPLACE notify_period_items.notify_no WITH notify_period.notify_no,;
+				notify_period_items.cat_id WITH claim_line.cat_id,;
+				notify_period_items.cat_code WITH claim_line.cat_code,;
+				notify_period_items.description WITH claim_line.description,;
+				notify_period_items.item_grp WITH claim_line.item_grp,;
+				notify_period_items.fee WITH claim_line.fee,;
+				notify_period_items.fee_rate WITH claim_line.total_fee,;
+				notify_period_items.group WITH claim_line.group,;
+				notify_period_items.benf_cover WITH claim_line.benf_cover,;
+				notify_period_items.oon_cover WITH 0,;
+				notify_period_items.serv_cover WITH claim_line.serv_cover,;
+				notify_period_items.per WITH claim_line.service_type,;
+				notify_period_items.serv_used WITH lnServiceDay,;
+				notify_period_items.charge WITH lnCharge,;
+				notify_period_items.benefit WITH lnPaid,;
+				notify_period_items.subservice WITH claim_line.subservice, ;
+				notify_period_items.subpaid WITH claim_line.subpaid, ;
+				notify_period_items.fee_rate WITH claim_line.total_fee, ;
+				notify_period_items.l_user WITH gcUserName, ;
+				notify_period_items.l_update WITH DATETIME()
+			ENDIF
+		ENDIF	
+		SKIP IN claim_line
+	ENDDO
+ENDIF	
+*****************
+SELECT notify_period_lines
+SET ORDER TO fw_no
+IF !SEEK(notify_period.notify_no+claim.notify_no)
+	APPEND BLANK 
+ENDIF
+REPLACE notify_no WITH notify_period.notify_no,;
+claim_id WITH claim.claim_id,;
+not_no WITH claim.notify_no,;
+admit WITH claim.admis_date,;
+disc WITH claim.disc_date,;
+icd10 WITH claim.illness1,;
+icd9 WITH claim.icd9_1,;
+prov_name WITH claim.prov_name,;
+fcharge WITH IIF(EMPTY(claim.fax_by), claim.scharge, claim.fcharge),;
+fpaid WITH IIF(EMPTY(claim.fax_by), claim.sbenfpaid, claim.fbenfpaid), ;
+l_user WITH gcUserName, l_update WITH DATETIME()
+***********************
+SELECT claim_item_icd9
+IF SEEK(claim.notify_no, "claim_item_icd9", "notify_no")
+	DO WHILE claim.notify_no = notify_no AND !EOF()
+		IF !SEEK(claim.followup+claim_item_icd9.item_code, "notify_period_fee", "itemcode")
+			APPEND BLANK IN notify_period_fee
+			REPLACE notify_period_fee.notify_no WITH IIF(EMPTY(claim.followup), claim.notify_no, claim.followup),;
+			notify_period_fee.claim_id WITH claim.claim_id
+		ENDIF
+		REPLACE notify_period_fee.itemcode WITH item_code,;
+		notify_period_fee.fee WITH fee,;
+		notify_period_fee.use WITH use,;
+		notify_period_fee.l_user WITH gcUserName,;
+		notify_period_fee.l_update WITH DATETIME()
+		SKIP
+	ENDDO
+ENDIF
+*
+*End UpdatePeriod
+************************************
+*
+FUNCTION GetSumall(tcType)
+
+IF tcType = "F"
+	*lnCharge = claim_line.fcharge - claim_line.fdiscount - claim_line.nopaid
+	*lnPaid = (claim_line.fpaid+claim_line.subpaid+claim_line.exgratia)
+	lnCharge = claim_line.fcharge - claim_line.fdiscount 
+	lnPaid = claim_line.fpaid+claim_line.subpaid
+	IF claim_line.service_type = "D"
+		lnBenfCover = claim_line.benf_cover * claim_line.fadmis
+	ELSE
+		lnBenfCover = claim_line.benf_cover
+	ENDIF
+ELSE 
+	*lnCharge = claim_line.scharge - claim_line.sdiscount - claim_line.nopaid
+	*lnPaid = (claim_line.spaid+claim_line.subpaid+claim_line.exgratia)
+	lnCharge = claim_line.scharge - claim_line.sdiscount 
+	lnPaid = claim_line.spaid+claim_line.subpaid
+	IF claim_line.service_type = "D"
+		lnBenfCover = claim_line.benf_cover * claim_line.sadmis
+	ELSE
+		lnBenfCover = claim_line.benf_cover
+	ENDIF
+ENDIF 	
+IF lnPaid > lnCharge
+	lnPaid = lnCharge - claim_line.subpaid
+ENDIF 	
+IF lnPaid > lnBenfCover
+	lnPaid = lnBenfCover
+ENDIF
+IF claim_line.exgratia = 0
+	lnOverPaid = IIF(lnCharge > lnPaid, lnCharge - lnPaid, 0)
+ELSE
+	lnSumPaid = lnPaid + claim_line.exgratia 
+	lnOverPaid = IIF(lnCharge > lnSumPaid, lnCharge - lnSumPaid, 0)
+ENDIF
+**************************************************** 		
+FUNCTION GetSumLine(tcType, lnCharge, lnPaid, lnOverPaid)
+
+IF tcType = "F"
+	lnCharge = claim_line.fcharge - claim_line.fdiscount 
+	lnPaid = claim_line.fpaid
+	IF claim_line.service_type $ "DV"
+		lnBenfCover = claim_line.benf_cover * IIF(claim_line.fadmis > claim_line.serv_cover,claim_line.serv_cover, claim_line.fadmis) 
+	ELSE
+		lnBenfCover = claim_line.benf_cover
+	ENDIF
+ELSE 
+	lnCharge = claim_line.scharge - claim_line.sdiscount 
+	lnPaid = claim_line.spaid
+	IF claim_line.service_type $ "DV"
+		lnBenfCover = claim_line.benf_cover * IIF(claim_line.sadmis > claim_line.serv_cover,claim_line.serv_cover, claim_line.sadmis)
+	ELSE
+		lnBenfCover = claim_line.benf_cover
+	ENDIF
+ENDIF 	
+IF lnPaid+claim_line.subpaid > lnCharge
+	lnPaid = lnCharge - claim_line.subpaid
+ENDIF 	
+IF lnPaid+claim_line.subpaid > lnBenfCover
+	lnPaid = lnBenfCover - claim_line.subpaid
+ENDIF
+***********************
+IF tcType = "F"
+	IF claim_line.nopaid = 0
+		lnPaid = IIF(lnCharge > lnBenfCover, lnBenfCover, lnCharge)
+	ELSE
+		lnPaid = lnCharge - claim_line.nopaid
+		lnPaid = IIF(lnPaid > lnBenfCover, lnBenfCover, lnPaid)
+	ENDIF 
+	***********************
+	IF claim_line.exgratia = 0
+		lnOverPaid = IIF(lnCharge - claim_line.nopaid > lnPaid+claim_line.subpaid, (lnCharge - claim_line.nopaid) - (lnPaid+claim_line.subpaid), 0)
+	ELSE
+		IF claim_line.exgratia >= lnBenfCover
+			lnPaid = IIF(claim_line.exgratia = lnBenfCover, 0, claim_line.exgratia - lnBenfCover)
+		ELSE 
+			lnPaid = lnCharge - claim_line.exgratia	
+		ENDIF 	
+	ENDIF
+	************************************* 	
+	IF claim_line.copayment # 0
+		IF claim_line.service_type $ "DV"
+			lnCoPay = (claim_line.benefit*claim_line.fadmis)*claim_line.copayment
+		ELSE 
+			lnCoPay = claim_line.benefit*claim_line.copayment
+		ENDIF 
+		lnPaid = IIF(lnPaid < lnCopay, 0, lnPaid - lnCoPay)	
+	ENDIF 
+	************************************************ 		
+	DO CASE 
+	CASE claim_line.nopaid # 0 AND claim_line.exgratia = 0 
+		lnOverPaid = (lnCharge - claim_line.nopaid)-(lnPaid+claim_line.exgratia)
+	CASE claim_line.nopaid # 0 AND claim_line.exgratia # 0 
+		lnOverPaid = (lnCharge - claim_line.nopaid)-(lnPaid+claim_line.subpaid+claim_line.exgratia)
+	CASE claim_line.nopaid = 0 AND claim_line.exgratia # 0 
+		lnOverPaid = lnCharge-(lnPaid+claim_line.subpaid+claim_line.exgratia)
+	CASE claim_line.nopaid = 0 AND claim_line.exgratia = 0 
+		lnOverPaid = lnCharge-(lnPaid+claim_line.subpaid)
+	ENDCASE 
+ELSE 
+	IF claim_line.snoncover = 0
+		lnPaid = IIF(lnCharge > lnBenfCover, lnBenfCover, lnCharge)
+	ELSE
+		lnPaid = lnCharge - claim_line.snoncover
+		*IF claim_line.snoncover >= lnBenfcover
+		*	lnPaid = IIF(claim_line.snoncover > lnBenfCover, lnCharge - claim_line.snoncover, 0)
+			lnPaid = IIF(lnPaid > lnBenfCover, lnBenfCover, lnPaid)			
+		*ELSE 	
+		*	lnPaid = IIF(lnCharge - claim_line.snoncover > lnPaid+claim_line.subpaid, lnPaid, lnCharge - claim_line.snoncover)
+		*	lnPaid = IIF(lnCharge - claim_line.snoncover > lnBenfCover, lnBenfCover, lnCharge - claim_line.snoncover)			
+		*ENDIF 	
+	ENDIF 
+	***********************
+	* Assess Exgratia
+	IF claim_line.apaid = 0
+		lnOverPaid = IIF(lnCharge - claim_line.snoncover > lnPaid+claim_line.subpaid, (lnCharge - claim_line.snoncover) - (lnPaid+claim_line.subpaid), 0)
+	ELSE
+		IF claim_line.apaid >= lnBenfCover
+			lnPaid = IIF(claim_line.apaid = lnBenfCover, 0, claim_line.apaid - lnBenfCover)
+		ELSE 
+			lnPaid = lnCharge - claim_line.apaid	
+		ENDIF 	
+	ENDIF
+	************************************* 	
+	IF claim_line.copayment # 0
+		IF claim_line.service_type $ "DV"
+			lnCoPay = (claim_line.benefit*claim_line.sadmis)*claim_line.copayment
+		ELSE 
+			lnCoPay = claim_line.benefit*claim_line.copayment
+		ENDIF 
+		lnPaid = IIF(lnPaid < lnCopay, 0, lnPaid - lnCoPay)	
+	ENDIF 
+	************************************************ 		
+	IF !claim_line.fee
+		IF claim_line.total_fee # 0 AND claim_line.total_fee < 1 
+			lnPaid = lnPaid * claim_line.total_fee
+		ENDIF 	
+	ENDIF
+	************************************* 		
+	DO CASE 
+	CASE claim_line.snoncover # 0 AND claim_line.apaid = 0 
+		lnOverPaid = (lnCharge - claim_line.snoncover)-(lnPaid+claim_line.apaid)
+	CASE claim_line.snoncover # 0 AND claim_line.apaid # 0 
+		lnOverPaid = (lnCharge - claim_line.snoncover)-(lnPaid+claim_line.subpaid+claim_line.apaid)
+	CASE claim_line.snoncover = 0 AND claim_line.apaid # 0 
+		lnOverPaid = lnCharge-(lnPaid+claim_line.subpaid+claim_line.apaid)
+	CASE claim_line.snoncover = 0 AND claim_line.apaid = 0 
+		lnOverPaid = lnCharge-(lnPaid+claim_line.subpaid)
+	ENDCASE 
+ENDIF 
+*
+lnPaid = IIF(lnPaid <= 0, 0, lnPaid)
+IF claim.deduc <> 0
+	IF claim_line.deductible > lnPaid
+		REPLACE claim_line.deduc WITH lnPaid
+	ELSE 
+		REPLACE claim_line.deduc WITH claim_line.deductible
+	ENDIF 
+	lnPaid = lnPaid - claim_line.deduc
+	lnOverPaid = lnCharge - (lnPaid + claim_line.deduc)
+ENDIF 	
+**************************************************** 		
+*
+FUNCTION GetSumLine1(tcType, lnCharge, lnPaid, lnOverPaid)
+IF tcType = "F"
+	lnCharge = claim_line.fcharge - claim_line.fdiscount 
+	lnPaid = claim_line.fpaid
+	IF claim_line.service_type = "D"
+		lnBenfCover = claim_line.benf_cover * claim_line.fadmis
+	ELSE
+		lnBenfCover = claim_line.benf_cover
+	ENDIF
+ELSE 
+	lnCharge = claim_line.scharge - claim_line.sdiscount 
+	lnPaid = claim_line.spaid
+	IF claim_line.service_type = "D"
+		lnBenfCover = claim_line.benf_cover * claim_line.sadmis
+	ELSE
+		lnBenfCover = claim_line.benf_cover
+	ENDIF
+ENDIF 	
+IF lnPaid+claim_line.subpaid > lnCharge
+	lnPaid = lnCharge - claim_line.subpaid
+ENDIF 	
+IF lnPaid+claim_line.subpaid > lnBenfCover
+	lnPaid = lnBenfCover - claim_line.subpaid
+ENDIF
+lnOverPaid = (lnCharge-claim_line.nopaid) - (lnPaid+claim_line.subpaid+claim_line.exgratia)
+************************************************
+*
+PROCEDURE SumBenfGrp(tcType, tcNotifyNo, tcGroup)
+LOCAL lnArea,;
+	lnRecNo,;
+	lcGroup,;
+	lcCurGroup, ;
+	lnVal
+***************
+* Sum Used Value
+******************************
+IF LEN(ALLTRIM(tcGroup)) < 2
+	RETURN 0
+ENDIF 
+*
+lnArea = SELECT(0)
+lnRecNo = RECNO()
+lcGroup = LEFT(tcGroup,1)
+lcCurGrp = tcGroup
+lnVal = -1
+*
+lnUsed = ICASE(tcType = "F", IIF(claim_line.service_type = "D", claim_line.fadmis, claim_line.fpaid), tcType = "S", IIF(claim_line.service_type = "D", claim_line.sadmis, claim_line.spaid))
+IF SEEK(tcNotifyNo+lcGroup,"claim_line","main_group")
+	IF LEN(ALLTRIM(claim_line.group)) = 1
+		DO CASE 
+		CASE tcType = "F"
+			IF claim_line.service_type = "D"
+				lnUsed = claim_line.serv_cover  - claim_line.fadmis
+			ELSE 	
+				lnUsed = claim_line.benf_cover  - claim_line.fpaid
+			ENDIF 	
+		CASE tcType = "S"
+			IF claim_line.service_type = "D"
+				lnUsed = claim_line.serv_cover  - claim_line.sadmis
+			ELSE 	
+				lnUsed = claim_line.benf_cover  - claim_line.spaid
+			ENDIF 	
+		ENDCASE 
+		lnVal = lnUsed
+	ENDIF 	
+ENDIF 	
+*= SEEK(claim.notify_no+tcGroup,"claim_line","not_grp")
+SELECT (lnArea)
+IF lnRecNo <> 0
+	GO lnRecNo
+ENDIF
+RETURN lnVal
+********************************
+*
+FUNCTION tdate2edate(tdDate)
+
+IF YEAR(tdDate) > 2000
+	RETURN DATE(YEAR(tdDate)-543, MONTH(tdDate), DAY(tdDate))
+ELSE 
+	RETURN tdDate	
+ENDIF 	
+************************************
+FUNCTION updateEM(tcFundcode)
+
+SELECT member
+DO CASE 
+CASE tcFundcode = "TIC"
+	REPLACE ALL member.employee WITH IIF(INLIST(LEFT(policy_no,22), "001D/PH51-00-000664-01", "001D/PH51-04-001480-02", "001D/PH51-03-000538-02"), "Y", "") FOR tpacode = "TIC"
+ENDCASE 	
+**********************************
+FUNCTION CheckCat(tcCatCode)
+IF PARAMETER() = 0
+	RETURN ""
+ENDIF	
+LOCAL lcRetCode
+lcChr = ""
+lcRetCode = ""
+tcCatCode = IIF(ISNULL(tcCatcode), "", ALLTRIM(tcCatCode))
+FOR i = 1 TO LEN(tcCatCode)
+	lcChr = SUBSTR(tcCatCode,i,1)
+	IF !INLIST(lcChr, "0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
+		lcRetCode = lcRetCode+lcChr
+	ENDIF
+ENDFOR
+RETURN ALLTRIM(lcRetCode)		
+
+*********************************
+FUNCTION GetExclusion(tcFundCode, tcPolicyNo, tcExclusion)
+
+IF EMPTY(tcExclusion) AND EMPTY(tcFundCode) AND EMPTY(tcPolicyNo)
+	RETURN ""
+ENDIF
+llUseExcl = .F.
+lcExclFile = tcFundCode + "_EXCLUSION"
+
+DO CASE 
+CASE tcFundCode = "KTA"
+	IF LEFT(tcPolicyNo,3) # "501"
+		lcExclFile = lcExclFile+"_"+LEFT(tcPolicyNo,3)
+	ENDIF 
+ENDCASE 
+*?lcExclFile
+lcNoCode = DATAPATH+lcExclFile+"_NoDetail.txt"
+IF !USED(lcExclFile)
+	IF FILE(DATAPATH+lcExclFile+".DBF")
+		USE (DATAPATH+lcExclFile) ALIAS (lcExclFile) IN 0
+		llUseExcl = .T.
+	ELSE 	
+		RETURN ""
+	ENDIF 	
+ENDIF
+IF EMPTY(tcExclusion)
+	RETURN ""
+ENDIF 	
+****************
+LOCAL lcExclusion,;
+	lcExclMemo,;
+	lcExclCode
+lcExclMemo = ""	
+lcExclusion = ALLTRIM(tcExclusion)
+lcField = lcExclFile+".desc"
+DO WHILE !EMPTY(lcExclusion)
+	DO CASE 
+	CASE tcFundCode = "KTA"	
+		lcExclCode = LEFT(lcExclusion,3)
+		IF SEEK(lcExclCode, lcExclfile, "code")
+			lcExclMemo = lcExclMemo + ALLTRIM(&lcField)+"("+ALLTRIM(lcExclCode)+")"+CHR(13)+CHR(10)
+		ELSE 
+			=STRTOFILE(lcExclCode+CHR(13)+CHR(10), lcNoCode)	
+		ENDIF
+		lcExclusion = IIF(LEN(lcExclusion) > 3, ALLTRIM(SUBSTR(lcExclusion,4)), "")
+	CASE tcFundCode = "ACE"	
+		DO WHILE !EMPTY(lcExclusion)	
+			lcExclCode = LEFT(lcExclusion, AT(";",lcExclusion)-1)
+			IF SEEK(lcExclCode, lcExclfile, "code")
+				lcExclMemo = lcExclMemo + " "+ ALLTRIM(&lcField)+"("+ALLTRIM(lcExclCode)+")"+CHR(13)+CHR(10)
+			ELSE 
+				lcExclMemo = lcExclMemo + lcExclCode+" "	
+				=STRTOFILE(lcExclCode+CHR(13)+CHR(10), lcNoCode)				
+			ENDIF
+			IF AT(";",lcExclusion) = 0
+				lcExclusion = ""
+			ELSE 	
+				lcExclusion = ALLTRIM(SUBSTR(lcExclusion, AT(";",lcExclusion)+1))
+			ENDIF 	
+		ENDDO 	
+		lcExclMemo = ALLTRIM(lcExclMemo)+CHR(13)+CHR(10)
+	ENDCASE 	
+ENDDO
+IF llUseExcl
+	USE IN (lcExclFile)
+ENDIF 	
+*
+RETURN lcExclMemo
+*
+*****************************
+Function KTA_MEA_HB_Premium(tcPlan, tdDob)
+
+lcHBPlan = RIGHT(ALLTRIM(tcPlan),2)
+lnAge = INT((DATE() - tdDob)/365.25)
+lnPremium = 0
+************************
+IF INLIST(lcHBPlan, "B1", "B2", "B3", "B4")
+	IF  lnAge >= 6 And lnAge <= 15 
+		lnPremium = ICASE(lcHBPlan = "B1", 475, lcHBPlan = "B2", 950, lcHBPlan = "B3", 1900, lcHBPlan = "B4",2850)
+	ELSE 	     
+		IF lnAge >= 16 And lnAge <= 40
+			lnPremium = ICASE(lcHBPlan = "B1", 650, lcHBPlan = "B2", 1300, lcHBPlan = "B3", 2600, lcHBPlan = "B4",3900)	
+		ELSE 
+			IF lnAge >= 41 And lnAge <= 50
+				lnPremium = ICASE(lcHBPlan = "B1", 750, lcHBPlan = "B2", 1300, lcHBPlan = "B3", 3000, lcHBPlan = "B4",4500)			
+			ELSE 
+				IF lnAge >= 51 And lnAge <= 60
+					lnPremium = ICASE(lcHBPlan = "B1", 1000, lcHBPlan = "B2", 1300, lcHBPlan = "B3", 4000, lcHBPlan = "B4",6000)				
+				ENDIF 
+			ENDIF 
+		ENDIF 
+	ENDIF 
+ELSE 
+	lnPremium = 0		
+ENDIF 			
+RETURN lnPremium
+*
+FUNCTION Kta_staff_family(tcFundCode, tcPolicyNo)
+
+IF tcFundCode # "KTA"
+	RETURN ""
+ENDIF 
+
+IF LEN(ALLTRIM(tcPolicyNo)) > 9
+	RETURN ""
+ENDIF 
+
+lcStaffNo = LEFT(tcPolicyNo, LEN(ALLTRIM(tcPolicyNo))-1)
+SELECT policy_no, name, surname ;
+FROM cims!member ;
+WHERE tpacode = tcFundCode ;
+	AND policy_no = lcStaffNo ;
+ORDER BY policy_no ;
+INTO CURSOR _staff
+lcStaff = _staff.policy_no
+USE IN _staff
+IF _TALLY > 0
+	RETURN lcStaff
+ELSE
+	RETURN ""
+ENDIF 		
+
+*
+*******************************
+FUNCTION DelTitle(tcText)
+	
+IF EMPTY(tcText)
+	RETURN ""
+ENDIF 
+*	
+lnSelect = SELECT()
+IF !USED("title")
+	USE cims!title IN 0 
+ENDIF 
+**
+lcTitle = ""
+lnLen = 0
+SELECT title 
+GO TOP 
+DO WHILE EMPTY(lcTitle) AND !EOF()
+	lcText = LEFT(tcText,LEN(ALLTRIM(title.short_title)))
+	IF ALLTRIM(title.short_title) = lcText
+		lcTitle = ALLTRIM(title.short_title)
+		lnLen = LEN(lcTitle)
+		lcName = ALLTRIM(SUBSTR(tcText, lnLen+1))
+	ELSE 
+		lcName = tcText	
+	ENDIF 
+	SKIP 	
+ENDDO 	
+m.title = lcTitle
+m.name = lcName
+m.surname = ALLTRIM(SUBSTR(m.name, AT(" ", m.Name)))
+m.name = ALLTRIM(LEFT(m.Name, AT(" ", m.Name)-1))
+USE IN title
+SELECT (lnSelect)
+RETURN lcName
+******************************************************************************
+function getAggregateByService(tcPlanId, tcServiceType)
+
+lnAggregate = 0
+if empty(tcPlanId) and empty(tcServiceType)
+	return 0
+endif 	
+
+select aggregate,aggregate_oon from cims!plan where plan_id = tcPlanID into array laAggree
+if _TALLY > 0
+	if tcServiceType = "OPD"
+		lnAggregate = laAggree[1]
+	else	
+		lnAggregate = laAggree[2]
+	endif
+endif 					
+return lnAggregate
+******************************************************************************
+FUNCTION AggregateBal(tcPolicyNo, tnPersonNo, tcPlanID, tcNotifyNo)
+
+LOCAL lnSrvUsed, ;
+	lnSumOPD, ;
+	ldExpried, ;
+	lnArea
+IF EMPTY(tcPolicyNo)  OR EMPTY(tcPlanID) OR EMPTY(tcNotifyno)
+	RETURN 0
+ENDIF
+*
+lnSelect = select()
+store "" to lcServiceType
+store {} to ldEffDate,ldExpDate, ldAdmit
+lcFundCode = left(tcPlanId,3)
+lnPaid = 0
+select service_type from cims!claim where notify_no = tcNotifyNo into array laClaim 
+if _TALLY = 0
+	return 0
+endif
+*
+lcServiceType = laClaim[1]	
+if lcServiceType = "OPD"
+	select notify_no, effective, expried, admis_date, service_type, ;
+		iif(empty(fax_by), sbenfpaid, fbenfpaid) AS paid, result ;
+	from cims!claim ;
+	where fundcode = lcFundCode ;
+		and policy_no = tcPolicyNo ;
+		and family_no = tnPersonNo ;
+		and plan_id = tcPlanId ;
+		and service_type = "OPD" ; 
+	into cursor _curAggregate readwrite 
+else
+	select notify_no, effective, expried, admis_date, service_type, ;
+		iif(empty(fax_by), sbenfpaid, fbenfpaid) AS paid, result ;
+	from cims!claim ;
+	where fundcode = lcFundCode ;
+		and policy_no = tcPolicyNo ;
+		and family_no = tnPersonNo ;
+		and plan_id = tcPlanId ;
+		and service_type <> "OPD" ; 
+	into cursor _curAggregate readwrite 
+endif 	
+
+if _TALLY > 0
+	go top
+	scan 
+		ldEffDate = iif(ttoc(effective,2) = "00:00", effective+(12*3600), effective)
+		ldExpDate = icase(ttoc(expried,2) = "23:59", expried+(12*3600)+60, ttoc(expried,2) = "00:00", expried+(12*3600), expried)
+		loCover = getYearCover(lcFundCode, ldEffDate, ldExpDate, admis_date)
+		if !isnull(loCover)
+			replace effective with loCover.Effective, expried with locover.expiry
+		endif
+	endscan 
+	locate for notify_no = tcNotifyNo
+	if found()
+		ldEffDate = effective
+		ldExpDate = expried
+		lcServiceType = service_type
+		if lcServiceType = "OPD"
+			sum paid for effective = ldEffDate and expried = ldExpDate and service_type = "OPD" and notify_no < tcNotifyNo to lnPaid
+		else
+			sum paid for effective = ldEffDate and expried = ldExpDate and service_type <> "OPD" and notify_no < tcNotifyNo to lnPaid		
+		endif	
+	endif		
+endif
+use in _curAggregate
+select (lnSelect)
+return lnPaid 
+*!*	*********************************************
+*!*	* คำนวณ ยอดจ่ายสินไหมแบบ FED
+*!*	*	Pass     :  tcCustID = รหัสลูกค้า
+*!*	*	Return :  ผลรวมของจำนวนวันที่เข้ารับการรักษา
+*!*	********************************************
+*!*	FUNCTION AggregateBal(tcPolicyNo, tnPersonNo, tcPlanID, tcNotifyNo)
+
+*!*	LOCAL lnSrvUsed, ;
+*!*		lnSumOPD, ;
+*!*		ldExpried, ;
+*!*		lnArea
+*!*	IF EMPTY(tcPolicyNo)  OR EMPTY(tcPlanID) OR EMPTY(tcNotifyno)
+*!*		RETURN 0
+*!*	ENDIF
+*!*	*
+*!*	*WAIT WINDOW TRANSFORM(claim.aggregate, "@Z 999,999.99")
+
+*!*	store "" to lcServiceType
+*!*	store {} to ldEffDate,ldExpDate
+*!*	select effective, expried,service_type from cims!claim where notify_no = tcNotifyNo into array laAggregate
+*!*	if _TALLY <> 0
+*!*		ldEffDate = laAggregate[1]
+*!*		ldExpDate = laAggregate[2]
+*!*		lcServiceType = laAggregate[3]
+*!*	endif 
+*!*	*
+*!*	lnArea = SELECT()
+*!*	lcBenefitCode = left(tcPolicyNo,9)
+*!*	STORE 0 TO lnAggree, lnAggreeTH, lnSumOpd
+
+*!*	SELECT 0
+*!*	if left(tcPlanID,3) = "AGL"
+*!*		SELECT pi.benefit,pi.benefit_th ;
+*!*		from cims!member INNER JOIN cims!policy2items pi ;
+*!*			ON member.quotation = pi.benefitcode ;
+*!*		where member.policy_no = tcPolicyNo ;
+*!*			and member.plan_id = tcPlanID ;
+*!*			and pi.catcode = "ALL" ;
+*!*		into array laAggree
+*!*		if _TALLY <> 0
+*!*			lnAggree = laAggree[1]
+*!*			lnAggreeTH = laAggree[2]
+*!*		endif 
+*!*	else
+*!*		select aggregate,aggregate_oon from cims!plan where plan_id = tcPlanID into array laAggree
+*!*		if _TALLY <> 0
+*!*			lnAggree = laAggree[2]
+*!*			lnAggreeTH = laAggree[1]
+*!*		endif 					
+*!*	endif
+*!*	IF lcServiceType = "OPD"
+*!*		SELECT notify_no, effective,service_type, IIF(EMPTY(claim.fax_by), sbenfpaid, fbenfpaid) AS paid, over_respond, ;
+*!*			deduc, deduc_paid, claim_with ;
+*!*		FROM cims!claim ;
+*!*		WHERE policy_no = tcPolicyNo ;
+*!*			AND family_no = tnPersonNo ;
+*!*			AND plan_id = tcPlanID ;
+*!*			and effective = ldEffDate ;	
+*!*			and service_type = "OPD";
+*!*		ORDER BY notify_no ;	
+*!*		INTO CURSOR curSumFed
+*!*	ELSE
+*!*		SELECT notify_no, effective,service_type, IIF(EMPTY(claim.fax_by), sbenfpaid, fbenfpaid) AS paid, over_respond, ;
+*!*			deduc, deduc_paid, claim_with ;
+*!*		FROM cims!claim ;
+*!*		WHERE policy_no = tcPolicyNo ;
+*!*			AND family_no = tnPersonNo ;
+*!*			AND plan_id = tcPlanID ;
+*!*			and effective = ldEffDate ;	
+*!*			and service_type <> "OPD" ;
+*!*		ORDER BY notify_no ;	
+*!*		INTO CURSOR curSumFed
+*!*	ENDIF 
+*!*	***********************************
+*!*	IF _TALLY > 0
+*!*		SELECT curSumfed
+*!*		lnSumOpd = 0
+*!*		DO WHILE !EOF()
+*!*			IF notify_no = tcNotifyNo		
+*!*				EXIT 
+*!*			ELSE 
+*!*				IF claim_with = "H" AND deduc <> 0
+*!*					lnSumOpd = lnSumOPD + paid + over_respond + deduc_paid			
+*!*				ELSE 
+*!*					lnSumOpd = lnSumOPD + paid + over_respond
+*!*				ENDIF 	
+*!*			ENDIF 	
+*!*			SKIP 
+*!*		ENDDO 	
+*!*	ENDIF
+*!*	*
+*!*	do case
+*!*	case left(tcPlanID,3) = "AGL"
+*!*		lnAggreeBal = -(lnAggreeTH - lnSumOPD)+lnAggree
+*!*	case left(tcPlanID,3) = "DVS"	
+*!*		lnAggreeBal = lnSumOPD
+*!*		WAIT WINDOW PROGRAM(4) NOWAIT 
+*!*		
+*!*		
+*!*		*lnAggreeBal =   -(iif(lcServiceType = "OPD" and lnAggreeTH <> 0, lnAggreeTH,lnAggree) - lnSumOPD)+lnAggree
+*!*	otherwise 
+*!*		lnAggreeBal = lnSumOPD	
+*!*	endcase 
+*!*	USE IN curSumFed
+*!*	SELECT (lnArea)
+*!*	RETURN lnAggreeBal 
+*************************************************
+*!*	FUNCTION AggregateBal(tcPolicyNo, tnPersonNo, tcPlanID, tcNotifyNo)
+
+*!*	LOCAL lnSrvUsed, ;
+*!*		lnSumOPD, ;
+*!*		ldExpried, ;
+*!*		lnArea
+*!*	IF EMPTY(tcPolicyNo)  OR EMPTY(tcPlanID) OR EMPTY(tcNotifyno)
+*!*		RETURN 0
+*!*	ENDIF
+*!*	*
+*!*	lnArea = SELECT()
+*!*	lnSumOpd = 0
+*!*	SELECT 0
+*!*	SELECT notify_no, IIF(EMPTY(claim.fax_by), sbenfpaid, fbenfpaid) AS paid, over_respond, ;
+*!*		deduc, deduc_paid, claim_with ;
+*!*	FROM cims!claim ;
+*!*	WHERE policy_no = tcPolicyNo ;
+*!*		AND family_no = tnPersonNo ;
+*!*		AND plan_id = tcPlanID ;	
+*!*	ORDER BY notify_no ;	
+*!*	INTO CURSOR curSumFed
+*!*	IF _TALLY > 0
+*!*		SELECT curSumfed
+*!*		DO WHILE !EOF()
+*!*			IF notify_no = tcNotifyNo
+*!*				EXIT 
+*!*			ELSE 	
+*!*				IF claim_with = "H" AND deduc <> 0
+*!*					lnSumOpd = lnSumOPD + paid + over_respond + deduc_paid			
+*!*				ELSE 
+*!*					lnSumOpd = lnSumOPD + paid + over_respond
+*!*				ENDIF 	
+*!*			ENDIF 	
+*!*			SKIP 
+*!*		ENDDO 	
+*!*	ENDIF
+*!*	USE IN curSumFed
+*!*	SELECT (lnArea)
+*!*	RETURN lnSumOPD
+*********************************************
+FUNCTION GetEffective1(tcFundCode, tcPolicyNo, tnPersonNo, tcPlanID, tcPlan)
+
+lnArea = SELECT()
+DO CASE 
+CASE tcFundCode = "KTA"
+	SELECT policy_no, product, plan_id, effective_y, effective, ;
+		IIF(EMPTY(policy_end), expiry, policy_end) AS expiry, ;
+		oldexpiry, lastpaid, reindate, end_serial, pay_fr ;
+	FROM cims!member ;
+	WHERE tpacode = tcFundCode ;
+	AND policy_no = tcPolicyNo ;	
+	AND plan_id = tcPlanID ;
+	AND product = tcPlan ;
+	INTO CURSOR _member
+	*
+	IF _TALLY = 0
+		RETURN {}
+	ENDIF 
+	ldOldExp = TTOD(expiry) - ICASE(pay_fr = "1M", 30, pay_fr = "3M", 90, pay_fr = "6M", 180, pay_fr = "Y", 366)
+	ldOldExp = DATE(YEAR(ldOldExp), MONTH(ldOldExp), DAY(expiry))	
+	ldGrace = ldOldExp + ICASE(LEFT(tcPolicyNo,3) = "501", 31, LEFT(tcPolicyNo,3) = "502", 31)
+	IF end_serial = 4
+		ltEffective = reindate
+	ELSE 	
+		IF reindate > ldOldExp
+ 			IF lastpaid <= ldGrace
+ 				ltEffective = effective
+		 	ELSE 
+		 		IF lastpaid <= ldOldExp &&TTOD(oldexpiry)
+	 				ltEffective = effective
+	 			ELSE 		 
+	 				ltEffective = lastpaid
+		 		ENDIF 	
+		 	ENDIF 		
+		ELSE 
+			ltEffective = effective
+		ENDIF 
+	ENDIF 	
+	RETURN ltEffective	
+OTHERWISE 
+	RETURN {}
+ENDCASE 	
+USE IN _member
+SELECT (lnArea)
+********************************************
+FUNCTION GetEffective(tcFundCode, tcPolicyNo, tnPersonNo, tcPlanID)
+
+lnArea = SELECT()
+DO CASE 
+CASE tcFundCode = "KTA"
+	SELECT policy_no, product, plan_id, effective_y, effective, expiry, ;
+		oldexpiry, lastpaid, reindate, end_serial, pay_fr ;
+	FROM cims!member ;
+	WHERE tpacode = tcFundCode ;
+	AND policy_no = tcPolicyNo ;	
+	AND plan_id = tcPlanID ;
+	INTO CURSOR _member
+	*
+	IF _TALLY = 0
+		RETURN {}
+	ENDIF 
+	*ldOldExp = TTOD(expiry) - ICASE(pay_fr = "1M", 30, pay_fr = "3M", 90, pay_fr = "6M", 180, pay_fr = "Y", 366)
+	*ldOldExp = DATE(YEAR(ldOldExp), MONTH(ldOldExp), DAY(expiry))	
+	ldOldExp = getOldExp(TTOD(expiry), pay_fr)
+	ldGrace = ldOldExp + ICASE(LEFT(tcPolicyNo,3) = "501", 31, LEFT(tcPolicyNo,3) = "502", 31)
+	IF end_serial = 4
+		ltEffective = reindate
+	ELSE 	
+		IF reindate > ldOldExp
+ 			IF lastpaid <= ldGrace
+ 				ltEffective = effective_y
+		 	ELSE 
+		 		IF lastpaid < ldOldExp &&TTOD(oldexpiry)
+	 				ltEffective = effective_y
+	 			ELSE 		 
+	 				ltEffective = lastpaid
+		 		ENDIF 	
+		 	ENDIF 		
+		ELSE 
+			ltEffective = effective_y
+		ENDIF 
+	ENDIF 	
+	RETURN ltEffective	
+OTHERWISE 
+	RETURN {}
+ENDCASE 	
+USE IN _member
+SELECT (lnArea)
+	
+*******************************
+FUNCTION GetOldCustID(tcFundCode, tcPolicyNo)
+
+lcRetVal = ""
+lnArea = SELECT()
+IF EMPTY(tcFundCode) AND EMPTY(tcPolicyNo)
+	lcRetVal = ""
+ELSE 
+	SELECT customer_id, product ;
+	FROM cims!member ;
+	WHERE tpacode = tcFundCode ;
+	AND policy_no = tcPolicyNo ;
+	INTO CURSOR curMemCustID
+	SELECT curMemCustID
+	IF RECCOUNT() > 0
+		lcRetVal = curMemCustID.customer_id
+	ENDIF 
+	USE IN curMemCustID
+ENDIF 		
+SELECT (lnArea)
+RETURN lcRetVal
+
+*****************************************
+FUNCTION GetOldExp(tdExpiry, tcPayFr)
+
+IF EMPTY(tdExpiry) OR EMPTY(tcPayfr)
+	RETURN {}
+ENDIF 	
+
+lcPayfr = ALLTRIM(tcPayfr)
+lnMonth = ICASE(lcpayfr = "1M", -1, lcPayfr = "3M", -3, lcPayfr = "6M", -6, lcPayfr = "Y", -12, lcPayfr = "M ", -1, lcPayfr = "Q ", -3, lcPayfr = "S ", -6, lcPayfr = "A ", -12, 0)
+ldOldExp = GOMONTH(tdExpiry, lnMonth)
+
+*DO CASE 
+*CASE pay_fr = "Y"
+*	ldOldExp = DATE(YEAR(tdExpiry)-1, MONTH(tdExpiry), DAY(tdExpiry))	
+*OTHERWISE 
+*	IF lnMonth < 1
+*		lnMonth = 12 + lnMonth
+*		ldOldExp = DATE(YEAR(tdExpiry)-1, lnMonth, DAY(tdExpiry))	
+*	ELSE 
+*		ldOldExp = DATE(YEAR(tdExpiry), lnMonth, DAY(tdExpiry))		
+*	ENDIF 
+*ENDCASE 		
+RETURN ldOldExp
+******************************************************
+FUNCTION GetDueDate(tcFundcode, tcPolicyNo, tcPlan, ttExpiry, tdLastPaid)
+
+IF EMPTY(tcFundcode) AND EMPTY(tcPolicyNo) AND EMPTY(tcPlan) AND EMPTY(ttExpiry) AND EMPTY(tdLastPaid)
+	RETURN .f.
+ENDIF 
+	
+SELECT duedate, lastpaid FROM cims!reinstate ;
+WHERE fundcode = tcFundCode AND policy_no = tcPolicyNo AND plan = tcPlan AND lastpaid = tdLastPaid ;
+INTO CURSOR curDue
+RETURN RECCOUNT("curDue") > 0
+
+********************************************
+FUNCTION GetPremium(tcPlan, tnPremium)
+
+
+lnSelect = SELECT()
+*
+lcPremiumFile = ADDBS(JUSTPATH(FULLPATH(DBC())))+"fal_premium"
+IF !USED("fal_premium")
+	USE (lcPremiumFile) IN 0 &&F:\hips\data\fal_premium IN 0
+ENDIF 	
+*
+lnPerm = 0
+llSpouse = .F. &&IIF(tnPremium = 0, .T., .F.)
+DO CASE 
+CASE "MRS" $ tcPlan
+	IF LEFT(tcPlan,1) = "I"
+		lcPlan = LEFT(tcPlan,5)+" "+RIGHT(ALLTRIM(SUBSTR(tcPlan,2)),1)
+	ELSE 
+		lcPlan = SUBSTR(tcPlan,2, 4)+RIGHT(ALLTRIM(SUBSTR(tcPlan,2)),1)
+	ENDIF 	
+	llSpouse = IIF(RIGHT(ALLTRIM(tcPlan), 2) = " ", .F., .T.)	
+CASE "ASK" $ tcPlan
+	lcPlan = SUBSTR(tcPlan, 1, LEN(ALLTRIM(tcPlan))-2)+IIF(LEFT(RIGHT(ALLTRIM(tcPlan), 2), 1) = " ", RIGHT(ALLTRIM(tcPlan), 2), RIGHT(ALLTRIM(tcPlan), 1))
+	llSpouse = IIF(LEFT(RIGHT(ALLTRIM(tcPlan), 2), 1) = " ", .F., .T.)
+OTHERWISE 
+	IF TYPE(LEFT(RIGHT(ALLTRIM(tcPlan),2),1)) = "N"
+		lcPlan = LEFT(ALLTRIM(tcplan), LEN(ALLTRIM(tcPlan))-2)+RIGHT(ALLTRIM(tcPlan),1)
+		llSpouse = .T.
+	ELSE 
+		lcPlan = tcPlan	
+	ENDIF 	
+ENDCASE 
+IF SEEK(lcPlan, "fal_premium", "plan")
+	IF llSpouse
+		lnPerm = fal_premium.spouse
+	ELSE 
+		lnPerm = fal_premium.insured
+	ENDIF 		
+ENDIF 
+USE IN fal_premium
+SELECT (lnSelect)
+RETURN lnPerm
+
+*********************************
+FUNCTION GetTpaPlanID(tcFundcode)
+
+lcPlanID = ""
+DO CASE 
+*CASE tcFundcode = "TNI"
+*	lcPlanID = "TNI0919"
+CASE tcFundcode = "FAL"	
+	lcPlanID = "FAL0636"
+ENDCASE 
+RETURN lcPlanID
+	
+***********************************
+FUNCTION GetDentalRemain(tcFundCode, tcPolicyNo, tcPlan)
+
+SELECT policy_no, plan, SUM(sc_charge) AS sc_paid, SUM(fl_charge) AS fl_paid, ;
+	SUM(ft_charge) AS ft_paid, SUM(et_charge) AS et_paid, SUM(rt_charge) AS rt_paid, ;
+	SUM(wt_charge) AS wt_paid, SUM(ac_charge) AS ac_paid ;
+FROM cims!appointment ;
+WHERE fundcode = tcFundCode ;
+	AND policy_no = tcPolicyNo ;
+	AND plan =  tcPlan ;
+GROUP BY 1, 2 ;
+INTO ARRAY laDental
+
+RETURN laDental
+
+***************************************
+FUNCTION GetPolicyYear(tdEffDate, tdExpDate)
+
+IF EMPTY(tdEffDate) AND EMPTY(tdExpDate)
+	RETURN 0
+ENDIF 	
+
+lnRenew = 1
+ldExp = GOMONTH(tdEffDate, 12)
+
+DO WHILE tdExpDate > ldExp
+	ldExp = GOMONTH(ldExp, 12)
+	lnRenew = lnRenew + 1
+ENDDO 
+RETURN lnRenew
+*****************************************
+FUNCTION GetIndexTag(tcFundCode, tcPolNo, tcTag)
+
+DO CASE 
+CASE INLIST(tcFundCode, "CIG", "AVI")
+	tcPolNo = tcFundCode+m.policy_no
+	tcTag = "policy_no"			
+CASE tcFundCode = "FAL"
+	tcPolNo = tcFundCode+m.quotation+ALLTRIM(m.name)+" "+ALLTRIM(m.surname)+m.product
+	tcTag = "quo_name_p"
+CASE tcFundCode = "SMG"
+	tcPolNo = tcFundCode+m.quotation+ALLTRIM(m.name)+ALLTRIM(m.surname)
+	tcTag = "quo_name"
+OTHERWISE 
+	tcPolNo = tcFundCode+m.policy_no+ALLTRIM(m.product)
+	tcTag = "pol_plan"
+ENDCASE
+RETURN .T.
+*******************************************
+FUNCTION GetPaMedical(tcFundCode, tcPolicyNo, tcPlan, tnPersonNo)
+
+IF EMPTY(tcFundCode) AND EMPTY(tcPolicyNo) AND EMPTY(tcPlan) AND EMPTY(tnPersonNo)
+	RETURN 0
+ENDIF 
+WAIT WINDOW "รอสักครู่ กำลังตรวจสอบวงเงินคงเหลือ" NOWAIT 
+lnMedical = 0
+lnSelect = SELECT()
+*
+lcCustID = IIF(ISNULL(tnPersonNo) OR EMPTY(tnPersonNo), null, ALLTRIM(STR(tnPersonNo)))
+IF tcFundCode = "SMG"
+	IF UPPER(LEFT(tcPlan,5)) = "SUPER"
+		lcPlan = strtran(tcPlan, "Super ", "")
+		lcSQL = "select [member].[me_cover],[member].[mc_cover] from [cimsdb].[dbo].[member] "+;
+			"where [member].[fundcode] = ?tcFundCode and [member].[customer_type] = 'P' and [member].[quotation] = ?tcPolicyNo "+;
+			"and [member].[customer_id] = ?lcCustID"
+	ELSE	
+		IF AT("-",tcPolicyNo) = 0
+			IF ISNULL(lcCustID)
+				lcSQL = "select [member].[me_cover],[member].[mc_cover] from [cimsdb].[dbo].[member] "+;
+					"where [member].[fundcode] = ?tcFundCode and [member].[cardno] = ?tcPolicyNo"
+			ELSE 
+				lcSQL = "select [member].[me_cover],[member].[mc_cover] from [cimsdb].[dbo].[member] "+;
+					"where [member].[fundcode] = ?tcFundCode and [member].[cardno] = ?tcPolicyNo and [member].[customer_id] = ?lcCustID"
+			ENDIF 				
+		ELSE 
+			tcPolicyNo = IIF(LEN(ALLTRIM(tcPolicyNo)) > 19, LEFT(tcPolicyNo,19), tcPolicyNo)
+			lcSQL = "select [member].[me_cover],[member].[mc_cover] from [cimsdb].[dbo].[member] "+;
+				"where [member].[fundcode] = ?tcFundCode and [member].[policy_no] = ?tcPolicyNo and [member].[customer_id] = ?lcCustID"
+		ENDIF
+	ENDIF	
+	lnSuscess = SQLEXEC(gnConn, (lcSQL), "curMedical")
+	IF lnSuscess = 1
+		IF upper(ALIAS(lnSelect)) = 'CLAIM'
+			IF  claim.fundcode = 'KPI' AND claim.cause_type = 'MC'
+				lnMedical = curMedical.mc_cover
+			ELSE 
+				lnMedical = curMedical.me_cover
+			ENDIF 
+		ENDIF  	
+	ENDIF 	
+	USE IN curMedical	
+ELSE 
+	IF UPPER(ALIAS(lnSelect)) = 'CLAIM'
+		IF  claim.fundcode = 'KPI' AND claim.cause_type = 'MC'
+			lnMedical = getMcCover(claim.fundcode, claim.app_no, claim.plan, 0)
+		ENDIF 
+	endif 	
+	IF lnMedical = 0
+		SELECT overall_limit FROM cims!member ;
+		WHERE tpacode = tcFundCode ;
+			AND policy_no = tcPolicyNo AND product = tcPlan ;
+		INTO ARRAY laMedical
+		IF _TALLY > 0
+			lnMedical = laMedical[1]
+		ELSE 
+			SELECT medical FROM cims!dependants ;
+			WHERE fundcode = tcFundCode ;
+				AND policy_no = tcPolicyNo ;
+				AND person_no = tnPersonNo ;
+				AND plan = tcPlan ;
+			INTO ARRAY laMedical
+			IF _TALLY > 0
+				lnMedical = laMedical[1]
+			ENDIF 			
+		ENDIF 
+	ENDIF 			
+ENDIF 	
+SELECT (lnSelect)
+RETURN lnMedical
+**********************************************
+FUNCTION GetPaMedical1(tcFundCode, tcPolicyNo, tcPlan)
+
+IF EMPTY(tcFundCode) AND EMPTY(tcPolicyNo) AND EMPTY(tcPlan)
+	RETURN 0
+ENDIF 
+WAIT WINDOW "รอสักครู่ กำลังตรวจสอบวงเงินคงเหลือ" NOWAIT 
+lnMedical = 0
+*
+IF !USED("members")
+	USE cims!members IN 0
+ENDIF 
+*	
+IF !USED("member")
+	USE cims!member IN 0
+ENDIF 
+*
+*******************************************
+lcPol = tcFundCode + tcPolicyNo + ALLTRIM(tcPlan)
+IF tcFundCode = "SMG"
+	IF SEEK(lcPol, "members", "pol_plan")
+		lnMedical = members.overall_limit
+	ENDIF 	
+ELSE 
+	IF SEEK(lcPol, "member", "pol_plan")
+		lnMedical = member.overall_limit
+	ENDIF 	
+ENDIF 	
+RETURN lnMedical
+*
+*******************************************************
+FUNCTION GetFieldTransfer(tcFundCode, tcFile, tcExt)
+
+IF EMPTY(tcFundCode) AND EMPTY(tcExt) AND EMPTY(tcFile)
+	RETURN .F.
+ENDIF 	
+tcFile = ALLTRIM(tcFile)
+DO CASE 
+CASE tcExt = "TXT"
+	DO CASE 
+	CASE tcFundCode = "SMG"
+	   COPY TO (STUFF(tcFile, AT("SMG_",tcFile)+4, 12,"PA_CLAIM")) FIELDS not_no, not_date, followup, bro_no, clm_no, ref_no, pol_no, cerf_no, ;
+	   		cust_id, title, name, surname, eff_date, exp_date, plan, type_clm, clm_type, acc_date, admit, ;
+	   		disc, hosp_amt, 	discount, benf_covr, non_cover, benf_paid, exgratia, over_benf, hosp_code, hosp_name, ;
+	   		ill_code, ill_name, icd_10, icd10_2, icd10_3, other, clm_pstat, ret_date, indication, treatment, remark, paid_date, ;
+	   		acno, acname, acbank, gender, dob FOR !DELETED() AND bro_no = "P" TYPE DELIMITED WITH CHARACTER "|"
+	   * Health Claim		
+	   COPY TO (STUFF(tcFile, AT("SMG_",tcFile)+4, 12,"HS_CLAIM")) FIELDS not_no, not_date, followup, bro_no, clm_no, ref_no, pol_no, cerf_no, ;
+	   		cust_id, title, name, surname, eff_date, exp_date, plan, type_clm, clm_type, acc_date, admit, ;
+	   		disc, hosp_amt, 	discount, benf_covr, non_cover, benf_paid, exgratia, over_benf, hosp_code, hosp_name, ;
+	   		ill_code, ill_name, icd_10, icd10_2, icd10_3, other, fee, no_r_b,  a_r_b, d_r_b, o_r_b, p_r_b, e_r_b, c_r_b, n_r_b, ;
+	   		no_icu, a_icu, d_icu, o_icu, p_icu, e_icu, c_icu, n_icu, f_ss_sa,	a_ss_sa, d_ss_sa, o_ss_sa, p_ss_sa, e_ss_sa,c_ss_sa, ;
+	   		n_ss_sa, a_oper, d_oper, o_oper, p_oper, e_oper,  c_oper, n_oper, a_anes, d_anes, o_anes, p_anes, e_anes, c_anes, n_anes, ;
+	   		a_ghe, d_ghe, o_ghe, p_ghe, e_ghe, c_ghe, a_med, d_med, o_med, p_med, e_med, c_med,  n_med, a_lab, d_lab, o_lab, ;
+	   		p_lab, e_lab, c_lab, n_lab, no_doct, a_doct_fee, d_doct_fee, o_doct_fee, p_doct_fee, e_doct_fee, c_doct_fee, n_doct_fee, ;
+	   		a_consult, d_consult, o_consult, p_consult, e_consult, c_consult, n_consult, a_aet, d_aet, o_aet, p_aet, e_aet, c_aet, n_aet, ;
+	   		a_opd, d_opd, o_opd, p_opd, e_opd,	c_opd, n_opd, clm_pstat, ret_date, indication, treatment, remark, paid_date, ;
+	   		acno, acname, acbank, gender, dob FOR !DELETED() AND bro_no <> "P" TYPE DELIMITED WITH CHARACTER "|" 
+	CASE tcFundCode = "FAL"	
+		lcTitle = "not_no|not_date|followup|bro_no|clm_no|ref_no|pol_no|cerf_no|cust_id|title|name|surname|eff_date|exp_date|plan|visit|type_clm|clm_type|"+;
+			"acc_date|admit|disc|hosp_amt|discount|benf_covr|non_cover|benf_paid|exgratia|over_benf|hosp_code|hosp_name|ill_code|ill_name|icd_10|icd10_2|"+;
+			"icd10_3|fee|no_r_b|a_r_b|d_r_b|o_r_b|p_r_b|e_r_b|c_r_b|n_r_b|no_icu|a_icu|d_icu|o_icu|p_icu|e_icu|c_icu|n_icu|f_ss_sa|a_ss_sa|d_ss_sa|o_ss_sa|"+;
+			"p_ss_sa|e_ss_sa|c_ss_sa|n_ss_sa|a_oper|d_oper|o_oper|p_oper|e_oper|c_oper|n_oper|a_anes|d_anes|o_anes|p_anes|e_anes|c_anes|n_anes|a_ghe|d_ghe|"+;
+			"o_ghe|p_ghe|e_ghe|c_ghe|n_ghe|a_med|d_med|o_med|p_med|e_med|c_med|n_med|a_lab|d_lab|o_lab|p_lab|e_lab|c_lab|n_lab|no_doct|a_doct_fee|d_doct_fee|"+;
+			"o_doct_fee|p_doct_fee|e_doct_fee|c_doct_fee|n_doct_fee|a_consult|d_consult|o_consult|p_consult|e_consult|c_consult|n_consult|a_aet|d_aet|o_aet|"+;
+			"p_aet|e_aet|c_aet|n_aet|a_opd|d_opd|o_opd|p_opd|e_opd|c_opd|n_opd|a_sf|d_sf|o_sf|p_sf|e_sf|c_sf|n_sf|a_et|d_et|o_et|p_et|e_et|c_et|n_et|a_acc|"+;
+			"d_acc|o_acc|p_acc|e_acc|c_acc|n_acc|a_wr|d_wr|o_wr|p_wr|e_wr|c_wr|n_wr|a_rc|d_rc|o_rc|p_rc|e_rc|c_rc|n_rc|a_sl|d_sl|o_sl|p_sl|e_sl|c_sl|n_sl|"+;
+			"other|clm_pstat|ret_date|indication|treatment|remark|paid_date|acno|acname|acbank|acctime|admittime"+CHR(13)+chr(10)			
+		*
+		tcFile = ADDBS(JUSTPATH(tcFile))+STRTRAN(DTOc(m.endDate), "/", "-")+"-PA-Reserve-New.txt"
+		COPY TO (tcFile) fields not_no,not_date,followup,bro_no,clm_no,ref_no,pol_no,cerf_no,cust_id,title,name,surname,eff_date,exp_date,plan,visit,type_clm,clm_type,;
+			acc_date,admit,disc,hosp_amt,discount,benf_covr,non_cover,benf_paid,exgratia,over_benf,hosp_code,hosp_name,ill_code,ill_name,icd_10,icd10_2,;
+			icd10_3,fee,no_r_b,a_r_b,d_r_b,o_r_b,p_r_b,e_r_b,c_r_b,n_r_b,no_icu,a_icu,d_icu,o_icu,p_icu,e_icu,c_icu,n_icu,f_ss_sa,a_ss_sa,d_ss_sa,o_ss_sa,;
+			p_ss_sa,e_ss_sa,c_ss_sa,n_ss_sa,a_oper,d_oper,o_oper,p_oper,e_oper,c_oper,n_oper,a_anes,d_anes,o_anes,p_anes,e_anes,c_anes,n_anes,a_ghe,d_ghe,;
+			o_ghe,p_ghe,e_ghe,c_ghe,n_ghe,a_med,d_med,o_med,p_med,e_med,c_med,n_med,a_lab,d_lab,o_lab,p_lab,e_lab,c_lab,n_lab,no_doct,a_doct_fee,d_doct_fee,;
+			o_doct_fee,p_doct_fee,e_doct_fee,c_doct_fee,n_doct_fee,a_consult,d_consult,o_consult,p_consult,e_consult,c_consult,n_consult,a_aet,d_aet,o_aet,;
+			p_aet,e_aet,c_aet,n_aet,a_opd,d_opd,o_opd,p_opd,e_opd,c_opd,n_opd,a_sf,d_sf,o_sf,p_sf,e_sf,c_sf,n_sf,a_et,d_et,o_et,p_et,e_et,c_et,n_et,a_acc,;
+			d_acc,o_acc,p_acc,e_acc,c_acc,n_acc,a_wr,d_wr,o_wr,p_wr,e_wr,c_wr,n_wr,a_rc,d_rc,o_rc,p_rc,e_rc,c_rc,n_rc,a_sl,d_sl,o_sl,p_sl,e_sl,c_sl,n_sl,;
+			other,clm_pstat,ret_date,indication,treatment,remark,paid_date,acno,acname,bankcode,acctime,admittime ;
+		FOR bro_no = "P" AND EMPTY(followup) and INLIST(left(clm_pstat,1), "W", "R") ;
+			AND !DELETED() TYPE  DELIMITED WITH CHARACTER "|"		
+		SET SAFETY OFF 
+		ctemp = FILETOSTR(tcFile)		
+		STRTOFILE(lcTitle + strtran(cTemp,["],[]), tcFile)
+		SET SAFETY ON 
+		**************************************		
+		tcFile = ADDBS(JUSTPATH(tcFile))+STRTRAN(DTOc(m.endDate), "/", "-")+"-PA-Reserve-Followup.txt"
+		COPY TO (tcFile) fields not_no,not_date,followup,bro_no,clm_no,ref_no,pol_no,cerf_no,cust_id,title,name,surname,eff_date,exp_date,plan,visit,type_clm,clm_type,;
+			acc_date,admit,disc,hosp_amt,discount,benf_covr,non_cover,benf_paid,exgratia,over_benf,hosp_code,hosp_name,ill_code,ill_name,icd_10,icd10_2,;
+			icd10_3,fee,no_r_b,a_r_b,d_r_b,o_r_b,p_r_b,e_r_b,c_r_b,n_r_b,no_icu,a_icu,d_icu,o_icu,p_icu,e_icu,c_icu,n_icu,f_ss_sa,a_ss_sa,d_ss_sa,o_ss_sa,;
+			p_ss_sa,e_ss_sa,c_ss_sa,n_ss_sa,a_oper,d_oper,o_oper,p_oper,e_oper,c_oper,n_oper,a_anes,d_anes,o_anes,p_anes,e_anes,c_anes,n_anes,a_ghe,d_ghe,;
+			o_ghe,p_ghe,e_ghe,c_ghe,n_ghe,a_med,d_med,o_med,p_med,e_med,c_med,n_med,a_lab,d_lab,o_lab,p_lab,e_lab,c_lab,n_lab,no_doct,a_doct_fee,d_doct_fee,;
+			o_doct_fee,p_doct_fee,e_doct_fee,c_doct_fee,n_doct_fee,a_consult,d_consult,o_consult,p_consult,e_consult,c_consult,n_consult,a_aet,d_aet,o_aet,;
+			p_aet,e_aet,c_aet,n_aet,a_opd,d_opd,o_opd,p_opd,e_opd,c_opd,n_opd,a_sf,d_sf,o_sf,p_sf,e_sf,c_sf,n_sf,a_et,d_et,o_et,p_et,e_et,c_et,n_et,a_acc,;
+			d_acc,o_acc,p_acc,e_acc,c_acc,n_acc,a_wr,d_wr,o_wr,p_wr,e_wr,c_wr,n_wr,a_rc,d_rc,o_rc,p_rc,e_rc,c_rc,n_rc,a_sl,d_sl,o_sl,p_sl,e_sl,c_sl,n_sl,;
+			other,clm_pstat,ret_date,indication,treatment,remark,paid_date,acno,acname,bankcode,acctime,admittime ;
+		FOR bro_no = "P" AND !EMPTY(followup) and INLIST(left(clm_pstat,1), "W", "R") AND !DELETED() ;
+		TYPE DELIMITED  WITH  CHARACTER "|"		
+		SET SAFETY OFF 
+		ctemp = FILETOSTR(tcFile)
+		STRTOFILE(lcTitle + strtran(cTemp,["],[]), tcFile)
+		SET SAFETY ON 
+		**************************************		
+		tcFile = ADDBS(JUSTPATH(tcFile))+STRTRAN(DTOc(m.endDate), "/", "-")+"-PA-Settlement.txt"
+		COPY TO (tcFile) fields not_no,not_date,followup,bro_no,clm_no,ref_no,pol_no,cerf_no,cust_id,title,name,surname,eff_date,exp_date,plan,visit,type_clm,clm_type,;
+			acc_date,admit,disc,hosp_amt,discount,benf_covr,non_cover,benf_paid,exgratia,over_benf,hosp_code,hosp_name,ill_code,ill_name,icd_10,icd10_2,;
+			icd10_3,fee,no_r_b,a_r_b,d_r_b,o_r_b,p_r_b,e_r_b,c_r_b,n_r_b,no_icu,a_icu,d_icu,o_icu,p_icu,e_icu,c_icu,n_icu,f_ss_sa,a_ss_sa,d_ss_sa,o_ss_sa,;
+			p_ss_sa,e_ss_sa,c_ss_sa,n_ss_sa,a_oper,d_oper,o_oper,p_oper,e_oper,c_oper,n_oper,a_anes,d_anes,o_anes,p_anes,e_anes,c_anes,n_anes,a_ghe,d_ghe,;
+			o_ghe,p_ghe,e_ghe,c_ghe,n_ghe,a_med,d_med,o_med,p_med,e_med,c_med,n_med,a_lab,d_lab,o_lab,p_lab,e_lab,c_lab,n_lab,no_doct,a_doct_fee,d_doct_fee,;
+			o_doct_fee,p_doct_fee,e_doct_fee,c_doct_fee,n_doct_fee,a_consult,d_consult,o_consult,p_consult,e_consult,c_consult,n_consult,a_aet,d_aet,o_aet,;
+			p_aet,e_aet,c_aet,n_aet,a_opd,d_opd,o_opd,p_opd,e_opd,c_opd,n_opd,a_sf,d_sf,o_sf,p_sf,e_sf,c_sf,n_sf,a_et,d_et,o_et,p_et,e_et,c_et,n_et,a_acc,;
+			d_acc,o_acc,p_acc,e_acc,c_acc,n_acc,a_wr,d_wr,o_wr,p_wr,e_wr,c_wr,n_wr,a_rc,d_rc,o_rc,p_rc,e_rc,c_rc,n_rc,a_sl,d_sl,o_sl,p_sl,e_sl,c_sl,n_sl,;
+			other,clm_pstat,ret_date,indication,treatment,remark,paid_date,acno,acname,bankcode,acctime,admittime ;
+		FOR bro_no = "P" AND INLIST(left(clm_pstat,1), "P", "D") ;
+			AND !DELETED() type delimited with character "|"		
+		SET SAFETY OFF 
+		ctemp = FILETOSTR(tcFile)		
+		STRTOFILE(lcTitle + strtran(cTemp,["],[]), tcFile)
+		SET SAFETY ON 
+		**************************************		
+		DO groupDentalItem
+		
+		tcFile = ADDBS(JUSTPATH(tcFile))+STRTRAN(DTOc(m.endDate), "/", "-")+"-Dental-Reserve-New.txt"
+		COPY TO (tcFile) FIELDS not_no,not_date,followup,bro_no,clm_no,ref_no,pol_no,cerf_no,cust_id,title,name,surname,eff_date,exp_date,plan,visit,type_clm,clm_type,;
+			acc_date,admit,disc,hosp_amt,discount,benf_covr,non_cover,benf_paid,exgratia,over_benf,hosp_code,hosp_name,ill_code,ill_name,icd_10,icd10_2,;
+			icd10_3,fee,no_r_b,a_r_b,d_r_b,o_r_b,p_r_b,e_r_b,c_r_b,n_r_b,no_icu,a_icu,d_icu,o_icu,p_icu,e_icu,c_icu,n_icu,f_ss_sa,a_ss_sa,d_ss_sa,o_ss_sa,;
+			p_ss_sa,e_ss_sa,c_ss_sa,n_ss_sa,a_oper,d_oper,o_oper,p_oper,e_oper,c_oper,n_oper,a_anes,d_anes,o_anes,p_anes,e_anes,c_anes,n_anes,a_ghe,d_ghe,;
+			o_ghe,p_ghe,e_ghe,c_ghe,n_ghe,a_med,d_med,o_med,p_med,e_med,c_med,n_med,a_lab,d_lab,o_lab,p_lab,e_lab,c_lab,n_lab,no_doct,a_doct_fee,d_doct_fee,;
+			o_doct_fee,p_doct_fee,e_doct_fee,c_doct_fee,n_doct_fee,a_consult,d_consult,o_consult,p_consult,e_consult,c_consult,n_consult,a_aet,d_aet,o_aet,;
+			p_aet,e_aet,c_aet,n_aet,a_opd,d_opd,o_opd,p_opd,e_opd,c_opd,n_opd,a_sf,d_sf,o_sf,p_sf,e_sf,c_sf,n_sf,a_et,d_et,o_et,p_et,e_et,c_et,n_et,a_acc,;
+			d_acc,o_acc,p_acc,e_acc,c_acc,n_acc,a_wr,d_wr,o_wr,p_wr,e_wr,c_wr,n_wr,a_rc,d_rc,o_rc,p_rc,e_rc,c_rc,n_rc,a_sl,d_sl,o_sl,p_sl,e_sl,c_sl,n_sl,;
+			other,clm_pstat,ret_date,indication,treatment,remark,paid_date,acno,acname,bankcode,acctime,admittime ;
+		FOR bro_no = "D" AND EMPTY(followup) and INLIST(left(clm_pstat,1), "W", "R") ;
+			AND !DELETED() type delimited with character "|"		
+		SET SAFETY OFF 
+		ctemp = FILETOSTR(tcFile)		
+		STRTOFILE(lcTitle + strtran(cTemp,["],[]), tcFile)
+		SET SAFETY ON 
+		**************************************		
+		tcFile = ADDBS(JUSTPATH(tcFile))+STRTRAN(DTOc(m.endDate), "/", "-")+"-Dental-Reserve-Followup.txt"
+		COPY TO (tcFile) FIELDS  not_no,not_date,followup,bro_no,clm_no,ref_no,pol_no,cerf_no,cust_id,title,name,surname,eff_date,exp_date,plan,visit,type_clm,clm_type,;
+			acc_date,admit,disc,hosp_amt,discount,benf_covr,non_cover,benf_paid,exgratia,over_benf,hosp_code,hosp_name,ill_code,ill_name,icd_10,icd10_2,;
+			icd10_3,fee,no_r_b,a_r_b,d_r_b,o_r_b,p_r_b,e_r_b,c_r_b,n_r_b,no_icu,a_icu,d_icu,o_icu,p_icu,e_icu,c_icu,n_icu,f_ss_sa,a_ss_sa,d_ss_sa,o_ss_sa,;
+			p_ss_sa,e_ss_sa,c_ss_sa,n_ss_sa,a_oper,d_oper,o_oper,p_oper,e_oper,c_oper,n_oper,a_anes,d_anes,o_anes,p_anes,e_anes,c_anes,n_anes,a_ghe,d_ghe,;
+			o_ghe,p_ghe,e_ghe,c_ghe,n_ghe,a_med,d_med,o_med,p_med,e_med,c_med,n_med,a_lab,d_lab,o_lab,p_lab,e_lab,c_lab,n_lab,no_doct,a_doct_fee,d_doct_fee,;
+			o_doct_fee,p_doct_fee,e_doct_fee,c_doct_fee,n_doct_fee,a_consult,d_consult,o_consult,p_consult,e_consult,c_consult,n_consult,a_aet,d_aet,o_aet,;
+			p_aet,e_aet,c_aet,n_aet,a_opd,d_opd,o_opd,p_opd,e_opd,c_opd,n_opd,a_sf,d_sf,o_sf,p_sf,e_sf,c_sf,n_sf,a_et,d_et,o_et,p_et,e_et,c_et,n_et,a_acc,;
+			d_acc,o_acc,p_acc,e_acc,c_acc,n_acc,a_wr,d_wr,o_wr,p_wr,e_wr,c_wr,n_wr,a_rc,d_rc,o_rc,p_rc,e_rc,c_rc,n_rc,a_sl,d_sl,o_sl,p_sl,e_sl,c_sl,n_sl,;
+			other,clm_pstat,ret_date,indication,treatment,remark,paid_date,acno,acname,bankcode,acctime,admittime ;
+		FOR bro_no = "D" AND !EMPTY(followup) and INLIST(left(clm_pstat,1), "W", "R") AND !DELETED() ;
+		TYPE DELIMITED  WITH  CHARACTER "|"		
+		SET SAFETY OFF 
+		ctemp = FILETOSTR(tcFile)
+		STRTOFILE(lcTitle + strtran(cTemp,["],[]), tcFile)
+		SET SAFETY ON 
+		**************************************		
+		tcFile = ADDBS(JUSTPATH(tcFile))+STRTRAN(DTOc(m.endDate), "/", "-")+"-Dental-Setlement.txt"
+		COPY TO (tcFile) fields not_no,not_date,followup,bro_no,clm_no,ref_no,pol_no,cerf_no,cust_id,title,name,surname,eff_date,exp_date,plan,visit,type_clm,clm_type,;
+			acc_date,admit,disc,hosp_amt,discount,benf_covr,non_cover,benf_paid,exgratia,over_benf,hosp_code,hosp_name,ill_code,ill_name,icd_10,icd10_2,;
+			icd10_3,fee,no_r_b,a_r_b,d_r_b,o_r_b,p_r_b,e_r_b,c_r_b,n_r_b,no_icu,a_icu,d_icu,o_icu,p_icu,e_icu,c_icu,n_icu,f_ss_sa,a_ss_sa,d_ss_sa,o_ss_sa,;
+			p_ss_sa,e_ss_sa,c_ss_sa,n_ss_sa,a_oper,d_oper,o_oper,p_oper,e_oper,c_oper,n_oper,a_anes,d_anes,o_anes,p_anes,e_anes,c_anes,n_anes,a_ghe,d_ghe,;
+			o_ghe,p_ghe,e_ghe,c_ghe,n_ghe,a_med,d_med,o_med,p_med,e_med,c_med,n_med,a_lab,d_lab,o_lab,p_lab,e_lab,c_lab,n_lab,no_doct,a_doct_fee,d_doct_fee,;
+			o_doct_fee,p_doct_fee,e_doct_fee,c_doct_fee,n_doct_fee,a_consult,d_consult,o_consult,p_consult,e_consult,c_consult,n_consult,a_aet,d_aet,o_aet,;
+			p_aet,e_aet,c_aet,n_aet,a_opd,d_opd,o_opd,p_opd,e_opd,c_opd,n_opd,a_sf,d_sf,o_sf,p_sf,e_sf,c_sf,n_sf,a_et,d_et,o_et,p_et,e_et,c_et,n_et,a_acc,;
+			d_acc,o_acc,p_acc,e_acc,c_acc,n_acc,a_wr,d_wr,o_wr,p_wr,e_wr,c_wr,n_wr,a_rc,d_rc,o_rc,p_rc,e_rc,c_rc,n_rc,a_sl,d_sl,o_sl,p_sl,e_sl,c_sl,n_sl,;
+			other,clm_pstat,ret_date,indication,treatment,remark,paid_date,acno,acname,bankcode,acctime,admittime ;
+		FOR bro_no = "D" AND INLIST(left(clm_pstat,1), "P", "D") AND !DELETED() ;
+		TYPE DELIMITED  WITH  CHARACTER "|"		
+		SET SAFETY OFF 
+		ctemp = FILETOSTR(tcFile)
+		STRTOFILE(lcTitle + strtran(cTemp,["],[]), tcFile)
+		SET SAFETY ON 
+	CASE tcFundCode = "DVS"
+	   COPY TO (tcFile) FIELDS not_no, not_date, followup, bro_no, clm_no, ref_no, pol_no, cerf_no, ;
+	   		cust_id, title, name, surname, eff_date, exp_date, plan, type_clm, clm_type, acc_date, admit, ;
+	   		disc, hosp_amt, 	discount, benf_covr, non_cover, benf_paid, exgratia, over_benf, hosp_code, hosp_name, ;
+	   		ill_code, ill_name, icd_10, icd10_2, icd10_3, fee, no_r_b,  a_r_b, d_r_b, o_r_b, p_r_b, e_r_b, c_r_b, n_r_b, ;
+	   		no_icu, a_icu, d_icu, o_icu, p_icu, e_icu, c_icu, n_icu, f_ss_sa,	a_ss_sa, d_ss_sa, o_ss_sa, p_ss_sa, e_ss_sa,c_ss_sa, ;
+	   		n_ss_sa, a_oper, d_oper, o_oper, p_oper, e_oper,  c_oper, n_oper, a_anes, d_anes, o_anes, p_anes, e_anes, c_anes, n_anes, ;
+	   		a_ghe, d_ghe, o_ghe, p_ghe, e_ghe, c_ghe, a_med, d_med, o_med, p_med, e_med, c_med,  n_med, a_lab, d_lab, o_lab, ;
+	   		p_lab, e_lab, c_lab, n_lab, no_doct, a_doct_fee, d_doct_fee, o_doct_fee, p_doct_fee, e_doct_fee, c_doct_fee, n_doct_fee, ;
+	   		a_consult, d_consult, o_consult, p_consult, e_consult, c_consult, n_consult, a_aet, d_aet, o_aet, p_aet, e_aet, c_aet, n_aet, ;
+	   		a_opd, d_opd, o_opd, p_opd, e_opd,	c_opd, n_opd, no_hb, a_hb, o_hb, p_hb, e_hb, c_hb, n_hb, ;
+	   		no_ihb, a_ihb, o_ihb, p_ihb, e_ihb, c_ihb, n_ihb, no_dhb, a_dhb, o_dhb, p_dhb, e_dhb, c_dhb, n_dhb, ;
+	   		other, clm_pstat, ret_date, indication, treatment, remark, paid_date, recovery, acno, acname, acbank, mobile, taxid, province	 ;
+	   		FOR !DELETED() TYPE DELIMITED WITH CHARACTER "|"
+	CASE tcFundCode = "SSL"
+	   COPY TO (tcFile) FIELDS not_no, not_date, followup, bro_no, clm_no, ref_no, pol_no, cerf_no, ;
+	   		cust_id, title, name, surname, eff_date, exp_date, plan, type_clm, clm_type, acc_date, admit, ;
+	   		disc, hosp_amt, 	discount, benf_covr, non_cover, benf_paid, exgratia, over_benf, hosp_code, hosp_name, ;
+	   		ill_code, ill_name, icd_10, icd10_2, icd10_3, fee, no_r_b,  a_r_b, d_r_b, o_r_b, p_r_b, e_r_b, c_r_b, n_r_b, ;
+	   		no_icu, a_icu, d_icu, o_icu, p_icu, e_icu, c_icu, n_icu, f_ss_sa,	a_ss_sa,d_ss_sa,o_ss_sa,p_ss_sa,e_ss_sa,c_ss_sa,;
+	   		n_ss_sa, a_oper, d_oper, o_oper, p_oper, e_oper,  c_oper, n_oper, a_anes, d_anes, o_anes, p_anes, e_anes, c_anes, n_anes, ;
+	   		a_ghe,d_ghe,o_ghe,	p_ghe,e_ghe,c_ghe,	n_ghe,	a_med,	d_med,	o_med,	p_med,	e_med,	c_med,	n_med,	a_lab,d_lab,	o_lab, ;
+	   		p_lab,e_lab,	c_lab,n_lab,	no_doct,a_doct_fee,	d_doct_fee,	o_doct_fee,	p_doct_fee,	e_doct_fee,	c_doct_fee,	n_doct_fee,	a_consult, ;
+	   		d_consult,o_consult,	p_consult, e_consult, c_consult, n_consult, a_aet,	d_aet, o_aet, p_aet,	e_aet, c_aet, n_aet, ;
+	   		a_opd, d_opd, o_opd, p_opd, e_opd,	c_opd, n_opd, no_hb, o_hb, p_hb, other, clm_pstat, ret_date, indication, ;
+	   		treatment, remark, paid_date, recovery, acno, acname, acbank, mobile ;
+	   		FOR !DELETED() TYPE DELIMITED WITH CHARACTER "|"
+	OTHERWISE 
+		COPY TO (tcFile) FOR !DELETED() TYPE DELIMITED WITH CHARACTER "|"   		
+	ENDCASE 
+CASE tcExt = "XLS"
+	DO CASE 
+	CASE tcFundCode = "SMG"
+	   COPY TO (STUFF(tcFile, AT("SMG_",tcFile)+4, 12,"PA_CLAIM")) FIELDS not_no, not_date, followup, bro_no, clm_no, ref_no, pol_no, cerf_no, ;
+	   		cust_id, title, name, surname, eff_date, exp_date, plan, type_clm, clm_type, acc_date, admit, ;
+	   		disc, hosp_amt, 	discount, benf_covr, non_cover, benf_paid, exgratia, over_benf, hosp_code, hosp_name, ;
+	   		ill_code, ill_name, icd_10, icd10_2, icd10_3, other, clm_pstat, ret_date, indication, treatment, remark, paid_date, ;
+	   		acno, acname, acbank, gender, dob FOR !DELETED() AND bro_no = "P" TYPE XL5
+	   * Health Claim		
+	   COPY TO (STUFF(tcFile, AT("SMG_",tcFile)+4, 12,"HS_CLAIM")) FIELDS not_no, not_date, followup, bro_no, clm_no, ref_no, pol_no, cerf_no, ;
+	   		cust_id, title, name, surname, eff_date, exp_date, plan, type_clm, clm_type, acc_date, admit, ;
+	   		disc, hosp_amt, 	discount, benf_covr, non_cover, benf_paid, exgratia, over_benf, hosp_code, hosp_name, ;
+	   		ill_code, ill_name, icd_10, icd10_2, icd10_3, other, fee, no_r_b,  a_r_b, d_r_b, o_r_b, p_r_b, e_r_b, c_r_b, n_r_b, ;
+	   		no_icu, a_icu, d_icu, o_icu, p_icu, e_icu, c_icu, n_icu, f_ss_sa,	a_ss_sa, d_ss_sa, o_ss_sa, p_ss_sa, e_ss_sa,c_ss_sa, ;
+	   		n_ss_sa, a_oper, d_oper, o_oper, p_oper, e_oper,  c_oper, n_oper, a_anes, d_anes, o_anes, p_anes, e_anes, c_anes, n_anes, ;
+	   		a_ghe, d_ghe, o_ghe, p_ghe, e_ghe, c_ghe, a_med, d_med, o_med, p_med, e_med, c_med,  n_med, a_lab, d_lab, o_lab, ;
+	   		p_lab, e_lab, c_lab, n_lab, no_doct, a_doct_fee, d_doct_fee, o_doct_fee, p_doct_fee, e_doct_fee, c_doct_fee, n_doct_fee, ;
+	   		a_consult, d_consult, o_consult, p_consult, e_consult, c_consult, n_consult, a_aet, d_aet, o_aet, p_aet, e_aet, c_aet, n_aet, ;
+	   		a_opd, d_opd, o_opd, p_opd, e_opd,	c_opd, n_opd, clm_pstat, ret_date, indication, treatment, remark, paid_date, ;
+	   		acno, acname, acbank, gender, dob FOR !DELETED() AND bro_no <> "P" TYPE XL5
+	CASE tcFundCode = "FAL"
+		tcFile = ADDBS(JUSTPATH(tcFile))+DTOS(DATE())+"-P-"+"PA-"+"01"
+		COPY TO (tcFile) FOR bro_no = "P" AND !DELETED() TYPE XL5 FIELDS EXCEPT no_hb, a_hb, o_hb, p_hb, e_hb, c_hb, n_hb, ;
+	   		no_ihb, a_ihb, o_ihb, p_ihb, e_ihb, c_ihb, n_ihb, no_dhb, a_dhb, o_dhb, p_dhb, e_dhb, c_dhb, n_dhb, ;
+	   		recovery, mobile, hb_cover, hb_fax,  hb_bal, taxid, province, gender, dob 
+		tcFile = ADDBS(JUSTPATH(tcFile))+DTOS(DATE())+"-P-"+"DEN-"+"01"
+		COPY TO (tcFile) FOR bro_no = "D" AND !DELETED() TYPE XL5 FIELDS EXCEPT no_hb, a_hb, o_hb, p_hb, e_hb, c_hb, n_hb, ;
+	   		no_ihb, a_ihb, o_ihb, p_ihb, e_ihb, c_ihb, n_ihb, no_dhb, a_dhb, o_dhb, p_dhb, e_dhb, c_dhb, n_dhb, ;
+	   		recovery, mobile, hb_cover, hb_fax,  hb_bal, taxid, province, gender, dob
+	CASE tcFundCode = "DVS"
+		select not_no, not_date, followup, bro_no, clm_no, ref_no, pol_no, cerf_no, ;
+	   		cust_id, title, name, surname, eff_date, exp_date, plan, type_clm, clm_type, acc_date, admit, ;
+	   		disc, hosp_amt, 	discount, benf_covr, non_cover, benf_paid, exgratia, over_benf, hosp_code, hosp_name, ;
+	   		ill_code, ill_name, icd_10, icd10_2, icd10_3, fee, no_r_b,  a_r_b, d_r_b, o_r_b, p_r_b, e_r_b, c_r_b, n_r_b, ;
+	   		no_icu, a_icu, d_icu, o_icu, p_icu, e_icu, c_icu, n_icu, f_ss_sa,	a_ss_sa, d_ss_sa, o_ss_sa, p_ss_sa, e_ss_sa,c_ss_sa, ;
+	   		n_ss_sa, a_oper, d_oper, o_oper, p_oper, e_oper,  c_oper, n_oper, a_anes, d_anes, o_anes, p_anes, e_anes, c_anes, n_anes, ;
+	   		a_ghe, d_ghe, o_ghe, p_ghe, e_ghe, c_ghe, a_med, d_med, o_med, p_med, e_med, c_med,  n_med, a_lab, d_lab, o_lab, ;
+	   		p_lab, e_lab, c_lab, n_lab, no_doct, a_doct_fee, d_doct_fee, o_doct_fee, p_doct_fee, e_doct_fee, c_doct_fee, n_doct_fee, ;
+	   		a_consult, d_consult, o_consult, p_consult, e_consult, c_consult, n_consult, a_aet, d_aet, o_aet, p_aet, e_aet, c_aet, n_aet, ;
+	   		a_opd, d_opd, o_opd, p_opd, e_opd,	c_opd, n_opd, no_hb, a_hb, o_hb, p_hb, e_hb, c_hb, n_hb, ;
+	   		no_ihb, a_ihb, o_ihb, p_ihb, e_ihb, c_ihb, n_ihb, no_dhb, a_dhb, o_dhb, p_dhb, e_dhb, c_dhb, n_dhb, ;
+	   		other, clm_pstat, ret_date, indication, treatment, remark, paid_date, recovery, acno, acname, acbank, mobile, taxid, province	, ;
+	   		left(clm_pstat,1) AS status, benf_paid AS amount, not_date AS recv_date, clm_pstat AS result ;
+	   	from (alias()) ;
+	   	into cursor __curDVS 	
+	   	
+	   	select __curDVS
+	   	copy to (tcFile) FOR !DELETED() TYPE XL5
+	   	use in __curDVS 
+	CASE tcFundCode = "SSL"
+	   COPY TO (tcFile) FIELDS not_no, not_date, followup, bro_no, clm_no, ref_no, pol_no, cerf_no, ;
+	   		cust_id, title, name, surname, eff_date, exp_date, plan, type_clm, clm_type, acc_date, admit, ;
+	   		disc, hosp_amt, 	discount, benf_covr, non_cover, benf_paid, exgratia, over_benf, hosp_code, hosp_name, ;
+	   		ill_code, ill_name, icd_10, icd10_2, icd10_3, fee, no_r_b,  a_r_b, d_r_b, o_r_b, p_r_b, e_r_b, c_r_b, n_r_b, ;
+	   		no_icu, a_icu, d_icu, o_icu, p_icu, e_icu, c_icu, n_icu, f_ss_sa,	a_ss_sa,d_ss_sa,o_ss_sa,p_ss_sa,e_ss_sa,c_ss_sa,;
+	   		n_ss_sa, a_oper, d_oper, o_oper, p_oper, e_oper,  c_oper, n_oper, a_anes, d_anes, o_anes, p_anes, e_anes, c_anes, n_anes, ;
+	   		a_ghe,d_ghe,o_ghe,	p_ghe,e_ghe,c_ghe,	n_ghe,	a_med,	d_med,	o_med,	p_med,	e_med,	c_med,	n_med,	a_lab,d_lab,	o_lab, ;
+	   		p_lab,e_lab,	c_lab,n_lab,	no_doct,a_doct_fee,	d_doct_fee,	o_doct_fee,	p_doct_fee,	e_doct_fee,	c_doct_fee,	n_doct_fee,	a_consult, ;
+	   		d_consult,o_consult,	p_consult, e_consult, c_consult, n_consult, a_aet,	d_aet, o_aet, p_aet,	e_aet, c_aet, n_aet, ;
+	   		a_opd, d_opd, o_opd, p_opd, e_opd,	c_opd, n_opd, no_hb, o_hb, p_hb, other, clm_pstat, ret_date, indication, ;
+	   		treatment, remark, paid_date, recovery, acno, acname, acbank, mobile ;
+	   		FOR !DELETED() TYPE XL5
+	OTHERWISE 
+		COPY TO (tcFile) FOR !DELETED() TYPE XL5
+	ENDCASE 
+ENDCASE 
+RETURN FILE(ALLTRIM(tcFile)+"."+tcExt)
+***********************************************
+*Claim Checklist ใช้สำหรับเช็คข้อมูลในเคลมก่อนทำการรัน report
+***********************************************
+FUNCTION ClaimCheckList()
+
+WAIT WINDOW "Check Claim Entry Please wait..." NOWAIT 
+llCheckList = .T.
+lcError = ""
+lnSelect = SELECT()
+IF EMPTY(notify_no)
+	llCheckList = .F.	
+	lcError = lcError + "          - ไม่มีหมายเลข notify no "+CHR(13)+CHR(10) 
+ENDIF 	
+*
+lcProvID = prov_id
+WAIT WINDOW lcProvID NOWAIT 
+IF 'DRAGON-DATA' $ ID()
+	SUSPEND 
+ENDIF 	
+SELECT name, prov_id FROM cims!provider WHERE prov_id = lcProvID INTO ARRAY laProv
+IF _TALLY = 0
+	llCheckList = .F.
+	lcError = lcError + "          - ไม่มีข้อมูลของโรงพยาบาล รหัส "+lcProvID+CHR(13)+CHR(10)
+ELSE 
+	IF ALLTRIM(prov_name) <> LEFT(ALLTRIM(laProv[1]),50)
+		llCheckList = .F.
+		lcError = lcError + "          - ชื่อโรงพยาบาล : "+ALLTRIM(prov_name)+" ID : "+prov_id+" ไม่ตรงกับ ในระบบคือ "+CHR(13)+;
+			"Hospital : "+ALLTRIM(laProv[1])+" ID: "+laProv[2]+CHR(13)+CHR(10)
+	ENDIF 
+ENDIF 
+*
+IF assessor_date < admis_date
+	llCheckList = .F.
+	lcError = lcError + "          - Assess Date < วันที่เข้ารับการรักษา"+CHR(13)+CHR(10)
+ENDIF 
+*
+IF EMPTY(admis_date)
+	llCheckList = .F.
+	lcError = lcError + "          - ไม่มีวันที่เข้ารับการรักษา"+CHR(13)+CHR(10)
+ENDIF 
+*
+IF YEAR(admis_date) < YEAR(DATE())-3
+	llCheckList = .F.
+	lcError = lcError + "          - ป้อนปีของวันที่เข้ารับการรักษาผิด "+CHR(13)+CHR(10)
+ENDIF 
+*
+IF EMPTY(disc_date)
+	llCheckList = .F.
+	lcError = lcError + "          - ไม่มีวันที่ออกจากโรงพยาบาล"+CHR(13)+CHR(10)
+ENDIF 
+*
+IF YEAR(disc_date) < YEAR(DATE())-3
+	llCheckList = .F.
+	lcError = lcError + "          - ป้อนปีของ วันที่ออกจากโรงพยาบาลผิด"+CHR(13)+CHR(10)
+ENDIF 
+*
+IF EMPTY(refno)
+	llCheckList = .F.
+	lcError = lcError + "          - ไม่มีเลขที่ใบแจ้งหนี้/ใบเสร็จรับเงิน"+CHR(13)+CHR(10)
+ENDIF 
+*
+IF EMPTY(ref_date)
+	llCheckList = .F.
+	lcError = lcError + "          - ไม่มีวันที่รับใบแจ้งหนี้/ใบเสร็จรับเงิน"+CHR(13)+CHR(10)
+ENDIF 	
+*
+IF YEAR(ref_date) < YEAR(DATE())-2
+	llCheckList = .F.
+	lcError = lcError + "          - ปี ค.ศ. ไม่ถูกต้อง 	"+CHR(13)+CHR(10)
+ENDIF 	
+*
+IF EMPTY(inv_page)
+	IF EMPTY(fax_by)
+		llCheckList = .F.
+		lcError = lcError + "          - ไม่ระบุประเภทของเคลม"+CHR(13)+CHR(10)
+	ENDIF 	
+ENDIF 		
+*
+IF EMPTY(charge)
+	IF EMPTY(fax_by)
+		llCheckList = .F.
+		lcError = lcError + "          - ไม่ระบุยอดเรียกเก็บบนใบแจ้งหนี้/ใบเสร็จรับเงิน"+CHR(13)+CHR(10)
+	ENDIF 	
+ENDIF
+*
+* Check aggregate 
+IF INLIST(claim_with , "I", "T")
+	IF claim.admis_date  < claim.effective AND  NOT ("D" $ claim.result )
+		llCheckList = .F.
+		lcError = lcError + "          - วันที่เข้ารับการรักษา น้อยกว่า วันเริ่มคุ้มครอง "+CHR(13)+CHR(10)
+	ENDIF 
+	*
+	IF claim.admis_date  > claim.expried AND NOT ("D" $ claim.result )
+		llCheckList = .F.
+		lcError = lcError + "          - วันที่เข้ารับการรักษา มากกว่า วันสิ้นสุดการคุ้มครอง "+CHR(13)+CHR(10)
+	ENDIF 
+	*
+	IF aggregate <> 0
+		IF sbenfpaid > dpaid
+			llCheckList = .F.
+			lcError = lcError + "          - ยอดจ่าย เกินจาก วงเงินความคุ้มครองสูงสุดต่อปี"+CHR(13)+CHR(10)	
+		ENDIF 	
+	ENDIF 	
+ENDIF 
+*
+IF claim_with <> "H"  && fundcode <> "AVI"
+	IF charge <> (scharge-sdiscount)
+		IF EMPTY(fax_by)
+			llCheckList = .F.
+			lcError = lcError + "          - ยอดเงินเรียกเก็บในเคลมไม่ตรงกับยอดเรียกเก็บบนใบแจ้งหนี้/ใบเสร็จรับเงิน"+CHR(13)+CHR(10)
+		ENDIF 	
+	ENDIF 		
+	*
+	IF result = "A11" 
+		IF inv_page = 2
+			IF LEFT(prov_id,1) <> "6"
+				llCheckList = .F.
+				lcError = lcError + "          - รหัสโรงพยาบาลไม่ถูกต้อง เคลมวางบิลให้เลือกโรงพยาบาลเครือข่ายหรือมีรหัสนำหน้าด้วย 6 เท่านั้น"+CHR(13)+CHR(10)
+			ENDIF 	
+		ENDIF 	
+	ENDIF 	
+ELSE 
+	WAIT WINDOW PROGRAM(5) NOWAIT 
+	IF "FRMAUDITCLAIM" $ PROGRAM(5)
+		IF EMPTY(assessor_by) AND !EMPTY(audit_by)	
+			REPLACE assessor_by WITH audit_by
+		ENDIF
+	ENDIF 	
+	*	
+	lnScharge = IIF(claim.currency_rate = 0, claim.scharge-claim.sdiscount, CEILING((claim.scharge-claim.sdiscount)*claim.currency_rate))
+	IF claim.charge <> lnScharge
+		llCheckList = .F.
+		lcError = lcError + "          - ยอดเงินเรียกเก็บในเคลมไม่ตรงกับยอดเรียกเก็บบนใบแจ้งหนี้/ใบเสร็จรับเงิน"+CHR(13)+CHR(10)
+	ENDIF 
+ENDIF 	
+*
+IF "FRMDIALYREPORT" $ PROGRAM(5)
+	IF EMPTY(claim.illness1) AND INLIST(LEFT(claim.result,1), "P", "A")
+		llCheckList = .F.
+		lcError = lcError + "          - ไม่มี ICD 10 #1"+CHR(13)+CHR(10)
+	ENDIF 
+	*
+	IF LEFT(claim.result,1) = "W"
+		llCheckList = .F.
+		lcError = lcError + "          - สถานะยังเป็น W อยู่"+CHR(13)+CHR(10)
+	ENDIF 		
+	*
+	IF EMPTY(claim.audit_by)
+		llCheckList = .F.
+		lcError = lcError + "          - ไม่มีชื่อ Auditor"+CHR(13)+CHR(10)
+	ENDIF 		
+ELSE
+	*clear edc claim when macth with this notify no
+	IF [FRMASSESSCLAIM] $ PROGRAM(5)
+		IF claim.inv_page = 2
+			if empty(claim.drg_10)
+				WAIT WINDOW PROGRAM(5) NOWAIT 
+				lnSelect = select()
+				scatter FIELDS memberid,prov_id,admis_date,acc_date,sbenfpaid memvar
+				m.admis_date = ttod(m.admis_date)
+				m.acc_date = ttod(m.acc_date)
+				lnSql = sqlexec(gnConn, "{call sp_getEdcClaim(?m.memberid,?m.prov_id,?m.admis_date, ?m.acc_date,?m.sbenfpaid)}", "curEdc")
+				if lnSql = 1
+					if reccount("curEdc") > 0
+						llCheckList = .F.
+						lcApproval = ""
+						select curEdc
+						scan 
+							lcApproval = "Approval : "+ claim.approval+" Acc Date : "+ttoc(claim.acc_date)+" Admit : "+ttoc(claim.admis_date)+" EDC Approval :  "+transform(claim.fbenfpaid, "@Z 9,999,999.99")+chr(13)
+						endscan 
+						=messagebox(lcApproval+chr(13)+"กรุณาจดเลขหลัง   Approval :  ที่มี Acc date และ Admit date ตรงกับเคลมนี้ แล้วป้อนลงใ่นช่อง Edc No ก่อนบันทึก",0+64,"Warnning")
+						lcError = lcError + "ไม่ป้อน Edc No. กรุณาป้อนก่อนทำการบันทึก"
+						use in curEdc
+					endif		
+				endif
+				select (lnSelect)
+			ENDIF
+		ELSE			
+			lcEdcNo = ALLTRIM(claim.drg_10)
+			lcSql = "{call sp_UpdateEdcClaimResult(?lcEdcNo)}"
+			lnSql = SQLEXEC(gnConn,lcSql)
+			select (lnSelect)			
+		ENDIF 	
+		*
+		IF INLIST(claim.claim_with, "A", "P")
+			lnEdcUsed = getedcpayonclaim(claim.fundcode, claim.policy_no, claim.family_no, claim.plan_id, claim.memberid, claim.acc_date)
+			lnMedical = claim.benf_cover - lnEdcUsed
+			*REPLACE claim.benf_cover WITH lnMedical
+			if claim.sbenfpaid > lnMedical
+				llCheckList = .F.
+				*lcError = lcError + "         - ยอดจ่าย มากกว่า วงเงินคงเหลือ เนื่องจากมีการจ่ายผ่าน EDC เป็นจำนวน "+ transform(lnEdcUsed, "@Z 999,999.99")+ " บาท"
+				=MESSAGEBOX("ยอดจ่าย มากกว่า วงเงินคงเหลือ เนื่องจากมีการจ่ายผ่าน EDC เป็นจำนวน "+ transform(lnEdcUsed, "@Z 999,999.99")+ " บาท",0+64,"Warnning")
+			endif 			
+		ENDIF 
+		select (lnSelect)					
+	ENDIF 		
+ENDIF 	
+*
+IF isAsCharge(claim.fundcode, claim.plan) OR INLIST(claim.claim_with, "A", "P")
+	IF EMPTY(claim.fax_by)
+		IF claim.sbenfpaid > claim.benf_cover
+			llCheckList = .F.
+			lcError = lcError + "          - ยอดจ่าย มากกว่า วงเงินความคุ้มครอง"+CHR(13)+CHR(10)		
+		ENDIF 
+	ELSE 
+		IF claim.fbenfpaid > claim.benf_cover
+			llCheckList = .F.
+			lcError = lcError + "          - ยอดจ่าย มากกว่า วงเงินความคุ้มครอง"+CHR(13)+CHR(10)				
+		ENDIF 	
+	ENDIF 
+ENDIF 
+*
+IF INLIST(claim.claim_with, "A", "P") OR claim.service_type = "ER" 
+	IF claim.result <> "C"
+		IF assessor_date < acc_date
+			llCheckList = .F.
+			lcError = lcError + "          - Assess Date < วันเกิดเหตุ"+CHR(13)+CHR(10)
+		ENDIF 
+		IF EMPTY(claim.acc_date)  AND claim.result <> 'D'
+			llCheckList = .F.
+			lcError = lcError + "          - ไม่มีวันเกิดเหตุ"+CHR(13)+CHR(10)
+		ENDIF 	
+		IF claim.acc_date > claim.admis_date  AND claim.result <> 'D'
+			llCheckList = .F.
+			lcError = lcError + "          - วันเกิดเหตุ เกิดหลังวันเข้ารักษาฯ"+CHR(13)+CHR(10)
+		ENDIF 	
+		IF claim.acc_date < claim.effective  AND claim.result <> 'D'
+			llCheckList = .F.
+			lcError = lcError + "          - วันเกิดเหตุ เกิดก่อนกรมธรรม์ให้ความคุ้มครอง"+CHR(13)+CHR(10)
+		ENDIF 			
+		IF claim.acc_date > claim.expried AND claim.result <> 'D'
+			llCheckList = .F.
+			lcError = lcError + "          - วันเกิดเหตุ เกิดหลังกรมธรรม์สิ้นสุดความคุ้มครอง"+CHR(13)+CHR(10)
+		ENDIF 			
+	ENDIF 		
+ENDIF 
+*
+lnSum = claim.sdiscount+claim.sbenfpaid+claim.snopaid+claim.abenfpaid+claim.sremain+claim.deduc_paid
+IF claim.scharge <> lnSum
+	llCheckList = .F.
+	lcError = lcError + "          - ยอดเงินโรงพยาบาลเรียกเก็บ ไม่เท่ากับ ยอดรวมของ ยอดส่วนลด+ยอดจ่าย+ยอดไม่คุ้มครอง+ยอดอนุโลมจ่าย+ยอดส่วนเกิน"+CHR(13)+CHR(10)
+ENDIF 	
+*
+*add policyid to claim 
+*IF claim.claim_with <> "D"
+	IF EMPTY(claim.memberid)
+		REPLACE claim.memberid WITH getPolicyIdByPolicyNo(claim.fundcode, claim.policy_no, claim.family_no, claim.plan_id)
+	ENDIF 	
+*ENDIF 	
+*
+*Save all claim data to sql server when no error
+IF NOT "FRMDIALYREPORT" $ PROGRAM(5)
+	IF llCheckList
+		IF saveClaimToSql() = .F.
+			lcSqlError = "SQL Save : "+claim.notify_no
+			=saveError(lcSqlError)			
+		ENDIF 
+		SELECT (lnSelect)		
+	ENDIF 	
+ENDIF 
+WAIT WINDOW "Check Claim Entry Finished..." NOWAIT 
+
+RETURN lcError
+********************************************************
+*
+PROCEDURE RecallPeriod
+LPARAMETERS tcFollowUp, tcNotifyNo
+
+IF EMPTY(tcFollowUp) AND EMPTY(tcNotifyNo)
+	RETURN 
+ENDIF 
+
+lnSelect = SELECT()
+STORE 0 TO lnCharge, lnPaid
+SELECT cat_id, ;
+	IIF(fadmis <> 0, fadmis, sadmis) AS admis, ;
+	IIF(fcharge <> 0, fcharge, scharge) AS charge, ;
+	IIF(fpaid <> 0, fpaid, spaid) AS paid ;
+FROM cims!claim_line ;
+WHERE notify_no = tcNotifyNo ;
+INTO CURSOR curLines
+IF _TALLY > 0
+	SELECT curLines
+	SCAN 	
+		IF SEEK(tcFollowUp+cat_id,"notify_period_items","notify_cat")
+			REPLACE notify_period_items.serv_used WITH notify_period_items.serv_used - admis, ;
+			notify_period_items.charge WITH notify_period_items.charge - charge, ;
+			notify_period_items.benefit WITH notify_period_items.benefit - paid, ;
+			notify_period_items.l_user WITH gcUserName, ;
+			notify_period_items.l_update WITH DATETIME()
+		ENDIF 
+		lnCharge = lnCharge + charge
+		lnPaid = lnPaid + paid
+	ENDSCAN 		
+ENDIF 
+**************************************************************
+FUNCTION getBenefitPeriod1(tcFundCode, tcPolicyNo, tnPersonNo, tdAdmit, tcFollowTo)
+IF EMPTY(tcFollowTo)
+	tcFollowTo = ""
+ENDIF 	
+IF EMPTY(tcFundCode) AND EMPTY(tcPolicyNo) AND EMPTY(tdAdmit)
+	RETURN .F.
+ENDIF
+SET ENGINEBEHAVIOR 70
+*****************
+* tcCustID = Client ID for seek period in notify_period
+*Return .T. = มีการเลือก notify no
+*Return ,F. = ไม่เลือก notify no ให้ใช้ตารางผลประโยชน์แทน
+*****************
+LOCAL lnArea,;
+	lcPolicyNo,;
+	lcNotifyNo,;
+	lnRecNo,;
+	llRetVal,;
+	loForm
+
+lnArea = SELECT()
+lnRecNo = RECNO()
+****************************************
+lcNotifyNo = ""
+cFundCode = tcFundCode
+cPolicyNo = tcPolicyNo
+nPersonNo = IIF(TYPE("tnPersonNo") = "L", 0, tnPersonNo)
+dDue = tdAdmit
+cNotifyNo = claim.notify_no
+lcService = claim.service_type
+lcCause = claim.cause_type
+ldAccDate = claim.acc_date
+**********************************
+IF tnPersonNo = 0
+	lcPolicyNo = tcFundcode + tcPolicyNo
+	IF SEEK(lcPolicyNo, "notify_period","policy_no")
+		DO FORM form\cims02_period WITH lcService, tcFollowTo, tdAdmit, cFundCode, lcCause TO lcNotifyNo
+	ENDIF
+ELSE
+	lcPolicyNo = tcFundcode + tcPolicyNo+STR(tnPersonNo)
+	IF SEEK(lcPolicyNo, "notify_period","person_no")
+		DO FORM form\cims02_period WITH lcService, tcFollowTo, tdAdmit, cFundCode, lcCause TO lcNotifyNo
+	ENDIF
+ENDIF
+****************************
+llRetVal = .F.
+IF !EMPTY(lcNotifyNO)
+	lcFollowUp = lcNotifyNo
+	IF !SEEK(lcNotifyNo, "notify_period", "notify_no")
+		IF SEEK(lcNotifyNo, "notify_period_lines", "not_no")
+			lcFollowUp = notify_period_lines.notify_no
+		ENDIF 
+	ENDIF 		
+	********************************************
+	SELECT A.notify_no, A.due,	A.visit_no, ;
+		A.type AS claim_type, ;
+		TTOD(A.admis_date) AS admis_date, ;
+		TTOD(A.disc_date) AS disc_date, ;
+		A.excl_type AS ds_no, A.acc_date, ;
+		A.diags, A.endfollowup, A.benefit AS benfpaid, ;
+		B.cat_id, B.cat_code, B.description, B.stdcode, ;
+		SUM(B.serv_used) AS service_used, ;
+		SUM(B.subservice) AS subservice, ;
+		SUM(B.benefit) AS benf_paid, ;
+		SUM(B.subpaid) AS subpaid, ;
+		B.serv_cover, B.benf_cover, B.oon_cover, ;
+		B.per, B.item_grp, B.fee, SUM(B.fee_rate) AS fee_rate, B.group ;
+	FROM cims!notify_period A INNER JOIN cims!notify_period_items B ;
+		ON A.notify_no = B.notify_no ;
+	GROUP BY B.cat_id ;
+	ORDER BY B.group ;
+	WHERE A.notify_no = lcFollowUp AND LEN(ALLTRIM(B.group)) <= 1 ;
+	INTO CURSOR curPeriodLines
+	*
+	IF RECCOUNT("curPeriodLines") <> 0
+		SELECT notify_no, due, visit_no, claim_type, admis_date, disc_date, diags, endfollowup, acc_date, ds_no, ;
+			cat_id, cat_code, description, stdcode, ;
+			service_used+subservice AS service_used, benfpaid, ;
+			benf_paid+subpaid AS benf_paid, ;
+			benf_cover As benefit, ;
+			oon_cover AS benfcover, ;
+			IIF(per $ "VD", serv_cover - (service_used+subservice), serv_cover)  AS serv_cover, ;
+			IIF(per $ "MYFV", benf_cover - (benf_paid+subpaid), benf_cover) AS benf_cover, ;
+			IIF(per $ "MYFV", oon_cover - (benf_paid+subpaid), oon_cover) AS oon_cover, ;
+			per, item_grp, fee, fee_rate, group ;
+			FROM curPeriodLines ;
+			INTO CURSOR period_Line
+		IF RECCOUNT("period_line") > 0
+			llRetVal = .T.
+		ENDIF	
+	ENDIF 	
+ENDIF
+IF USED("curPeriodLines")
+	USE IN curPeriodLines
+ENDIF 
+SELECT (lnArea)
+IF lnRecNo <> 0 AND lnRecNo <= RECCOUNT()
+	GO lnRecNo
+ENDIF
+SET ENGINEBEHAVIOR 90
+RETURN llRetVal
+**************************************************************
+FUNCTION getBenefitCover(tcFundcode, tcPolicyNo, tnPersonNo, tcPlanId, tcNotifyNo)
+*
+IF EMPTY(tcFundCode) AND EMPTY(tcPolicyNo) AND EMPTY(tnPersonNo) AND EMPTY(tcPlanId)
+	RETURN NULL
+ENDIF 	
+lnSelect = SELECT()
+*
+STORE 0 TO lnPaid, lnDeducPaid, lnOverAllLimit, lnDeductible
+*
+* query claim table for get current service type
+lcServiceType = "OPD"	
+select service_type from cims!claim where notify_no = tcNotifyNo into array laType
+if _TALLY = 1
+	lcServiceType = laType
+endif
+* Query all benefit paid and deductible from claim table
+SELECT policy_no, service_type, SUM(sbenfpaid) AS CoverBal, SUM(deduc_paid) AS DeducBal ;
+FROM cims!claim ;
+WHERE fundcode = tcFundCode ;
+	AND policy_no = tcPolicyNo ;
+	AND family_no = tnPersonNo ;
+	AND notify_no <> tcNotifyNo ;
+GROUP BY policy_no, service_type ;
+INTO CURSOR curClaimPaid
+SCATTER fields coverbal,deducbal NAME loClaimPaid
+*
+sum deducBal to loClaimPaid.DeducBal
+if lcServiceType = "OPD"
+	sum coverBal for service_type = "OPD" to loClaimPaid.CoverBal
+else	
+	sum coverBal for service_type <> "OPD" to loClaimPaid.CoverBal
+endif
+*
+ADDPROPERTY(loClaimPaid, "nOverAllLimit", 0)
+ADDPROPERTY(loClaimPaid, "nDeductible", 0)
+* Query Covage from member table
+SELECT member.overall_limit, member.insure, ;
+	plan.aggregate, plan.aggregate_oon ;
+FROM cims!member left join cims!plan ;
+	on member.plan_id = plan.plan_id ;
+WHERE member.tpacode = tcFundCode ;
+	AND member.policy_no = tcPolicyNo ;
+	AND member.family_no = tnPersonNo ;
+	AND member.plan_id = tcPlanId ;
+INTO ARRAY laMember
+IF _TALLY > 0
+	loClaimPaid.nOverAllLimit = iif(lcServiceType = "OPD", laMember[3], laMember[1])
+	loClaimPaid.nDeductible = laMember[2]
+ENDIF
+*
+loClaimPaid.CoverBal = loClaimPaid.nOverAllLimit - loClaimPaid.CoverBal
+loClaimPaid.DeducBal = IIF(loClaimPaid.DeducBal >= loClaimPaid.nDeductible, 0, loClaimPaid.nDeductible - loClaimPaid.DeducBal)
+*
+USE IN curClaimPaid
+SELECT (lnSelect)
+
+RETURN loClaimPaid
+********************************************************
+PROCEDURE RI_Update_Members
+
+LOCAL llRetVal
+
+SELECT members
+IF members.family_no <> OLDVAL("family_no")
+	SCATTER FIELDS family_no, no_of_pers MEMVAR 
+	lcPolName = members.tpacode+members.policy_no+LEFT(ALLTRIM(members.name)+" "+ALLTRIM(members.surname),120)
+	=STRTOFILE(TTOC(DATETIME())+" "+lcPolName+CHR(13)+CHR(10),"smg_update.txt",.T.) 	
+	UPDATE cims!claim SET ;
+		claim.family_no = m.family_no, ;
+		claim.person_no = m.no_of_pers ;
+	WHERE claim.fundcode+claim.policy_no+claim.client_name = lcPolName
+	IF _TALLY > 0
+		UPDATE cims!notify SET ;
+			notify.family_no = m.family_no, ;
+			notify.person_no = m.no_of_pers ;
+		WHERE notify.fundcode+notify.policy_no+notify.client_name = lcPolName
+		*
+		SELECT notify_no, family_no, person_no ;
+		FROM cims!claim ;
+		WHERE claim.fundcode+claim.policy_no+claim.client_name = lcPolName ;
+			AND EMPTY(followup) ;
+		INTO CURSOR _claim
+		IF _TALLY > 0
+			UPDATE cims!notify_period SET ;
+				family_no = _claim.family_no, ;
+				person_no = _claim.person_no ;
+			FROM _claim ;
+			WHERE notify_period.notify_no = _claim.notify_no
+		ENDIF 
+		USE IN _claim
+		******************************
+		IF CURSORGETPROP("Buffering","claim") <> 1
+			=TABLEUPDATE(.T.,.T.,"claim")
+		ENDIF 
+		IF CURSORGETPROP("Buffering","notify") <> 1
+			=TABLEUPDATE(.T.,.T.,"notify")		
+		ENDIF 
+		IF CURSORGETPROP("Buffering","notify_period") <> 1
+			=TABLEUPDATE(.T.,.T.,"notify_period")
+		ENDIF 
+		RETURN .T.
+	ELSE 
+		RETURN .F.	
+	ENDIF  
+ENDIF 
+***********************************
+FUNCTION getWarning(tcFundCode, tcPlanID)
+lcWarning = ""
+***********************************
+llBlackList = .F.
+IF USED("custbypersonno")  OR USED("custbypersonnos") 
+	DO CASE 
+	CASE tcFundCode = "SMG"
+		llBlackList = checkBlackList(custbypersonnos.tpacode, custbypersonnos.natid, ALLTRIM(LEFT(custbypersonnos.name, AT(" ", custbypersonnos.name))), ALLTRIM(SUBSTR(custbypersonnos.name, AT(" ", custbypersonnos.name))))	
+	*OTHERWISE 	
+	*	llBlackList = checkBlackList(custbypersonno.tpacode, custbypersonno.natid, ALLTRIM(LEFT(custbypersonno.name, AT(" ", custbypersonno.name))), ALLTRIM(SUBSTR(custbypersonno.name, AT(" ", custbypersonno.name))))	
+	ENDCASE  	
+ENDIF 	
+*
+DO CASE 
+CASE tcFundCode = "BKI"
+	IF INLIST(tcPlanID, "BKI1678", "BKI1679")
+		lcWarning = "กรุณาตรวจสอบการชำระเบี้ยประกันของลูกค้าก่อน อนุมัติการจ่ายทุกครั้ง "+ CHR(13) +;
+			"ลูกค้าจะสามารถใช้สิทธิ์ Fax claim ได้ต่อเมื่อชำระเบี้ยครบ 3 งวดแล้วเท่านั้น" + CHR(13) +;
+			"โดยดูได้จากช่อง Pay Freq ถ้าเท่ากับ 3 แสดงว่าจ่ายครบแล้ว"
+	ENDIF 
+ENDCASE 
+*
+IF llBlackList
+	lcWarning = lcWarning+CHR(13)+"*** กรมธรรม์นี้ ได้ถูก Black List โดยบริษัทประกัน กรุณาตรวจสอบกับบริษัทประกันฯ ก่อนทำจ่ายทุกครั้ง ***"
+ENDIF 
+
+RETURN lcWarning
+ENDFUNC 
+*******************************************
+FUNCTION getEffCover(tcFundCode, ttEffective, ttExpiry, ttPolicyDate, ttAccDate)
+
+IF EMPTY(tcFundcode) AND EMPTY(ttEffective) AND EMPTY(ttExpiry) AND EMPTY(ttPolicyDate)
+	RETURN {}
+ENDIF 
+IF EMPTY(ttAccDate)
+	ttAccDate = DATETIME()
+ENDIF 
+
+loRetVal = CREATEOBJECT("Empty")
+=ADDPROPERTY(loRetVal, "Effective", ttEffective)
+=ADDPROPERTY(loRetVal, "Expiry", ttExpiry)
+IF INLIST(tcFundCode, "DVS", "SMG", "NSI", "AIC", "BKI", "BUI", "FAL",  "ALA", "AVI", "KPI", "KNI", "LIB", "SIC")
+	loRetVal.effective = ttEffective
+	loRetVal.Expiry = ttExpiry
+ELSE
+	IF !EMPTY(ttPolicyDate)
+		ttEffDate = IIF(EMPTY(ttPolicyDate), ttEffective, ttPolicyDate)
+		ttEffDate = DATETIME(YEAR(ttEffDate), MONTH(ttEffDate), DAY(ttEffDate), HOUR(ttEffDate), MINUTE(ttEffDate))
+
+		ttExpDate = GOMONTH(ttPolicyDate,12)
+		ttExpDate = DATETIME(YEAR(ttExpDate), MONTH(ttExpDate), DAY(ttExpDate), HOUR(ttExpDate), MINUTE(ttExpDate))
+		lnRenew = YEAR(ttExpiry) - YEAR(ttPolicyDate)
+		FOR i = 1 TO lnRenew
+			IF ttAccDate > ttEffDate AND ttAccDate <= ttExpDate
+				loRetVal.effective = ttEffDate
+				loRetVal.Expiry = ttExpDate		
+				EXIT
+			ENDIF 
+			ttEffDate = GOMONTH(ttEffDate, 12)
+			ttEffDate = DATETIME(YEAR(ttEffDate), MONTH(ttEffDate), DAY(ttEffDate), HOUR(ttEffDate), MINUTE(ttEffDate))
+			ttExpDate = GOMONTH(ttEffDate,12)
+			ttExpDate = DATETIME(YEAR(ttExpDate), MONTH(ttExpDate), DAY(ttExpDate), HOUR(ttExpDate), MINUTE(ttExpDate))			
+		ENDFOR 	
+	ENDIF 	
+ENDIF 	
+RETURN loRetVal
+ENDFUNC 
+*******************************************
+*
+FUNCTION getEffCover1(tcFundCode, ttEffective, ttExpiry, ttPolicyDate, ttAccDate)
+
+IF EMPTY(tcFundcode) AND EMPTY(ttEffective) AND EMPTY(ttExpiry) AND EMPTY(ttPolicyDate)
+	RETURN {}
+ENDIF 
+IF EMPTY(ttAccDate)
+	ttAccDate = DATETIME()
+ENDIF 
+
+loRetVal = CREATEOBJECT("Empty")
+=ADDPROPERTY(loRetVal, "Effective", ttPolicyDate)
+=ADDPROPERTY(loRetVal, "Expiry", ttExpiry)
+DO WHILE .t.
+	IF ttAccDate < ttEffective
+		ttEffDate = GOMONTH(ttEffective,-12)
+		ttEffective = DATETIME(YEAR(ttEffDate), MONTH(ttEffDate), DAY(ttEffDate), HOUR(ttEffective), MINUTE(ttEffective))
+	ELSE 
+		EXIT
+	ENDIF 
+ENDDO 
+loRetVal.effective = ttEffective
+loRetVal.Expiry = DATETIME(YEAR(GOMONTH(ttEffective,12)), MONTH(GOMONTH(ttEffective,12)), DAY(GOMONTH(ttEffective,12)), HOUR(ttEffective), MINUTE(ttEffective))	
+RETURN loRetVal
+ENDFUNC 
+*
+******************************************************************
+FUNCTION GUIDGen 
+	LPARAMETERS tn_mode 
+	IF EMPTY(tn_mode)
+		tn_mode = 0
+	ENDIF 		
+
+	LOCAL ; 
+	lc_guid_return as String, ; 
+	lc_buffer as String, ; 
+	ln_result as Integer, ; 
+	lc_GUID as String 
+
+	DECLARE Integer CoCreateGuid ; 
+	   IN ole32.dll ; 
+	   String@ pguid 
+
+	lc_GUID = SPACE(16) && 16 Byte = 128 Bit 
+	ln_result = CoCreateGuid(@lc_GUID) 
+
+	IF tn_mode = 0 
+		lc_guid_return = lc_GUID 
+	ELSE 
+		lc_buffer = SPACE(78) 
+
+		DECLARE Integer StringFromGUID2 ; 
+		    IN ole32.dll ; 
+		    String  pguid, ; 
+		    String  @lpszBuffer, ; 
+		    Integer cbBuffer 
+
+		ln_result = StringFromGUID2(lc_GUID,@lc_buffer,LEN(lc_buffer)/2) 
+		lc_guid_return = STREXTRACT(STRCONV((LEFT(lc_buffer,(ln_result-1)*2)),6), "{", "}")		
+	ENDIF 
+	RETURN lc_guid_return
+ENDFUNC
+*****************************
+* Function hex2dec - Convert a character hex value into decimal.
+      * Handy for dealing with Hex declarations in API calls.
+      * Passed: m.hex (character hex value)
+      * Returns: Decimal value
+FUNCTION hex2dec
+      PARAMETER m.hex
+
+      m.decimal = 0
+      FOR i = LEN(m.hex) TO 1 STEP -1
+            m.decimal = m.decimal + (AT(SUBSTR(m.hex, i, 1), ;
+               "0123456789ABCDEF") - 1) * 16 ^ (i - 1)
+      NEXT
+      RETURN m.decimal
+ENDFUNC 
+*************************************
+FUNCTION checkDupClaim(tcFundCode, tcPolicyNo, tnFamilyNo, tcProvId, ttAccDate, ttAdmit)
+
+IF EMPTY(tcFundCode) AND EMPTY(tcPolicyNo) AND EMPTY(tnFamilyNo) AND EMPTY(tcProvID) AND EMPTY(ttAccDate) AND EMPTY(ttAdmit)
+	RETURN ""
+ENDIF 	
+lnSelect = SELECT()
+lcDupClaim = ""
+lcNotifyNo = claim.notify_no
+SELECT notify_no, refno, doc_date ;
+FROM cims!claim ;
+WHERE fundcode = tcFundCode ;
+	AND policy_no = tcPolicyNo ;
+	AND family_no = tnFamilyNo ;
+	AND prov_id = tcProvID ;
+	AND acc_date = ttAccDate ;
+	AND admis_date = ttAdmit ;
+	AND notify_no <> lcNotifyNo ;
+INTO CURSOR curDupClaim
+*
+IF _TALLY > 0
+	SCAN 
+		lcDupClaim = lcDupClaim + "Notify No: "+notify_no+" Invoice No: "+ALLTRIM(refno)+"  Invoice Date: "+TRANSFORM(doc_date)+CHR(10)+CHR(13)
+	ENDSCAN 
+ENDIF 
+USE IN curDupClaim
+SELECT (lnSelect)
+RETURN lcDupClaim
+
+****************************************
+FUNCTION checkBlackList(tcFundCode, tcNatID, tcName, tcSurName)
+
+IF EMPTY(tcFundCode) AND EMPTY(tcNatID) AND EMPTY(tcName) AND EMPTY(tcSurName)
+	RETURN .F.
+ENDIF 	
+
+llError = .F.
+lcBlackList = ADDBS(DATAPATH)+tcFundCode+"_BlackList.DBF"
+IF FILE(lcBlackList)
+	SELECT idcardno ;
+	FROM (lcBlackList) ;
+	WHERE 	 idcardno = ALLTRIM(tcNatID) ;
+		AND name = ALLTRIM(tcName) ;
+		AND surname = ALLTRIM(tcSurName) ;
+	INTO ARRAY aBlackList	
+	IF _TALLY <> 0
+		llError = .T.
+	ENDIF
+ENDIF 	
+RETURN llError
+***************************************************
+*
+FUNCTION ukey
+   PARAMETER lenkey
+   IF PARAMETERS()=0
+        lenkey=8
+   ENDIF
+   IF lenkey=1
+        RETURN RIGHT(SYS(3),1)
+   ENDIF
+   len1=FLOOR(lenkey/2)
+   len2=lenkey-len1
+   key1= RIGHT(SYS(3),len1)
+   key2= RIGHT(SYS(2015),len2)
+
+   RETURN key1+key2
+   *************************************************
+   *
+FUNCTION luhn(tcCardNo)
+
+lnLuhn = 0
+lnCheckDigit = ""
+FOR i = 1 TO 18
+	STORE 0 TO lnDigit1, lnDigit2
+	IF INLIST(i, 1, 3, 5, 7, 9, 11, 13, 15, 17)
+		lnDigit = VAL(SUBSTR(tcCardNo, i, 1)) * 2
+		IF lnDigit > 9
+			lnDigit1 = lnDigit - 9
+		ELSE 
+			lnDigit1 = lnDigit	
+		ENDIF 	
+	ELSE 
+		lnDigit = VAL(SUBSTR(tcCardNo, i, 1))
+		lnDigit2 = lnDigit	
+	ENDIF 
+	lnLuhn = lnLuhn + (lnDigit1 + lnDigit2)
+ENDFOR
+lnMod = MOD(lnLuhn, 10)
+IF lnMod = 0
+	lnCheckDigit = 0
+ELSE 	
+	lnCheckDigit = 10 - MOD(lnLuhn, 10)
+ENDIF 	
+RETURN lnCheckDigit	
+*
+*********************************************
+FUNCTION genMemberID
+
+lcMemberId = "8"+STRTRAN(STR(fund_id,3), " ", "0") + ;
+	ICASE(INLIST(customer_type, "I", "H"), "10", INLIST(customer_type, "G", "T"), "20", INLIST(customer_type, "P"), "30", INLIST(customer_type, "A"), "40", INLIST(customer_type, "D"),"50", INLIST(customer_type, "B"), "60", "00") + ;
+	IIF(EMPTY(effective), "00", RIGHT(STR(YEAR(effective),4),2)) + newid("MEMBERID")
+	
+lcMemberId = lcMemberId + STR(luhn(lcMemberId),1)	
+
+RETURN lcMemberId
+*
+************************************************
+FUNCTION getSmgMember1(tcPolicyNo, tnFamilyNo, ttAccDate)
+
+LOCAL loSmg, nConn
+
+IF EMPTY(tcPolicyNo)
+	RETURN null 
+ENDIF 	
+IF  EMPTY(ttAccDate)
+	ldAccDate = {}
+ELSE 
+	ldAccDate = ttAccDate
+ENDIF 
+nConn = gnConn &&SQLCONNECT("CimsDB")
+IF nConn <= 0 
+	RETURN null
+ENDIF 	
+*
+lnSelect = SELECT()
+lcPolicyNo = ALLTRIM(tcPolicyNo)
+lnFamilyNo = tnFamilyNo
+lcError = ""
+lcErrorStatus = ""
+llNoError = .T. 
+DO CASE 
+CASE LEFT(tcPolicyNo, 4) = "5577"
+	lcSql = "SELECT policy_no, personcode, eff_date, exp_date, refno, projcode, productno AS prodno, locationno AS locno, itemno, grouptype, subclass, personno, idno "+; 
+		"FROM cimsdb.dbo.smg_member WHERE cardid = ?lcPolicyNo or creditcardno = ?lcPolicyNo order by exp_date DESC"	
+	lnSqlSucess = SQLEXEC(nConn, lcSql, "curSmg")
+	STORE {} to ldN1,ltOldExp
+	STORE "" TO lcErrorStatus
+	STORE 0 TO lnAmt, lnMinAmt, lnRecNo
+	SELECT curSmg
+	IF RECCOUNT() > 1
+		ldN1 = DATE(YEAR(GOMONTH(exp_date,2)), MONTH(GOMONTH(exp_date,2)), 1)-1
+		IF ldAccDate < eff_date OR ldAccDate > exp_date
+			DO WHILE ldAccDate < eff_date OR ldAccDate > exp_date AND !EOF()
+				lnAmt = ABS(exp_date-ldAccDate)
+				IF ldAccDate > exp_date
+					IF ldAccDate <= ldN1
+						llNoError = .F.
+						lcErrorStatus = "N1"
+						lcError = lcError + "อยู่ช่วงขยายเวลา N+1, "				
+					ENDIF 	
+					EXIT 
+				ELSE 			
+					IF lcErrorStatus = "N1"
+						ldOldN1 = DATE(YEAR(GOMONTH(ltOldExp,2)), MONTH(GOMONTH(ltOldExp,2)), 1)-1
+						IF eff_date = ltOldExp
+							lnRecNo = RECNO()
+							llNoError = .T.
+							lcErrorStatus = ""
+							lcError = STRTRAN(lcError,"อยู่ช่วงขยายเวลา N+1, ","")
+							EXIT
+						ENDIF 
+						IF eff_date > ltOldExp AND TTOD(eff_date) <= ldOldN1
+							llNoError = .F.
+							lcErrorStatus = "N2"
+							lcError = lcError + "วันเริ่มกรมธรรม์อยู่ในช่วงขยายเวลา N+1, "
+						ENDIF 		
+					ELSE 				
+						lnRecNo = IIF(lnMinAmt = 0, RECNO(), IIF(lnAmt < lnMinAmt, RECNO(), lnRecNo))
+						lnMinAmt = IIF(lnMinAmt = 0, lnAmt, IIF(lnAmt < lnMinAmt, lnAmt, lnMinAmt))
+					ENDIF 	
+				ENDIF 
+				ltOldExp = exp_date
+				SKIP 
+				IF !EOF()
+					ldN1 = DATE(YEAR(GOMONTH(exp_date,2)), MONTH(GOMONTH(exp_date,2)), 1)-1
+				ENDIF 	
+			ENDDO 
+			IF lnRecNo > 0
+				GO lnRecNo
+			ELSE 
+				GO BOTTOM 	
+			ENDIF
+		ENDIF
+	ENDIF 	
+CASE AT("-", tcPolicyNo) <> 0
+	lcPolicyNo = IIF(LEN(ALLTRIM(tcPolicyNo)) > 19, LEFT(tcPolicyNo,19), lcPolicyNo)		
+	IF tnFamilyNo = 0	
+		lcSql = "SELECT policy_no, personcode, eff_date, exp_date, refno, projcode, productno AS prodno, locationno AS locno, itemno, grouptype, subclass, personno, idno "+; 
+			"FROM cimsdb.dbo.smg_member WHERE policy_no = ?lcPolicyNo"	
+	ELSE 
+		lcSql = "SELECT policy_no, personcode, eff_date, exp_date, refno, projcode, productno AS prodno, locationno AS locno, itemno, grouptype, subclass, personno, idno "+; 
+			"FROM cimsdb.dbo.smg_member WHERE policy_no = ?lcPolicyNo AND personcode = ?lnFamilyNo"	
+	ENDIF 
+	lnSqlSucess = SQLEXEC(nConn, lcSql, "curSmg")	
+OTHERWISE
+	IF tnFamilyNo = 0
+		lcPolicyNo = LEFT(STRTRAN(ALLTRIM(tcPolicyNo), " ", "-"), 25)
+		lcSql = "SELECT policy_no, personcode, eff_date, exp_date, refno, projcode, productno AS prodno, locationno AS locno, itemno, grouptype, subclass, personno, idno "+; 
+			"FROM cimsdb.dbo.smg_member WHERE cardid = ?lcPolicyNo"	
+	ELSE 
+		lcPolicyNo = tcPolicyNo
+		lcSql = "SELECT policy_no, personcode, eff_date, exp_date, refno, projcode, productno AS prodno, locationno AS locno, itemno, grouptype, subclass, personno, idno "+; 
+			"FROM cimsdb.dbo.smg_member WHERE policy_no = ?lcPolicyNo AND personcode = ?lnFamilyNo"	
+	ENDIF
+	lnSqlSucess = SQLEXEC(nConn, lcSql, "curSmg")
+ENDCASE 
+IF !USED("curSmg") OR RECCOUNT("curSmg") = 0
+	lcSql = "SELECT policy_no, personcode, eff_date, exp_date, refno, projcode, productno AS prodno, locationno AS locno, itemno, grouptype, subclass, personno, idno "+; 
+		"FROM cimsdb.dbo.smg_member WHERE refno = ?lcPolicyNo AND personcode = ?lnFamilyNo"
+	lnSqlSucess = SQLEXEC(nConn, lcSql, "curSmg")
+ENDIF 	
+*
+IF USED("curSmg")
+	SELECT curSmg
+	SCATTER NAME loSmg
+	=ADDPROPERTY(loSmg, "errorstatus", lcErrorStatus)	
+	=ADDPROPERTY(loSmg, "errornote", lcError)
+	=ADDPROPERTY(loSmg, "noerror", llNoError)
+	IF RECCOUNT() =  0
+		llNoError = .F.
+		lcErrorStatus = "E0"		
+		lcError = lcError + "ไม่พบเลขกรมธรรม์"
+	ELSE 
+		IF loSmg.subclass <> "PH"
+			IF lcErrorStatus <> "N1"
+				IF ldAccDate < eff_date
+					llNoError = .F.
+					lcErrorStatus = "E1"
+					lcError = lcError + "อุบัติเหตุเกิดก่อนกรมธรรม์มีผลบังคับ, "
+				ENDIF
+				IF ldAccDate > exp_date
+					llNoError = .F.		
+					lcErrorStatus = "E2"				
+					lcError = lcError+"อุบัติเหตุเกิดหลังกรมธรรม์สิ้นสุด"
+				ENDIF
+			ENDIF 	
+		ENDIF
+	ENDIF
+	loSmg.noerror = llNoError
+	loSmg.errornote = lcError
+	loSmg.errorstatus = lcErrorStatus
+	*	
+	USE IN curSmg
+ELSE 
+	loSmg = null
+ENDIF
+SELECT (lnSelect)
+RETURN loSmg
+************************************************
+FUNCTION getSmgMember(tcPolicyNo, tnFamilyNo, ttAccDate)
+
+LOCAL loSmg, nConn
+
+IF EMPTY(tcPolicyNo)
+	RETURN null 
+ENDIF 	
+IF  EMPTY(ttAccDate)
+	ldAccDate = {}
+ELSE 
+	ldAccDate = ttAccDate
+ENDIF 
+nConn = gnConn &&SQLCONNECT("CimsDB")
+IF nConn <= 0 
+	RETURN null
+ENDIF 	
+*
+lnSelect = SELECT()
+lcPolStatus = "C"
+lcPolicyNo = ALLTRIM(tcPolicyNo)
+lcFamilyNo = ALLTRIM(STR(tnFamilyNo)) 
+lnFamilyNo = tnFamilyNo
+lcError = ""
+lcErrorStatus = ""
+llNoError = .T.
+
+DO CASE 
+CASE LEFT(tcPolicyNo, 4) = "5577"
+	DO CASE 
+	CASE USED("curClaimList")
+		lcPolicyNo = curClaimList.client_no
+		lcSql = "SELECT policy_no, effective AS eff_date, expiry AS exp_date, expried_y AS exp_n1 "+;
+			"FROM cimsdb.dbo.member WHERE policy_no = ?lcPolicyNo AND polstatus <> ?lcPolStatus"
+	OTHERWISE 	
+		lcPolicyId = curClaimCheck.memberid		
+		lcSql = "SELECT policy_no, effective AS eff_date, expiry AS exp_date, expried_y AS exp_n1 "+;
+			"FROM cimsdb.dbo.member WHERE policyid = ?lcPolicyid AND polstatus <> ?lcPolStatus"		
+	ENDCASE 
+	*lcSql = "SELECT policy_no, effective AS eff_date, expiry AS exp_date, expried_y AS exp_n1 "+;
+		"FROM cimsdb.dbo.member WHERE (cardno = ?lcPolicyNo or oldcardno = ?lcPolicyNo) AND polstatus <> ?lcPolStatus ORDER BY exp_date DESC"	
+	lnSqlSucess = SQLEXEC(nConn, lcSql, "curSmg")
+	STORE {} to ldN1,ltOldExp
+	STORE "" TO lcErrorStatus
+	STORE 0 TO lnAmt, lnMinAmt, lnRecNo
+	SELECT curSmg
+	DO WHILE !EOF()
+		lnRecNo = RECNO()
+		IF ldAccDate >= eff_date AND ldAccDate <= exp_date
+			EXIT 
+		ELSE 			
+			lnAmt = ABS(exp_date-ldAccDate)
+			IF ldAccDate > exp_date AND ldAccDate <= exp_n1
+				llNoError = .F.
+				lcErrorStatus = "N1"
+				lcError = lcError + "อยู่ช่วงขยายเวลา N+1, "
+				EXIT 			
+			ELSE
+				IF lcErrorStatus = "N1"
+					ldOldN1 = DATE(YEAR(GOMONTH(ltOldExp,2)), MONTH(GOMONTH(ltOldExp,2)), 1)-1
+					IF eff_date = ltOldExp
+						llNoError = .T.
+						lcErrorStatus = ""
+						lcError = STRTRAN(lcError,"อยู่ช่วงขยายเวลา N+1, ","")
+						EXIT
+					ENDIF 
+					IF eff_date > ltOldExp AND TTOD(eff_date) <= ldOldN1
+						llNoError = .F.
+						lcErrorStatus = "N2"
+						lcError = lcError + "วันเริ่มกรมธรรม์อยู่ในช่วงขยายเวลา N+1, "
+					ENDIF 		
+				ELSE 				
+					lnRecNo = IIF(lnMinAmt = 0, RECNO(), IIF(lnAmt < lnMinAmt, RECNO(), lnRecNo))
+					lnMinAmt = IIF(lnMinAmt = 0, lnAmt, IIF(lnAmt < lnMinAmt, lnAmt, lnMinAmt))
+				ENDIF 	
+			ENDIF 
+			ltOldExp = exp_date
+			SKIP 
+			IF !EOF()
+				ldN1 = DATE(YEAR(GOMONTH(exp_date,2)), MONTH(GOMONTH(exp_date,2)), 1)-1
+			ENDIF 	
+		ENDIF 	
+	ENDDO 
+	IF lnRecNo > 0
+		GO lnRecNo
+	ELSE 
+		GO BOTTOM 	
+	ENDIF 	
+CASE AT("-", tcPolicyNo) <> 0
+	lcPolicyNo = IIF(LEN(ALLTRIM(tcPolicyNo)) > 19, LEFT(tcPolicyNo,19), lcPolicyNo)		
+	IF tnFamilyNo = 0	
+		lcSql = "SELECT policy_no, effective AS eff_date, expiry AS exp_date, expried_y AS exp_n1 "+;
+			"FROM cimsdb.dbo.member WHERE policy_no = ?lcPolicyNo AND polstatus <> ?lcPolStatus "	
+	ELSE 
+		lcSql = "SELECT policy_no, effective AS eff_date, expiry AS exp_date, expried_y AS exp_n1 "+;
+			"FROM cimsdb.dbo.member WHERE policy_no = ?lcPolicyNo AND customer_id = ?lcFamilyNo AND polstatus <> ?lcPolStatus"
+	ENDIF 
+	lnSqlSucess = SQLEXEC(nConn, lcSql, "curSmg")	
+CASE AT("-", tcPolicyNo) = 0
+	IF tnFamilyNo = 0	
+		lcSql = "SELECT policy_no, effective AS eff_date, expiry AS exp_date, expried_y AS exp_n1 "+;
+			"FROM cimsdb.dbo.member WHERE cardno = ?lcPolicyNo AND polstatus <> ?lcPolStatus"	
+	ELSE
+		lcSql = "SELECT policy_no, effective AS eff_date, expiry AS exp_date, expried_y AS exp_n1 "+;
+			"FROM cimsdb.dbo.member WHERE cardno = ?lcPolicyNo AND customer_id = ?lcFamilyNo AND polstatus <> ?lcPolStatus"
+	ENDIF 
+	lnSqlSucess = SQLEXEC(nConn, lcSql, "curSmg")		
+OTHERWISE
+	IF tnFamilyNo = 0
+		lcPolicyNo = LEFT(STRTRAN(ALLTRIM(tcPolicyNo), " ", "-"), 25)
+		lcSql = "SELECT policy_no, effective AS eff_date, expiry AS exp_date, expried_y AS exp_n1 "+;
+			"FROM cimsdb.dbo.member WHERE cardno = ?lcPolicyNo AND polstatus <> ?lcPolStatus"	
+	ELSE 
+		lcPolicyNo = tcPolicyNo
+		lcFamilyNo = ALLTRIM(STR(lnFamilyNo)) 		
+		lcSql = "SELECT policy_no, effective AS eff_date, expiry AS exp_date, expried_y AS exp_n1 "+;
+			"FROM cimsdb.dbo.member WHERE policy_no = ?lcPolicyNo AND customer_id = ?lcFamilyNo AND polstatus <> ?lcPolStatus"
+	ENDIF
+	lnSqlSucess = SQLEXEC(nConn, lcSql, "curSmg")
+ENDCASE 
+IF !USED("curSmg") OR RECCOUNT("curSmg") = 0
+		lcSql = "SELECT policy_no, effective AS eff_date, expiry AS exp_date, expried_y AS exp_n1 "+;
+			"FROM cimsdb.dbo.member WHERE quotation = ?lcPolicyNo AND customer_id = ?lcFamilyNo AND polstatus <> ?lcPolStatus"
+	lnSqlSucess = SQLEXEC(nConn, lcSql, "curSmg")
+ENDIF 	
+*
+loSmg = null
+IF USED("curSmg")
+	SELECT curSmg
+	SCATTER NAME loMember
+*	USE IN curSmg
+	**************************
+	lcPolicyNo = loMember.policy_no
+	ldEffDate = loMember.eff_date
+	ldExpDate = loMember.exp_date	
+	*
+	IF tnFamilyNo = 0
+		lcSql = "SELECT policy_no, personcode, eff_date, exp_date, refno, projcode, productno AS prodno, locationno AS locno, itemno, grouptype, subclass, personno, idno "+; 
+			"FROM cimsdb.dbo.smg_member WHERE policy_no = ?lcPolicyNo order by exp_date"	
+	ELSE 
+		lcSql = "SELECT policy_no, personcode, eff_date, exp_date, refno, projcode, productno AS prodno, locationno AS locno, itemno, grouptype, subclass, personno, idno "+; 
+			"FROM cimsdb.dbo.smg_member WHERE policy_no = ?lcPolicyNo and personcode = ?tnFamilyNo order by exp_date"	
+	ENDIF 				
+	lnSqlSucess = SQLEXEC(nConn, lcSql, "curSmg1")
+	IF lnSqlSucess = 1
+		IF USED("curSmg1")
+			SELECT curSmg1
+			SCATTER NAME loSmg
+			loSmg.eff_date = loMember.eff_date
+			loSmg.exp_date = loMember.exp_date
+			=ADDPROPERTY(loSmg, "errorstatus", lcErrorStatus)	
+			=ADDPROPERTY(loSmg, "errornote", lcError)
+			=ADDPROPERTY(loSmg, "noerror", llNoError)
+			IF RECCOUNT() =  0
+				llNoError = .F.
+				lcErrorStatus = "E0"		
+				lcError = lcError + "ไม่พบเลขกรมธรรม์"
+			ELSE 
+				IF loSmg.subclass <> "PH"
+					IF lcErrorStatus <> "N1"
+						IF ldAccDate < loSmg.eff_date
+							llNoError = .F.
+							lcErrorStatus = "E1"
+							lcError = lcError + "อุบัติเหตุเกิดก่อนกรมธรรม์มีผลบังคับ, "
+						ENDIF
+						IF ldAccDate > loSmg.exp_date
+							llNoError = .F.		
+							lcErrorStatus = "E2"				
+							lcError = lcError+"อุบัติเหตุเกิดหลังกรมธรรม์สิ้นสุด"
+						ENDIF
+					ENDIF 	
+				ENDIF 	
+			ENDIF
+		ENDIF
+	ENDIF 	
+	loSmg.noerror = llNoError
+	loSmg.errornote = lcError
+	loSmg.errorstatus = lcErrorStatus
+	*	
+	USE IN curSmg1
+ENDIF
+SELECT (lnSelect)
+RETURN loSmg
+************************************
+FUNCTION getCustByPolicyID(tcFundCode, tcPolicyId)
+*Return 
+* NULL = no parameter
+* -1 = cannot connect SQL Server
+* .T. = have data from query
+* .F.  = no data from query
+*
+IF EMPTY(tcFundCode) AND EMPTY(tcPolicyID)
+	RETURN .F.
+ENDIF 
+*
+lcSql = "{call sp_cims_getcustbypolicyid(?tcFundCode,?tcPolicyId)}"
+lnSql = SQLEXEC(gnConn, lcSql, "custbypolicyid")
+RETURN IIF(lnSql = 1, USED("custbypolicyid"), lnSql)
+**********************************************
+function getCustFromScb(tcCardNo, tcNatId)
+
+lcSql = "{call sp_queryCustFromScb(?tcCardNo, ?tcNatId)}"
+lnSql = sqlexec(gnConn,lcSql,"custFromScb")
+RETURN iif(lnSql = 1, USED("custfromscb"), lnSql)
+**********************************************
+FUNCTION getCustByNatID(tcFundCode, tcNatID)
+*Return 
+* NULL = no parameter
+* -1 = cannot connect SQL Server
+* .T. = have data from query
+* .F.  = no data from query
+*
+loRetVal = NULL 
+lnSelect = SELECT()
+IF EMPTY(tcFundCode) AND EMPTY(tcName) AND EMPTY(tcSurname)
+	RETURN loRetVal
+ENDIF 
+nConn = gnConn &&SQLCONNECT("CimsDB")
+IF nConn < 1
+	RETURN .F.
+ENDIF 
+*
+lcSql = "select [member].[policy_no],[member].[cardno],[member].[plan],[member].[effective],[member].[expiry],[member].[policyid],[member].[renew] "+;
+	"from [cimsdb].[dbo].[member] where [member].[fundcode] = ?tcFundCode and [member].[natid] = ?tcNatID"+;
+	" order by [member].[expiry] desc"
+lnSql = SQLEXEC(nConn, lcSql, "_custbynatid")
+IF USED("_custbynatid")
+	SELECT IIF(EMPTY(cardno), policy_no, cardno) AS cardno, policy_no, plan, effective, expiry, policyid, renew ;
+	FROM _custbynatid ;
+	INTO CURSOR custbynatid
+	*
+	USE IN _custbynatid
+ENDIF 	
+SELECT (lnSelect)
+RETURN USED("custbynatid")
+************************************
+FUNCTION getCustByFullName(tcFundCode, tcName,tcSurName)
+*Return 
+* NULL = no parameter
+* -1 = cannot connect SQL Server
+* .T. = have data from query
+* .F.  = no data from query
+*
+loRetVal = NULL 
+lnSelect = SELECT()
+IF EMPTY(tcFundCode) AND EMPTY(tcName) AND EMPTY(tcSurname)
+	RETURN loRetVal
+ENDIF 
+nConn = gnConn &&SQLCONNECT("CimsDB")
+IF nConn < 1
+	RETURN -1
+ENDIF 
+*
+lcSql = "select [member].[fundcode],[member].[natid],[member].[policyid],[member].[policy_no],[member].[cardno],[member].[effective],[member].[expiry] "+;
+	"from [cimsdb].[dbo].[member] where [member].[fundcode] = ?tcFundCode and [member].[name] = N'"+ALLTRIM(tcName)+"' and [member].[surname] = N'"+ALLTRIM(tcSurname)+;
+	"' order by [member].[expiry] desc"
+lnSql = SQLEXEC(nConn, lcSql, "custbyfullname")
+*=SQLDISCONNECT(nConn)
+IF USED("custbyfullname")
+	SELECT custbyfullname
+	SCATTER NAME loRetVal
+	USE IN custbyfullname
+ENDIF 
+SELECT (lnSelect)
+RETURN loRetVal
+************************************************
+FUNCTION getPolicyID(tcFundCode, tcPolicyNo, tnFamilyNo)
+*Return 
+* NULL = no parameter
+* -1 = cannot connect SQL Server
+* .T. = have data from query
+* .F.  = no data from query
+*
+IF EMPTY(tcFundCode) AND EMPTY(tcPolicyNo)
+	RETURN ""
+ENDIF 
+
+nConn = gnConn &&SQLCONNECT("CimsDB")
+IF nConn < 1
+	RETURN "0"
+ENDIF 
+*
+lcCustId = ALLTRIM(STR(tnFamilyNo))
+IF AT("-", tcPolicyNo) <> 0
+	lcWhere = "[policy_no] = ?tcPolicyno"+IIF(tnFamilyNo = 0, "", " and [customer_id] = ?lcCustId")
+ELSE 
+	lcWhere = "[cardno] = ?tcPolicyno"
+	IF tcPolicyNo = "5577"
+		loAdjCard = checkAdjCard(tcFundCode, tcPolicyNo)
+		IF !EMPTY(loAdjCard.oldcard) OR !EMPTY(loAdjCard.newcard)
+			lcWhere = "("
+			IF !EMPTY(loAdjCard.oldcard)
+				lcWhere = "[cardno] = ?tcPolicyno or [cardno] = ?loAdjCard.oldcard"
+			ENDIF 
+			IF !EMPTY(loAdjCard.newcard)
+				lcWhere = "[cardno] = ?tcPolicyno or [cardno] = ?loAdjCard.newcard"
+			ENDIF 
+			lcWhere = lcWhere+")"
+		ENDIF 				
+	ENDIF 
+ENDIF 	
+lcSql = "select [member].[policyid] from [cimsdb].[dbo].[member] where "+lcWhere+" order by [member].[expiry] desc"
+lnSql = SQLEXEC(nConn, lcSql, "curPolicyid")
+*=SQLDISCONNECT(nConn)
+IF USED("curPolicyid")
+	lcRetVal = curPolicyID.policyid
+	USE IN curPolicyid
+ELSE 
+	lcRetVal = "0"
+ENDIF 
+RETURN lcRetVal
+************************************************
+FUNCTION getPolicyNoByPolicyID(tcFundCode, tcPolicyID)
+*Return 
+* NULL = no parameter
+* -1 = cannot connect SQL Server
+* .T. = have data from query
+* .F.  = no data from query
+*
+IF EMPTY(tcFundCode) AND EMPTY(tcPolicyID)
+	RETURN ""
+ENDIF 
+
+nConn = gnConn &&SQLCONNECT("CimsDB")
+IF nConn < 1
+	RETURN "-1"
+ENDIF 
+
+lcRetVal = ""
+lnSelect = SELECT()
+lcSql = "select [member].[policy_no] from [cimsdb].[dbo].[member] where [member].[fundcode] = ?tcFundCode and [member].[policyid] = ?tcPolicyId"
+lnSql = SQLEXEC(nConn, lcSql, "curPolicy")
+IF lnSql = 1
+	IF USED("curPolicy")
+		lcRetVal = curPolicy.policy_no
+		USE IN curPolicy
+	ELSE 
+		lcRetVal = "0"
+	ENDIF 
+ELSE 
+	lnRetVal = "-1"
+ENDIF 		
+SELECT (lnSelect)
+RETURN lcRetVal
+********************************
+FUNCTION checkAdjCard(tcFundCode, tcCardNo)
+
+loCard = CREATEOBJECT("empty")
+=ADDPROPERTY(loCard, "oldcard","")
+=ADDPROPERTY(loCard, "oldadjdate",{})
+=ADDPROPERTY(loCard, "newcard","")
+=ADDPROPERTY(loCard, "newadjdate",{})
+*
+IF EMPTY(tcFundCode) AND EMPTY(tcCardNo)
+	RETURN loCard
+ENDIF 
+SELECT newcard, adjdate ;
+FROM (ADDBS(DATAPATH)+"smg_adj_card") ;
+WHERE fundcode = tcFundCode AND oldcard = tcCardNo ;
+INTO ARRAY laOldCard
+*
+IF _TALLY > 0
+	loCard.newcard = laOldCard[1]
+	loNewAdjDate = laOldCard[2]
+ELSE 	
+	SELECT oldcard, adjdate ;
+	FROM (ADDBS(DATAPATH)+"smg_adj_card")  ;
+	WHERE fundcode = tcFundCode AND newcard = tcCardNo ;
+	INTO ARRAY laNewCard
+	IF _TALLY > 0
+		loCard.oldcard = laNewCard[1]	
+		loCard.oldadjdate = laNewCard[2]			
+	ENDIF 	
+ENDIF 	
+IF USED("smg_adj_card")
+	USE IN smg_adj_card
+ENDIF 
+RETURN loCard
+********************************
+FUNCTION checkAdjOldCard(tcFundCode, tcCardNo)
+
+loCard = CREATEOBJECT("empty")
+=ADDPROPERTY(loCard, "oldcard","")
+=ADDPROPERTY(loCard, "adjdate",{})
+*
+IF EMPTY(tcFundCode) AND EMPTY(tcCardNo)
+	RETURN loCard
+ENDIF 
+*
+loCard.oldcard = tcCardNo
+*!*	SELECT oldcard, adjdate ;
+*!*	FROM (ADDBS(DATAPATH)+"smg_adj_card") ;
+*!*	WHERE fundcode = tcFundCode AND newcard = tcCardNo ;
+*!*	INTO ARRAY laNewCard
+*!*	IF _TALLY > 0
+*!*		loCard.oldcard = laNewCard[1]	
+*!*		loCard.adjdate = laNewCard[2]			
+*!*	ENDIF 	
+*!*	IF USED("smg_adj_card")
+*!*		USE IN smg_adj_card
+*!*	ENDIF 	
+RETURN loCard
+********************************
+FUNCTION checkAdjNewCard(tcFundCode, tcCardNo)
+
+loCard = CREATEOBJECT("empty")
+=ADDPROPERTY(loCard, "newcard","")
+=ADDPROPERTY(loCard, "adjdate",{})
+*
+IF EMPTY(tcFundCode) AND EMPTY(tcCardNo)
+	RETURN loCard
+ENDIF 
+*
+SELECT newcard, adjdate ;
+FROM (ADDBS(DATAPATH)+"smg_adj_card") ;
+WHERE fundcode = tcFundCode AND oldcard = tcCardNo ;
+INTO ARRAY laNewCard
+IF _TALLY > 0
+	loCard.newcard = laNewCard[1]
+	loCard.adjdate = laNewCard[2]
+ENDIF 	
+IF USED("smg_adj_card")
+	USE IN smg_adj_card
+ENDIF 	
+RETURN loCard
+********************************************
+FUNCTION getUserInfo(tcUserName)
+
+loRetVal = null 
+llClosed = .F.
+lnSelect = SELECT()
+
+IF FILE(addbs(gcProgDir)+"form\SendSms.scx")
+	on key label F12 do form (addbs(gcProgDir)+"form\SendSms")
+ENDIF
+
+IF !USED("users")
+	llClosed = .T.
+ENDIF 	
+
+SELECT userid, fullname, email, group, level, super, startaction, password, department, username, extension ;
+FROM cims!users ;
+WHERE username = tcUserName ;
+INTO CURSOR curUser
+IF _TALLY > 0
+	SELECT curUser
+	SCATTER NAME loRetVal
+ENDIF 
+
+USE IN curUser
+IF llClosed
+	USE IN users
+ENDIF 		
+SELECT (lnSelect)
+RETURN loRetVal
+**********************************************
+FUNCTION getVfpNotation(tcFundcode, tcPolicyNo, tnFamilyNo)
+
+lcRetVal = ""
+IF EMPTY(tcFundCode) AND EMPTY(tcPolicyNo) AND EMPTY(tnFamilyNo)
+	RETURN lcRetVal
+ENDIF 	
+llClosed = .F.
+lnSelect = SELECT()
+IF !USED("members")
+	llClosed = .T.
+ENDIF 	
+SELECT notation ;
+FROM cims!members ;
+WHERE tpacode = tcFundCode ;
+	AND policy_no = tcPolicyNo ;
+	AND family_no = tnFamilyNo ;
+INTO ARRAY laNotation
+IF _TALLY > 0
+	lcRetVal = laNotation[1]	
+ENDIF 
+IF llClosed
+	USE IN members
+ENDIF 	
+RETURN lcRetVal	
+********************************************
+FUNCTION checkActiveCard(tcNatID)
+
+IF EMPTY(tcNatID)
+	RETURN ""
+ENDIF 
+lcRetVal = ""
+llClosed = !USED("card2natid")
+SELECT cardno FROM cims!card2natid ;
+WHERE natid == tcNatId AND expdate = {} ;
+INTO ARRAY laCard
+IF _TALLY > 0
+	lcRetVal = laCard[1]
+ENDIF
+IF llClosed
+	USE IN card2natid
+ENDIF 	
+RETURN lcRetVal
+***********************************************************************************
+FUNCTION getOldPolicy(tcFundcode, tcOldPolicyNo)
+*
+* ฟังก์ชั่นสำหรับเช็คกรมธรรม์ PA Debit plus ที่ effective ช่วง N+1
+*
+IF EMPTY(tcFundCode) AND EMPTY(tcOldPolicyNo)
+	RETURN .T.
+ENDIF 	
+*	
+loOld = null
+lnSelect = SELECT()
+lcSQL = "SELECT [policy_no], [effective], [expiry], [old_policyno] FROM [cimsdb].[dbo].[member] WHERE [fundcode] = ?tcFundCode AND [policy_no] = ?tcOldPolicyNo"
+lnSucess = SQLEXEC(gnConn, (lcSQL), "curOld")
+IF lnSucess > 0
+	IF USED("curOld")
+		IF RECCOUNT("curOld") <> 0
+			SELECT curOld
+			SCATTER NAME loOld
+		ENDIF 
+		USE IN curOld
+	ENDIF 
+ENDIF 
+SELECT (lnSelect)
+RETURN loOld
+***********************************************************************************
+FUNCTION checkN1(tcFundcode, tcOldPolicyNo, ttEffDate)
+*
+* ฟังก์ชั่นสำหรับเช็คกรมธรรม์ PA Debit plus ที่ effective ช่วง N+1
+*
+IF EMPTY(tcFundCode) AND EMPTY(tcOldPolicyNo) AND EMPTY(ttEffDate)
+	RETURN .T.
+ENDIF 	
+*	
+ldOldExp = {}
+llRetVal = .F.
+lnSelect = SELECT()
+lnRenew = 0
+lcOldPolicyNo = tcOldPolicyNo
+DO WHILE !EMPTY(lcOldPolicyNo)
+	lnRenew = lnRenew + 1
+	loOldPolicy = getOldPolicy(tcFundCode, lcOldPolicyNo)
+	IF ISNULL(loOldPolicy)
+		lcOldPolicyNo = ""
+	ELSE
+		lcOldPolicyNo = loOldPolicy.old_policyno
+	ENDIF
+ENDDO
+IF lnRenew > 2
+	ldOldExp = GOMONTH(loOldPolicy.expiry, 12*(lnRenew-2))
+ELSE 
+	ldOldExp = loOldPolicy.expiry	
+ENDIF 	
+ldN1 = GOMONTH(ldOldExp,2)-DAY(ldOldExp)
+IF TTOD(ttEffDate) >= DATE(YEAR(ldN1), MONTH(ldOldExp),1) AND TTOD(ttEffDate) <= ldN1
+	llRetVal = .T.
+ENDIF 	
+SELECT (lnSelect)
+RETURN llRetVal
+*******************************************************************************************
+FUNCTION findInsured(tcFundcode, tcPolicyNo, tnKey, tnExact)
+
+lcSql = ""
+lcScbWhere = ""
+llRetVal = .F.
+
+tcPolicyNo = ALLTRIM(tcPolicyNo)+icase(tnExact = 1, "%", "")
+DO CASE 
+CASE tnKey = 1
+	lcWhere =  "[policy_no] LIKE ?tcPolicyNo"
+CASE tnKey = 2
+	lcWhere =  "[name] LIKE N'"+tcPolicyNo+"'"
+	lcScbWhere = iif(tcFundCode = "SMG", lcWhere, "")	
+CASE tnKey = 3
+	lcWhere =  "[surname] LIKE N'"+tcPolicyNo+"'"
+	lcScbWhere = iif(tcFundCode = "SMG", lcWhere, "")	
+CASE tnKey = 4
+	lcWhere =  "[natid] LIKE ?tcPolicyNo"
+	lcScbWhere = iif(tcFundCode = "SMG", lcWhere, "")
+CASE tnKey = 5
+	tcPolicyNo = ALLTRIM(STRTRAN(tcPolicyNo, "-", ""))
+	lcWhere =  "[cardno] LIKE ?tcPolicyNo or [oldcardno] LIKE ?tcPolicyNo"
+CASE tnKey = 6
+	lcWhere =  "[quotation] LIKE ?tcPolicyNo"
+OTHERWISE 	
+	tcPolicyNo = ALLTRIM(STRTRAN(tcPolicyNo, "-", ""))		
+	lcWhere =  "[cardno] LIKE ?tcPolicyNo"
+	lcScbWhere = iif(tcFundCode = "SMG", lcWhere, "")
+ENDCASE
+IF !EMPTY(tcFundCode)
+	lcWhere = "[fundcode] = ?tcFundCode AND "+lcWhere
+endif
+lcSql1 = "SELECT RTRIM([name])+' '+RTRIM([surname]) AS fullname, [policy_no], [family_no], [plan], [effective], "+;
+	"[expiry], [cardno], [natid],[policyid], CASE WHEN [fundcode] = 'SMG' THEN 'SCSMG' ELSE '' END AS getfrom "+;
+	"FROM [cimsdb].[dbo].[member] WHERE "+lcWhere	
+lnSql1 = SQLEXEC(gnConn, lcSql1, "curClient1", laCursorInfo)
+if lnSql1 = 1
+	if empty(lcScbWhere)
+		select * from curClient1 into cursor curClientList
+	else	
+		lcSql2 = "SELECT RTRIM([name])+' '+RTRIM([surname]) AS fullname, [policy_no], 0 AS family_no, [plan], [eff_date] AS effective, "+;
+			"[exp_date] AS expiry, [cardno], [cust_id] AS natid, '' AS policyid, 'SCB' AS getfrom FROM [cimsdb].[dbo].[member_scb] WHERE "+lcScbWhere
+		lnSql2 = SQLEXEC(gnConn, lcSql2, "curClient2", laCursorInfo)
+		if lnSql2 = 1
+			select * from curClient2 where cardno not in (select cardno from curClient1) ;
+			into cursor curClient3
+			
+			select * from curClient1 ;
+			union all ;
+			select * from curClient3 ;
+			into cursor curClientList
+		else
+			select * from curClient1 into cursor curClientList				
+		endif	
+	endif 
+	SELECT curClientList
+	IF RECCOUNT() > 0
+		llRetVal = .T.
+		IF !IsTag("fullname", "curClientList")
+			INDEX ON fullname TAG fullname
+		ENDIF
+		IF !IsTag("policy_no", Alias())
+			INDEX ON policy_no TAG policy_no
+		ENDIF	
+		SET ORDER TO fullname
+	ENDIF 	
+endif	
+
+if used("curClient1")
+	use in curClient1
+endif 	
+if used("curClient2")
+	use in curClient2
+endif 	
+if used("curClient3")
+	use in curClient3
+endif 				
+
+RETURN llRetVal
+*******************************************************************************************
+FUNCTION findCustomer(tcFundcode, tcPolicyNo, tnKey)
+
+lcSql = ""
+llRetVal = .F.
+IF tcFundCode = "SMG"
+	tcPolicyNo = ALLTRIM(tcPolicyNo)+"%"
+	DO CASE 
+	CASE tnKey = 1
+		lcWhere =  "[policy_no] LIKE ?tcPolicyNo"
+	CASE tnKey = 2
+		lcWhere =  "[name] LIKE N'"+tcPolicyNo+"'"
+	CASE tnKey = 3
+		lcWhere =  "[surname] LIKE N'"+tcPolicyNo+"'"
+	CASE tnKey = 4
+		lcWhere =  "[natid] LIKE ?tcPolicyNo"
+	CASE tnKey = 5
+		tcPolicyNo = ALLTRIM(STRTRAN(tcPolicyNo, "-", ""))
+		lcWhere =  "[cardno] LIKE ?tcPolicyNo or [oldcardno] LIKE ?tcPolicyNo"
+	CASE tnKey = 6
+		lcWhere =  "[quotation] LIKE ?tcPolicyNo"
+	OTHERWISE 	
+		tcPolicyNo = ALLTRIM(STRTRAN(tcPolicyNo, "-", ""))		
+		lcWhere =  "[cardno] LIKE ?tcPolicyNo"
+	ENDCASE
+	IF !EMPTY(tcFundCode)
+		lcWhere = "[fundcode] = ?tcFundCode AND "+lcWhere
+	ENDIF
+	lcSql = "SELECT [fundcode] AS tpacode, RTRIM([name])+' '+RTRIM([surname]) AS fullname, [policy_no], [plan] AS product, [family_no], [effective], [expiry], [policyid], [natid] FROM [cimsdb].[dbo].[member] WHERE "+lcWhere
+	IF !EMPTY(lcSql)
+		lnSqlExec = SQLEXEC(gnConn, lcSql, "curClientList", laCursorInfo)
+		IF lnSqlExec > 0
+			SELECT curClientList
+			IF RECCOUNT() > 0
+				llRetVal = .T.
+				IF !IsTag("fullname", "curClientList")
+					INDEX ON fullname TAG fullname
+				ENDIF
+				IF !IsTag("policy_no", Alias())
+					INDEX ON policy_no TAG policy_no
+				ENDIF	
+				SET ORDER TO fullname
+			ENDIF		
+		ENDIF 	
+	ENDIF
+ENDIF 
+RETURN llRetVal
+*****************************************
+FUNCTION checkIsCard(tcFundCode, tcCardNo)
+
+IF EMPTY(tcFundCode) AND EMPTY(tcCardNo)
+	RETURN .F.
+ENDIF 
+
+llRetVal = .F.
+DO CASE 
+CASE tcFundCode = "SMG"
+	llRetVal = INLIST(LEFT(tcCardNo,4), "5577", "2020","4120","4220","4320","4420")
+ENDCASE
+RETURN llRetVal
+*****************************************
+FUNCTION isAsCharge(tcFundCode, tcPlan)
+
+IF EMPTY(tcFundCode) AND EMPTY(tcPlan)
+	RETURN .F.
+ENDIF 
+	
+llRetVal = .F.	
+DO CASE 
+CASE tcFundCode = "TIM"
+	llRetVal = "HEACARE1" $ tcPlan 
+CASE tcFundCode = "BKI"
+	IF AT(".", tcPlan) = 0
+		llRetVal = .T.	
+	ENDIF 	
+CASE tcFundCode = "SMG"
+	IF claim.service_type = "IPD"
+		llRetVal = "PHTM" $ tcPlan OR "PHPLUS" $ tcPlan OR "HPS" $ tcPlan
+	ENDIF 
+ENDCASE 
+RETURN llRetVal
+*************************************************
+FUNCTION saveNotifyToSQL(taNotify, tlNew)
+*tlNew = .T. is new record
+
+lnSelect = SELECT()
+cNotifyNo = taNotify[1]
+
+IF tlNew
+	INSERT INTO cimssql!rvNotify FROM ARRAY taNotify
+ELSE 
+	USE cimsSQL!rvNotify IN 0 
+	IF RECCOUNT("rvNotify") > 0
+		SELECT rvNotify
+		GATHER FROM taNotify MEMO 
+	ENDIF 		
+ENDIF 
+lnSuscess = TABLEUPDATE(.T.,.T.,"rvNotify")
+USE IN rvNotify
+SELECT (lnSelect)
+RETURN lnSuscess
+*********************************************
+FUNCTION getMcCover(tcFundCode, tcPackage, tcPlan, tnCover)
+
+IF EMPTY(tcFundCode) AND EMPTY(tcPackage) AND EMPTY(tcPlan)
+	RETURN 0
+ENDIF 
+tnCover = IIF(EMPTY(tnCover), 0, tnCover)
+lnMedical = 0 &&tnCover
+DO CASE 
+CASE tcFundCode = "KPI"
+	DO CASE 
+	CASE tcPackage = "1P01"
+		lnMedical = 0	
+	CASE tcPackage = "2P04"
+		lnMedical = 10000		
+	CASE tcPackage = "4P02"
+		lnMedical = 20000		
+	CASE tcPackage = "5P01"
+		lnMedical = 20000
+	CASE tcPackage = "5P02"
+		lnMedical = 20000		
+	CASE tcPackage = "6P01"
+		lnMedical = 20000
+	CASE tcPackage = "6P02"
+		lnMedical = 0
+	CASE tcPackage = "7P01"
+		lnMedical = 20000
+	CASE tcPackage = "7P02"
+		lnMedical = 10000
+	CASE tcPackage = "9P01"
+		lnMedical = 20000
+	CASE tcPackage = "10PA"
+		lnMedical = 20000		
+	ENDCASE
+*!*	CASE tcFundCode = "FAL"
+*!*		DO case
+*!*		CASE "CHMP-A" $ tcPlan
+*!*			lnMedical = tnCover+3000
+*!*		CASE "CHMP-B" $ tcPlan
+*!*			lnMedical = tnCover+5000
+*!*		CASE "CHMP-C" $ tcPlan
+*!*			lnMedical = tnCover+10000	
+*!*		CASE "CHMP-D" $ tcPlan
+*!*			lnMedical = tnCover+15000	
+*!*		CASE "CHMP-E" $ tcPlan
+*!*			lnMedical = tnCover+20000
+*!*		OTHERWISE 
+*!*			lnMedical = tnCover	
+*!*		ENDCASE 	
+OTHERWISE 
+	lnMedical = tnCover	
+ENDCASE 
+RETURN lnMedical
+**********************************************
+FUNCTION isDepartment(tcUserName, tcDepartment)
+
+llRetVal = .F.
+llClosed = .F.
+lnSelect = SELECT()
+IF !USED("users")
+	llClosed = .T.
+ENDIF 	
+
+SELECT department ;
+FROM cims!users ;
+WHERE username = tcUserName ;
+INTO ARRAY laUserDM
+IF _TALLY > 0
+	IF tcDepartment = laUserDM[1]
+		llRetVal = .T.
+	ENDIF 	
+ENDIF 
+IF llClosed
+	USE IN users
+ENDIF 		
+SELECT (lnSelect)
+RETURN llRetVal
+************************************************
+FUNCTION getDateTime2Date(tcFundCode, tdDate)
+
+IF EMPTY(tcFundCode) AND EMPTY(tdDate)
+	RETURN {}
+ENDIF 
+
+ldRetDate = tdDate
+DO CASE 
+CASE tcFundCode = "FAL"
+	IF USED("curClaimList")
+		IF curClaimList.return_date > m.EndDate
+			REPLACE clm_pstat WITH ICASE(curClaimList.result = 'P5', 'W61', 'W6')
+			ldRetDate = ""
+		ENDIF 
+	ENDIF 
+	IF EMPTY(tdDate)
+		ldRetDate = ""
+	ELSE 	
+		IF TYPE("tdDate") = "T"
+			ldRetDate = DTOC(TTOD(tdDate))
+		ELSE 
+			ldRetDate = DTOC(tdDate)
+		ENDIF 			
+	ENDIF 	
+ENDCASE 	
+RETURN ldRetDate
+***********************************************************************************
+FUNCTION checkMember(tcFundcode, tcPolicyNo, tnPersonNo, tcPlanId)
+
+IF EMPTY(tcFundCode) AND EMPTY(tcPolicyNo) AND EMPTY(tnPersonNo) 
+	RETURN .T.
+ENDIF 	
+*	
+llRetVal = .T.
+lnSelect = SELECT()
+IF EMPTY(tcPlanId)
+	lcSQL = "SELECT [policyid] FROM [cimsdb].[dbo].[member] WHERE [fundcode] = ?tcFundCode AND [policy_no] = ?tcPolicyNo "+;
+		"AND [family_no] = ?tnPersonNo AND [plan_id] = ?tcPlanId"
+ELSE 
+	lcSQL = "SELECT [policyid] FROM [cimsdb].[dbo].[member] WHERE [fundcode] = ?tcFundCode AND [policy_no] = ?tcPolicyNo "+;
+		"AND [family_no] = ?tnPersonNo"
+ENDIF 		
+lnSucess = SQLEXEC(gnConn, (lcSQL), "curExist")
+IF lnSucess > 0
+	IF USED("curExist")
+		IF RECCOUNT("curExist") = 0
+			llRetVal = .F.
+		ENDIF 	
+	ENDIF 	
+ENDIF 
+WAIT CLEAR 
+IF USED("curExist")
+	USE IN curExist		
+ENDIF 	
+SELECT (lnSelect)
+RETURN llRetVal
+***********************************************************************************
+FUNCTION checkExistMember(tdDate)
+WAIT WINDOW "ตรวจสอบมีการนำเข้าข้อมูลของวันที่ "+DTOC(tdDate) NOWAIT 
+lnSelect = SELECT()
+lcDate = STR(YEAR(tdDate),4)+"-"+STRTRAN(STR(MONTH(tdDate),2), " ", "0")+"-"+STRTRAN(STR(DAY(tdDate),2)," ", "0")
+lcSQL = "SELECT [adddate], COUNT(*) AS amount FROM [cimsdb].[dbo].[member] WHERE [adddate] = ?lcDate GROUP BY [adddate]"
+lnSucess = SQLEXEC(lnConn, (lcSQL), "curAddMember")
+lnCount = 0
+IF lnSucess > 0
+	IF USED("curAddMember")
+		lnCount = curAddMember.amount
+	ENDIF 	
+ELSE 
+	lnCount = -1
+ENDIF 
+WAIT CLEAR 
+SELECT (lnSelect)
+RETURN lnCount	
+
+*************************************************
+FUNCTION insertToMember
+
+m.deductible = m.insure
+m.expried_y = IIF(m.expried_y = {}, null, m.expried_y)
+m.me_cover = IIF(INLIST(m.customer_type, "P"), m.overall_limit, 0)
+m.hs_cover = IIF(INLIST(m.customer_type, "I", "H"), m.overall_limit, 0)
+m.mc_cover = getMcCover(m.tpacode, m.package, m.product, m.overall_limit)
+*
+lcSql = "INSERT INTO [cimsdb].[dbo].[member] ([policy_no], [family_no], [plan], [natid], [title], [name], [surname], [sex], [birth_date], [age], [h_addr1], [h_addr2], [mobile], "+ ;
+	"[h_city], [h_province], [h_country], [h_postcode], [h_phone], [policy_date], [effective], [expiry], [agent], [agency], [overall_limit], [access_lvl], [premium], "+ ;
+	"[adddate], [customer_id], [package], [branch_code], [l_submit], [no_of_pers], [policy_name], [polstatus], [old_policyno], [plan_id], [cardno], "+ ;
+	"[quotation], [l_update], [fund_id], [fundcode], [customer_type], [effective_y], [expried_y], [l_user], [exclusion], [infonote], [pay_fr], [pay_mode], [renew], "+;
+	"[insure], [start_date], [policy_start], [policy_end], [lastpaid], [reindate], [canceldate], [lapsedate], [adjcancel], [adjlapse], [adjrein], [adjrefund], [cancelexp], "+;
+	"[replace_date], [acno], [acname], [bankcode], [bankname], [brcode], [brname], [me_cover], [mc_cover], [hs_cover], [deductible], [notation]) " + ;
+	"VALUES (?m.policy_no, ?m.family_no, ?m.product, ?m.natid, ?m.title, ?m.name, ?m.surname, ?m.sex, ?m.birth_date, ?m.age, ?m.h_addr1, ?m.h_addr2, ?m.mobile, " + ;
+	"?m.h_city, ?m.h_province, ?m.h_country, ?m.h_postcode, ?m.h_phone, ?m.policy_date, ?m.effective, ?m.expiry, ?m.agent, ?m.agentcy, ?m.overall_limit, ?m.access_lvl, ?m.premium, " + ;
+	"?m.adddate, ?m.customer_id, ?m.package, ?m.branch_code, ?m.l_submit, ?m.no_of_pers, ?m.policy_name, ?m.polstatus, ?m.old_policyno, ?m.plan_id, ?m.cardno, " + ;
+	"?m.quotation, ?m.l_update, ?m.fund_id, ?m.tpacode, ?m.customer_type, ?m.effective_y, ?m.expried_y, ?m.l_user, ?m.exclusion, ?m.infonote, ?m.pay_fr, ?m.pay_mode, ?m.renew, "+ ;
+	"?m.insure, ?m.start_date, ?m.policy_start, ?m.policy_end, ?m.lastpaid, ?m.reindate, ?m.canceldate, ?m.lapsedate, ?m.adjcancel, ?m.adjlapse, ?m.adjrein, ?m.adjrefund, ?m.cancelexp, "+;
+	"?m.replace_date, ?m.acno, ?m.acname, ?m.bankcode, ?m.bankname, ?m.brcode, ?m.brname, ?m.me_cover, ?m.mc_cover, ?m.hs_cover, ?m.deductible, ?m.notation)"
+
+*=SQLSETPROP(lnConn,"Transactions", 2) && Manual transaction	
+lnSucess = SQLEXEC(gnConn, lcSql)	
+*
+*!*	IF lnSucess < 0
+*!*		= SQLROLLBACK(lnConn) && Rollback insert record
+*!*	ELSE
+*!*		= SQLCOMMIT(lnConn)  && Commit the changes
+*!*	ENDIF
+*!*	= SQLSETPROP(lnConn, 'Transactions', 1)  && Auto transactions
+
+RETURN lnSucess
+*****************************************************************
+FUNCTION updateToMember
+
+m.deductible = m.insure
+m.me_cover = IIF(INLIST(m.customer_type, "P"), m.overall_limit, 0)
+m.hs_cover = IIF(INLIST(m.customer_type, "I", "H"), m.overall_limit, 0)
+m.mc_cover = getMcCover(m.tpacode, m.package, m.product, m.overall_limit)
+m.expried_y = IIF(m.expried_y = {}, null, m.expried_y)
+
+IF m.tpacode = "FAL"
+	lcSql = "UPDATE [cimsdb].[dbo].[member] SET [policy_no] = ?m.policy_no, [family_no] = ?m.family_no, [plan] = ?m.product, [natid] = ?m.natid, [title] = ?m.title, [name] = ?m.name, "+;
+		"[surname] = ?m.surname, [sex] = ?m.sex, [birth_date] = ?m.birth_date, [age] = ?m.age, [h_addr1] = ?m.h_addr1, [h_addr2] = ?m.h_addr2, [mobile] = ?m.mobile, "+;
+		"[h_city] = ?m.h_city, [h_province] = ?m.h_province, [h_country] = ?m.h_country, [h_postcode] = ?m.h_postcode, [h_phone] = ?m.h_phone, [policy_date] = ?m.policy_date, "+;
+ 		"[effective] = ?m.effective, [expiry] = ?m.expiry, [agent] = ?m.agent, [agency] = ?m.agentcy, [overall_limit] = ?m.overall_limit, [access_lvl] = ?m.access_lvl, [premium] = ?m.premium, "+;
+		"[adddate] = ?m.adddate, [customer_id] = ?m.customer_id, [package] = ?m.package, [branch_code] = ?m.branch_code, [l_submit] = ?m.l_submit, [no_of_pers] = ?m.no_of_pers, "+;
+		"[policy_name] = ?m.policy_name, [polstatus] = ?m.polstatus, [old_policyno] = ?m.old_policyno, [plan_id] = ?m.plan_id, [cardno] = ?m.cardno, "+;
+		"[quotation] = ?m.quotation, [l_update] = ?m.l_update, [fund_id] = ?m.fund_id, [fundcode] = ?m.tpacode, [customer_type] = ?m.customer_type, [effective_y] = ?m.effective_y, "+;
+		"[expried_y] = ?m.expried_y, [l_user] = ?m.l_user, [exclusion] = ?m.exclusion, [infonote] = ?m.infonote, [pay_fr] = ?m.pay_fr, [pay_mode] = ?m.pay_mode, [renew] =?m.renew, "+;
+		"[insure] = ?m.insure, [start_date] = ?m.start_date, [policy_start] = ?m.policy_start, [policy_end] = ?m.policy_end, [lastpaid] = ?m.lastpaid, [reindate] = ?m.reindate, "+;
+		"[canceldate] = ?m.canceldate, [lapsedate] = ?m.lapsedate, [adjcancel] = ?m.adjcancel, [adjlapse] = ?m.adjlapse, [adjrein] = ?m.adjrein, [adjrefund] = ?m.adjrefund, [cancelexp] = ?m.cancelexp, "+;
+		"[replace_date] = ?m.replace_date, [acno] = ?m.acno, [acname] = ?m.acname, [bankcode] = ?m.bankcode, [bankname] = ?m.bankname, [brcode] = ?m.brcode, [brname] = ?m.brname, "+;
+		"[me_cover] = ?m.me_cover, [mc_cover] = ?m.mc_cover, [hs_cover] = ?m.hs_cover, [deductible] = ?m.deductible, [notation] = ?m.notation "+;
+		"WHERE [fundcode] = ?m.tpacode AND [quotation] = ?m.quotation AND [family_no] = ?m.family_no AND [plan] = ?m.product"
+ELSE 
+	lcSql = "UPDATE [cimsdb].[dbo].[member] SET [policy_no] = ?m.policy_no, [family_no] = ?m.family_no, [plan] = ?m.product, [natid] = ?m.natid, [title] = ?m.title, [name] = ?m.name, "+;
+		"[surname] = ?m.surname, [sex] = ?m.sex, [birth_date] = ?m.birth_date, [age] = ?m.age, [h_addr1] = ?m.h_addr1, [h_addr2] = ?m.h_addr2, [mobile] = ?m.mobile, "+;
+		"[h_city] = ?m.h_city, [h_province] = ?m.h_province, [h_country] = ?m.h_country, [h_postcode] = ?m.h_postcode, [h_phone] = ?m.h_phone, [policy_date] = ?m.policy_date, "+;
+ 		"[effective] = ?m.effective, [expiry] = ?m.expiry, [agent] = ?m.agent, [agency] = ?m.agentcy, [overall_limit] = ?m.overall_limit, [access_lvl] = ?m.access_lvl, [premium] = ?m.premium, "+;
+		"[adddate] = ?m.adddate, [customer_id] = ?m.customer_id, [package] = ?m.package, [branch_code] = ?m.branch_code, [l_submit] = ?m.l_submit, [no_of_pers] = ?m.no_of_pers, "+;
+		"[policy_name] = ?m.policy_name, [polstatus] = ?m.polstatus, [old_policyno] = ?m.old_policyno, [plan_id] = ?m.plan_id, [cardno] = ?m.cardno, "+;
+		"[quotation] = ?m.quotation, [l_update] = ?m.l_update, [fund_id] = ?m.fund_id, [fundcode] = ?m.tpacode, [customer_type] = ?m.customer_type, [effective_y] = ?m.effective_y, "+;
+		"[expried_y] = ?m.expried_y, [l_user] = ?m.l_user, [exclusion] = ?m.exclusion, [infonote] = ?m.infonote, [pay_fr] = ?m.pay_fr, [pay_mode] = ?m.pay_mode, [renew] =?m.renew, "+;
+		"[insure] = ?m.insure, [start_date] = ?m.start_date, [policy_start] = ?m.policy_start, [policy_end] = ?m.policy_end, [lastpaid] = ?m.lastpaid, [reindate] = ?m.reindate, "+;
+		"[canceldate] = ?m.canceldate, [lapsedate] = ?m.lapsedate, [adjcancel] = ?m.adjcancel, [adjlapse] = ?m.adjlapse, [adjrein] = ?m.adjrein, [adjrefund] = ?m.adjrefund, [cancelexp] = ?m.cancelexp, "+;
+		"[replace_date] = ?m.replace_date, [acno] = ?m.acno, [acname] = ?m.acname, [bankcode] = ?m.bankcode, [bankname] = ?m.bankname, [brcode] = ?m.brcode, [brname] = ?m.brname, "+;
+		"[me_cover] = ?m.me_cover, [mc_cover] = ?m.mc_cover, [hs_cover] = ?m.hs_cover, [deductible] = ?m.deductible, [notation] = ?m.notation "+;
+		"WHERE [fundcode] = ?m.tpacode AND [policy_no] = ?m.policy_no AND [family_no] = ?m.family_no AND [plan] = ?m.product"
+ENDIF 		
+
+*=SQLSETPROP(lnConn,"Transactions", 2) && Manual transaction	
+lnSuscess = SQLEXEC(gnConn, lcSql)	
+IF lnSuscess < 1
+	=AERROR(aSqlError)
+	=saveError(aSqlError[2])
+ENDIF 	
+*!*	IF lnSucess < 0
+*!*		= SQLROLLBACK(lnConn) && Rollback insert record
+*!*	ELSE
+*!*		= SQLCOMMIT(lnConn)  && Commit the changes
+*!*	ENDIF
+*!*	= SQLSETPROP(lnConn, 'Transactions', 1)  && Auto transactions
+
+RETURN lnSuscess
+*******************************************
+function getBkiPremium(tcFundCode, tcPackage, tcPlan, tnAge)
+
+if tcFundCode <> "BKI" and empty(tcPackage) and empty(tcPlan) and empty(tnAge)
+	return 0
+endif 
+
+lnPremium = 0
+SELECT age_begin, age_end, net_prem ;
+FROM (ADDBS(DATAPATH)+"bki_premium.dbf") ;
+WHERE prodcode = tcPackage ;
+	AND plan = tcPlan ;
+	AND tnAge BETWEEN age_begin AND age_end ;
+INTO ARRAY laPremium
+if _TALLY > 0
+	lnPremium = laPremium[3]
+endif 	
+return lnPremium
+*************************************************
+FUNCTION ri_edcInsertToClaim
+
+IF  ALIAS() = "CLAIMPAYMENT"
+	scatter memo memvar 
+	m.notify_no = substr(m.notify_no,3,4)+"00"+m.apprv
+	m.claim_id = substr(m.notify_no,3,4)+m.apprv
+	m.claim_with = iif(m.opdcover = 0, "P", "I")
+	m.service_type = iif(m.claim_with = "P", "OPD", iif(empty(m.accdate), "OPD", "ER"))
+	m.claim_type = iif(m.service_type = "OPD",1,3)
+	m.result = iif(m.paid = 0, "D32","W52")
+	m.type_claim = iif(m.claim_with = "PA", 2, iif(m.service_type = "OPD", 1,2))	
+	m.cause_type = iif(m.type_claim = 1, "ILL", "ACC")	
+	m.benf_cover = iif(m.claim_with = "P", m.medical, iif(m.service_type = "OPD", m.opdcover,m.medical))
+	m.customer_id = ""
+	m.policyid = ""
+	m.prov_class = "D"
+	m.family_no = 0
+	insert into cims!claim (notify_no,notify_date,fundcode,claim_with,customer_id,cardno,policy_no,;
+	    	client_name,plan,plan_id,effective,expried,acc_date,admis_date,disc_date,benf_cover,fcharge,;
+    		fbenfpaid,charge,result,prov_id,prov_name,claim_id,claim_date,type_claim,claim_type,service_type,;
+	    	cause_type,policy_holder,memberid,prov_class,family_no) ;
+     values (m.notify_no,m.transdate,m.fundcode,m.claim_with,m.customer_id,m.cardno,m.policy_no,;
+ 	    	m.client_name,m.plan,m.plan_id,m.effdate,m.expdate,m.accdate,m.transdate,m.transdate,m.benf_cover,m.charge,;
+    		m.paid,m.charge,m.result,m.prov_id,m.prov_name,m.claim_id,m.transdate,m.type_claim,m.claim_type,m.service_type,;
+	    	m.cause_type,m.client_name,m.policyid,m.prov_class,m.family_no)		
+endif 	
+return .t.
+******************************************
+FUNCTION ri_insertClaimToSQL
+RETURN .t.
+******************************************
+FUNCTION ri_updateClaimFromSQL
+RETURN .t.
+******************************************
+FUNCTION ri_insertNotifyToSQL
+RETURN .t.
+******************************************
+FUNCTION ri_updateNotifyFromSQL
+RETURN .t.
+******************************************
+FUNCTION ri_insertPeriodToSQL
+RETURN .t.
+******************************************
+FUNCTION ri_updatePeriodFromSQL
+RETURN .t.
+******************************************
+FUNCTION ri_insertAppointmentToClaim
+RETURN .t.
+******************************************
+FUNCTION ri_updatePvFromSQL
+RETURN .t.
+******************************************
+function insertPolicy2ItemsSQL(tcAlias, tnConn)
+
+lnSelect = SELECT()
+lnSuscess = -2
+if !empty(tcAlias) and tnConn > 0
+	lnSelect = select()
+	lcSql = "INSERT INTO [cimsdb].[dbo].[policy2items] ([fundcode],[policy_no],[plan],[effdate],[expdate],[trailer],[cat_id],[catcode],[catdesc],"+;
+		"[rate],[benefit],[itemcode],[l_user],[l_update],[adddate],[per],[currency_type],[daycover],[benefitcode],[fxrate],[remark],[benefit_th]) "+;
+		"VALUES (?m.fundcode,?m.policy_no,?m.plan,?m.effdate,?m.expdate,?m.trailer,?m.cat_id,?m.catcode,?m.catdesc,?m.rate,?m.benefit,?m.itemcode,"+;
+		"?m.l_user,?m.l_update,?m.adddate,?m.per,?m.currency_type,?m.daycover,?m.benefitcode,?m.fxrate,?m.remark,?m.benefit_th)"
+	SELECT (tcAlias)	
+	scatter memo memvar 
+	lnSuscess = sqlexec(tnConn,lcsql)
+endif 
+SELECT (lnSelect)
+return lnSuscess
+******************************************
+function updatePolicy2ItemsSQL(tcAlias, tnConn)
+
+lnSuscess = -2
+lnSelect = SELECT()
+if !empty(tcAlias) and tnConn > 0
+	lnSelect = select()
+	lcSql = "UPDATE [cimsdb].[dbo].[policy2items] SET [fundcode] = ?m.fundcode ,[policy_no] = ?m.policy_no,[plan] = ?m.plan,[effdate] = ?m.effdate,"+;
+		"[expdate] = ?m.expdate,[trailer] = ?m.trailer,[cat_id] = ?m.cat_id,[catcode] = ?m.catcode,[catdesc] = ?m.catdesc,"+;
+		"[rate] = ?m.rate,[benefit] = ?m.benefit,[itemcode] = ?m.itemcode,[l_user] = ?m.l_user,[l_update] = ?m.l_update,[adddate] = ?m.adddate,"+;
+		"[per] = ?m.per,[currency_type] = ?m.currency_type,[daycover] = ?m.daycover,[benefitcode] = ?m.benefitcode,[fxrate] = ?m.fxrate,"+;
+		"[remark] = ?m.remark,[benefit_th] = ?m.benefit_th WHERE [fundcode] = ?m.fundcode AND [policy_no] = ?m.policy_no AND [catcode] = ?m.catcode"
+	SELECT (tcAlias)		
+	scatter memo memvar 
+	lnSuscess = sqlexec(tnConn,lcsql)
+endif 
+SELECT (lnSelect)
+return lnSuscess
+****************************************************	
+function app_findNotifyNo(tcAlias,tcWhere,tcNotifyNo)
+	
+lcReturnVal = ""	
+lcAlias = tcAlias
+lcWhere = tcWhere
+lcNotifyNo = tcNotifyNo
+DO CASE
+CASE lcAlias = "NOTIFY"
+*!*		lcSql = "SELECT [notify_no], [policy_no], [prov_name], [admis_date], [client_name], [family_no], [fundcode] FROM [cimsdb].[dbo].[notify] ;
+*!*			WHERE [notify_no] LIKE '" + lcNotifyNo + "'"	
+	IF EMPTY(lcWhere)
+		SELECT notify_no, policy_no, prov_name, admis_date, client_name, family_no, fundcode;
+		FROM cims!notify ;
+		ORDER BY notify_no;
+		WHERE notify_no LIKE lcNotifyNo;
+		INTO CURSOR cNotifyList
+	ELSE
+		lcWhere = "notify_no LIKE "+ lcNotifyNo + " AND "+ALLTRIM(lcWhere)
+		SELECT notify_no, policy_no, prov_name, admis_date, client_name, family_no, fundcode;
+		FROM cims!notify ;
+		ORDER BY notify_no;
+		WHERE &lcWhere;
+		INTO CURSOR cNotifyList
+	ENDIF					
+*!*		lnSuscess = SQLEXEC(gnConn, lcSql, "cList2")
+*!*		IF lnSuscess = 1
+*!*			select * from cList1 ;
+*!*			union ;
+*!*			select * from cList2 ;
+*!*			into cursor cNotifyList
+*!*		else
+*!*			select * from cList1 ;
+*!*			into cursor cNotifyList
+*!*		ENDIF 	
+	lcReturnVal = "cNotifyList.notify_no, client_name, prov_name, admis_date"
+CASE lcAlias = "CLAIM"
+*!*		lcSql = "SELECT [notify_no], [policy_no], [admis_date], [disc_date], [claim_id], [client_name], [family_no], ;
+*!*			[fundcode] FROM [cimsdb].[dbo].[claim] WHERE [notify_no] LIKE '" + lcNotifyNo + "'"	
+	IF EMPTY(lcWhere)
+		SELECT notify_no, policy_no, admis_date, disc_date, claim_id, client_name, family_no, fundcode;
+		FROM cims!claim ;
+		ORDER BY notify_no;
+		WHERE notify_no LIKE lcNotifyNo;
+		INTO CURSOR cNotifyList
+	ELSE	
+		lcWhere = "notify_no LIKE " + lcNotifyNo + " AND " + ALLTRIM(lcWhere)
+		SELECT notify_no, policy_no, admis_date, disc_date,claim_id, client_name, family_no, fundcode;
+		FROM cims!claim ;
+		ORDER BY notify_no;
+		WHERE &lcWhere;
+		INTO CURSOR cNotifyList
+	ENDIF					
+*!*		lnSuscess = SQLEXEC(gnConn, lcSql, "cList2")
+*!*		IF lnSuscess = 1
+*!*			if _TALLY = 0
+*!*				select * from cList2 ;
+*!*				into cursor cNotifyList
+*!*			else 	
+*!*				select * from cList1 ;
+*!*				union ;
+*!*				select * from cList2 ;
+*!*				into cursor cNotifyList
+*!*			endif 	
+*!*		else
+*!*			select * from cList1 ;
+*!*			into cursor cNotifyList
+*!*		ENDIF 	
+	lcReturnVal = "cNotifyList.notify_no, client_name, admis_date,disc_date"
+ENDCASE
+return lcReturnVal	
+*********************************** 
+function voidClaimPayment(tcMid, tcApprv)
+
+if empty(tcMid) and empty(tcApprv)
+	RETURN 0
+endif 
+lcsql = "{call sp_updateVoidClaimPayment(?tcMid, ?tcApprv)}"
+lnsuscess = sqlexec(gnConn, lcsql)
+
+return lnSuscess	
+********************************************************
+function getPaPeriod(tcFundCode, tcPolicyNo, tnPersonNo, tcPlanId)
+
+lnSelect = select()
+
+IF tcFundCode = "SMG"
+	select acc_date,illness1,	;
+		sum(iif(claim.fbenfpaid = 0, claim.scharge, claim.fcharge)) AS charge, ;
+		sum(iif(inlist(left(result, 1), "P","W","A"), iif(claim.fbenfpaid = 0, claim.sbenfpaid, claim.fbenfpaid), 0)) AS paid, ;
+		sum(deduc_paid) AS deducpaid ;	
+	from cims!claim ;
+	where fundcode = ?tcFundCode ;
+		and client_no = ?tcPolicyNo ;
+		and family_no = ?tnPersonNo ;
+		and plan_id = ?tcPlanId ;
+	group by acc_date, illness1 ;
+	into cursor __curPeriod
+	if _TALLY > 0
+		select claim.notify_no,claim.followup, claim.acc_date,claim.admis_date,claim.disc_date,claim.service_type,claim.illness1, ;
+			gomonth(claim.acc_date,12) AS due ;
+		from cims!claim ;
+		where fundcode = ?tcFundCode ;
+			and client_no = ?tcPolicyNo ;
+			and family_no = ?tnPersonNo ;
+			and plan_id = ?tcPlanId ;
+			and empty(followup) ;
+		into cursor __curPeriod1
+	endif			
+ELSE
+	select acc_date,illness1,	;
+		sum(iif(claim.fbenfpaid = 0, claim.scharge, claim.fcharge)) AS charge, ;
+		sum(iif(inlist(left(result, 1), "P","W","A"), iif(claim.fbenfpaid = 0, claim.sbenfpaid, claim.fbenfpaid), 0)) AS paid, ;
+		sum(deduc_paid) AS deducpaid ;	
+	from cims!claim ;
+	where fundcode = ?tcFundCode ;
+		and policy_no = ?tcPolicyNo ;
+		and family_no = ?tnPersonNo ;
+		and plan_id = ?tcPlanId ;
+	group by acc_date, illness1 ;
+	into cursor __curPeriod
+	if _TALLY > 0
+		select claim.notify_no,claim.followup, claim.acc_date,claim.admis_date,claim.disc_date,claim.service_type,claim.illness1, ;
+			gomonth(claim.acc_date,12) AS due ;
+		from cims!claim ;
+		where fundcode = ?tcFundCode ;
+			and policy_no = ?tcPolicyNo ;
+			and family_no = ?tnPersonNo ;
+			and plan_id = ?tcPlanId ;
+			and empty(followup) ;
+		into cursor __curPeriod1
+	endif			
+ENDIF 
+
+if USED("__curPeriod") AND USED("__curPeriod1")
+	select __curPeriod1.notify_no, __curPeriod1.acc_date, __curPeriod1.admis_date, __curPeriod1.disc_date,  __curPeriod1.service_type,  __curPeriod1.illness1 AS diags, ;
+		__curPeriod.charge,__curPeriod.paid, __curPeriod1.due, __curPeriod.deducpaid, __curPeriod.charge - __curPeriod.paid AS clientpaid ;
+	from __curPeriod inner join __curPeriod1 ;
+		on __curPeriod.acc_date = __curPeriod1.acc_date ;
+	into cursor curPeriods
+			
+	use in __curPeriod
+	use in __curPeriod1
+endif 			
+
+select (lnSelect)
+return used("curPeriods")
+********************************************************
+function getPaPeriodItems(tcNotNo, ttAcc)
+
+lnSelect = select()
+
+select memberid AS policyid, fundcode, policy_no, family_no, plan_id,  acc_date, ;
+	sum(iif(claim.fbenfpaid = 0, claim.scharge, claim.fcharge)) AS charge, ;
+	sum(iif(inlist(left(result, 1), "P","W","A"), iif(claim.fbenfpaid = 0, claim.sbenfpaid, claim.fbenfpaid), 0)) AS paid ;
+from cims!claim ;
+where (notify_no = tcNotNo OR followup = tcNotNo) ;
+group by policyid,fundcode, policy_no, family_no, plan_id,  acc_date ;
+into cursor curPeriod
+
+if _TALLY > 0
+	select curPeriod
+	scatter memvar
+	if empty(m.policyid)
+		select "ค่ารักษาพยาบาลเนื่องจากอุบัติเหตุ" AS description, curMember.overall_limit AS benf_cover, curPeriod.paid, ;
+			0 AS admis, "A" AS group, "M" AS per, 0 As remain, 0 AS service,  curMember.overall_limit - curPeriod.paid AS benf_bal;
+		from  curPeriod inner join cims!member ;
+			on curPeriod.fundcode = member.tpacode ;
+				and curPeriod.policy_no = member.policy_no ;
+				and curPeriod.family_no = member.family_no ;
+				and curPeriod.plan_id = member.plan_id ;
+		into cursor curPeriodItems		
+	else
+		lcSql = "SELECT [me_cover] FROM [cimsdb].[dbo].[member] WHERE [policyid] = ?m.policyid"
+		lnSuscess = sqlexec(gnConn,lcSql, "curMember")
+		if lnSuscess = 1	
+			select  "ค่ารักษาพยาบาลเนื่องจากอุบัติเหตุ" AS description, curMember.me_cover AS benf_cover, curPeriod.paid, ;
+			0 AS admis, "A" AS group, "M" AS per, 0 As remain, 0 AS service,  curMember.me_cover - curPeriod.paid AS benf_bal;			
+			from  curPeriod, curMember ;
+			into cursor curPeriodItems 	
+			
+			use in curMember		
+		endif	
+	endif
+endif
+use in curPeriod
+select (lnSelect)
+return used("curPeriodItems")
+***************************************
+function getPaPeriodLines(tcNotNo, ttAcc)
+
+lnSelect = select()
+select notify_no, prov_name,acc_date,admis_date,disc_date,illness1, iif(claim.fbenfpaid = 0, claim.scharge, claim.fcharge) AS charge, ;
+	iif(inlist(left(result, 1), "P","W","A"), iif(claim.fbenfpaid = 0, claim.sbenfpaid, claim.fbenfpaid), 0) AS paid, result ;
+from cims!claim ;
+where (notify_no = tcNotNo OR followup = tcNotNo) ;
+into cursor curPeriodLines
+
+select (lnSelect)
+return used("curPeriodLines")
+***********************************
+function getProductCover(tcPlanId)
+
+lnSelect = select()
+
+select distinct category.service_type, treatment.for ;
+from cims!plan2cat inner join cims!category ;
+	on plan2cat.cat_code = category.cat_code ;
+	inner join cims!treatment_type treatment ;
+		on category.treament = treatment.code ;
+where plan2cat.plan_id = tcPlanId ;
+into cursor __curProdCover
+
+select icase(for = "A", "ประกันอุบัติเหตุ",for = "I", "ประกันสุขภาพ",for = "D", "ประกันทันตกรรม",for = "B", "ประกันชดเชยรายได้","ไม่ระบุ") AS cover,;
+	icase(for = "A", "P", for = "I", "I", for = "D", "D", for = "B", "B", "N") AS type ;
+from __curProdCover ;
+into cursor curProdCover	
+
+use in __curProdCover
+select (lnSelect)
+
+return used("curProdCover")
+*********************************************
+FUNCTION getAggregate(tcPlanID)
+
+lnAggregate = 0
+SELECT aggregate ;
+FROM cims!plan ;
+WHERE plan_id = tcPlanID ;
+INTO ARRAY aPlan
+IF _TALLY > 0
+	lnAggregate = aPlan[1]
+ENDIF
+RETURN lnAggregate	
+********************************************
+FUNCTION updateEndorse(tcFundCode, tcPolicyNo, tcPlan, tcName, tcSurname, tcNatId, tcSex, tdDob, tnAge, tcAddress1, tcAddress2,;
+		tcAddress3, tcAddress4, tcCountry, tcPostcode, tcPhone, tcTitle)
+
+tcPolicyNo = ALLTRIM(tcPolicyNo)
+tcPlan = ALLTRIM(tcPlan)
+
+UPDATE cims!member SET name = tcName, surname = tcSurname, ;
+	policy_name = alltrim(tcName)+" "+alltrim(tcSurName), ;
+	natid = tcNatId, sex = tcSex, birth_date = tdDob, age = tnAge, ;
+	h_addr1 = tcAddress1, h_addr2 = tcAddress2, ;
+	h_city = tcAddress3, h_province = tcAddress4, ;
+	h_country = tcCountry, h_postcode = tcPostcode, ;
+	h_phone = tcPhone, title = tcTitle, ;
+	replace_date = DATETIME(), ;
+	l_user = gcUserName, l_update = DATETIME() ;
+WHERE  tpacode = tcFundcode ;
+	AND quotation LIKE tcPolicyNo ;
+	AND product LIKE  tcPlan
+	
+return _TALLY
+********************************************
+function updateFniPolicy(tcFundCode,tcPolicyNo,tcName,tcSurname,tcNatId,tcQuoNo)
+
+update cims!member set policy_no = tcPolicyNo, ;
+	policy_group = tcPolicyNo ;
+where tpacode = tcFundcode ;
+	and quotation = tcQuoNo
+lnUpdate = _TALLY 
+IF lnUpdate > 0
+	update cims!claim set policy_no = tcPolicyNo ;
+	where fundcode = tcFundcode ;
+		and policy_no = tcQuoNo
+	IF _TALLY > 0
+		update cims!notify set policy_no = tcPolicyNo ;
+		where fundcode = tcFundcode ;
+			and policy_no = tcQuoNo		
+		*	
+		update cims!notify_period set policy_no = tcPolicyNo ;
+		where fundcode = tcFundcode ;
+			and policy_no = tcQuoNo		
+	ENDIF 		
+ENDIF 
+return lnUpdate
+**************************************************
+function updateFniSQL(tcUpdate,tcFundCode,tcPolicyNo,tcNatId,tcQuoNo,ttExpiry, tdAdjDate, tcPolStatus, tdCancelDate)
+
+if empty(tcUpdate)
+	return -1
+endif 	
+
+llRetval = .F.
+tdUpdate = datetime()
+
+do case
+case tcUpdate = "P" && change quotation no to policy no
+	text to lcSql NOSHOW 
+		UPDATE cimsdb.dbo.member set member.policy_no = ?tcPolicyNo,
+			member.policy_group = ?tcPolicyNo
+		WHERE member.fundcode = ?tcFundcode
+			AND member.quotation = ?tcQuoNo
+			AND member.natid  = ?tcNatId
+	endtext 
+case tcUpdate = "R" && extend expiry date when customer paid
+	text to lcSql NOSHOW 
+		UPDATE cimsdb.dbo.member set member.expiry = ?ttExpiry, 
+			member.l_submit = ?tdAdjDate,
+			member.l_update = ?tdUpdate
+		WHERE member.fundcode = ?tcFundcode
+			AND member.quotation = ?tcQuoNo
+			AND member.natid  = ?tcNatId
+	endtext 
+case tcUpdate = "C" && cancel policy
+	text to lcSql NOSHOW 
+		UPDATE cimsdb.dbo.member SET member.expiry = ?ttExpiry, 
+			member.adjcancel = ?tdAdjDate,
+			member.canceldate = ?tdCancelDate,
+			member.l_update = ?tdUpdate
+		WHERE member.fundcode = ?tcFundcode
+			AND member.quotation = ?tcQuoNo
+			AND member.natid  = ?tcNatId
+	endtext 
+endcase 		
+	
+lnSql = sqlexec(gnConn, lcSql)
+if lnSql = 1
+	llRetVal = .T.
+else
+	=aerror(laSqlError)	
+	suspend 
+endif 
+return llRetVal
+******************************************
+function getClaimLineSeqNo(tcNotifyNo)
+
+if empty(tcNotifyNo)
+	lnNextSql = 0
+else	
+	sele notify_no, max(recno) from cims!claim_line where notify_no = tcNotifyNo group by notify_no into array aMax
+	if _TALLY > 0
+		lnNextSql = aMax[2] + 1
+	else 
+		lnNextSql = 1	
+	endif
+endif	
+return lnNextSql	
+**************************************
+function checkMemberError()
+
+
+lcError = ""
+IF EMPTY(m.natid)
+	lcError = "ไม่พบเลขบัตรประชาชน"
+ENDIF 
+=STRTOFILE(lcError, "member_error.txt",1)
+
+return lcError
+**************************************
+function getClaimTransferWhere(tcFundCode)
+
+DO CASE 
+case tcFundCode = "FAL"
+	lcWhere = "fundcode = lcTpacode AND (return_date between ldStart and ldEnd or ttod(assessor_date) between ldStart and ldEnd or ttod(fax_date) between ldStart and ldEnd)"
+CASE tcFundcode = "DVS"
+	lcWhere = [fundcode = lcTpacode AND return_date BETWEEN ldStart AND ldEnd]	
+OTHERWISE 	
+	IF EMPTY(tcFundCode)
+		lcWhere = [(return_date BETWEEN ldStart AND ldEnd) OR (TTOD(audit_date) BETWEEN ldStart AND ldEnd AND result LIKE "W%" AND NOT result LIKE "W6%")]
+	ELSE 
+		lcWhere = [(fundcode = lcTpacode AND result # "HC" AND (return_date BETWEEN ldStart AND ldEnd OR senddate BETWEEN ldStart AND ldEnd))]		
+	ENDIF 	
+ENDCASE 	
+return lcWhere
+*****************************
+PROCEDURE fniExport2Text
+
+lcTitle = "not_no|not_date|followup|bro_no|clm_no|ref_no|pol_no|cerf_no|cust_id|title|name|surname|eff_date|exp_date|plan|visit|type_clm|clm_type|"+;
+	"acc_date|admit|disc|hosp_amt|discount|benf_covr|non_cover|benf_paid|exgratia|over_benf|hosp_code|hosp_name|ill_code|ill_name|icd_10|icd10_2|"+;
+	"icd10_3|fee|no_r_b|a_r_b|d_r_b|o_r_b|p_r_b|e_r_b|c_r_b|n_r_b|no_icu|a_icu|d_icu|o_icu|p_icu|e_icu|c_icu|n_icu|f_ss_sa|a_ss_sa|d_ss_sa|o_ss_sa|"+;
+	"p_ss_sa|e_ss_sa|c_ss_sa|n_ss_sa|a_oper|d_oper|o_oper|p_oper|e_oper|c_oper|n_oper|a_anes|d_anes|o_anes|p_anes|e_anes|c_anes|n_anes|a_ghe|d_ghe|"+;
+	"o_ghe|p_ghe|e_ghe|c_ghe|n_ghe|a_med|d_med|o_med|p_med|e_med|c_med|n_med|a_lab|d_lab|o_lab|p_lab|e_lab|c_lab|n_lab|no_doct|a_doct_fee|d_doct_fee|"+;
+	"o_doct_fee|p_doct_fee|e_doct_fee|c_doct_fee|n_doct_fee|a_consult|d_consult|o_consult|p_consult|e_consult|c_consult|n_consult|a_aet|d_aet|o_aet|"+;
+	"p_aet|e_aet|c_aet|n_aet|a_opd|d_opd|o_opd|p_opd|e_opd|c_opd|n_opd|a_sf|d_sf|o_sf|p_sf|e_sf|c_sf|n_sf|a_et|d_et|o_et|p_et|e_et|c_et|n_et|a_acc|"+;
+	"d_acc|o_acc|p_acc|e_acc|c_acc|n_acc|a_wr|d_wr|o_wr|p_wr|e_wr|c_wr|n_wr|a_rc|d_rc|o_rc|p_rc|e_rc|c_rc|n_rc|a_sl|d_sl|o_sl|p_sl|e_sl|c_sl|n_sl|"+;
+	"other|clm_pstat|ret_date|indication|treatment|remark|paid_date|acno|acname|acbank|acctime|admittime"+chr(10)			
+*
+tcFile = ADDBS(JUSTPATH(tcFile))+DTOS(DATE())+"-PA-Reserve-New.txt"
+COPY TO (tcFile) fields not_no,not_date,followup,bro_no,clm_no,ref_no,pol_no,cerf_no,cust_id,title,name,surname,eff_date,exp_date,plan,visit,type_clm,clm_type,;
+	acc_date,admit,disc,hosp_amt,discount,benf_covr,non_cover,benf_paid,exgratia,over_benf,hosp_code,hosp_name,ill_code,ill_name,icd_10,icd10_2,;
+	icd10_3,fee,no_r_b,a_r_b,d_r_b,o_r_b,p_r_b,e_r_b,c_r_b,n_r_b,no_icu,a_icu,d_icu,o_icu,p_icu,e_icu,c_icu,n_icu,f_ss_sa,a_ss_sa,d_ss_sa,o_ss_sa,;
+	p_ss_sa,e_ss_sa,c_ss_sa,n_ss_sa,a_oper,d_oper,o_oper,p_oper,e_oper,c_oper,n_oper,a_anes,d_anes,o_anes,p_anes,e_anes,c_anes,n_anes,a_ghe,d_ghe,;
+	o_ghe,p_ghe,e_ghe,c_ghe,n_ghe,a_med,d_med,o_med,p_med,e_med,c_med,n_med,a_lab,d_lab,o_lab,p_lab,e_lab,c_lab,n_lab,no_doct,a_doct_fee,d_doct_fee,;
+	o_doct_fee,p_doct_fee,e_doct_fee,c_doct_fee,n_doct_fee,a_consult,d_consult,o_consult,p_consult,e_consult,c_consult,n_consult,a_aet,d_aet,o_aet,;
+	p_aet,e_aet,c_aet,n_aet,a_opd,d_opd,o_opd,p_opd,e_opd,c_opd,n_opd,a_sf,d_sf,o_sf,p_sf,e_sf,c_sf,n_sf,a_et,d_et,o_et,p_et,e_et,c_et,n_et,a_acc,;
+	d_acc,o_acc,p_acc,e_acc,c_acc,n_acc,a_wr,d_wr,o_wr,p_wr,e_wr,c_wr,n_wr,a_rc,d_rc,o_rc,p_rc,e_rc,c_rc,n_rc,a_sl,d_sl,o_sl,p_sl,e_sl,c_sl,n_sl,;
+	other,clm_pstat,ret_date,indication,treatment,remark,paid_date,acno,acname,bankcode,acctime,admittime ;
+FOR bro_no = "P" AND EMPTY(followup) and INLIST(left(clm_pstat,1), "W", "R") ;
+	AND !DELETED() TYPE  DELIMITED WITH CHARACTER "|"		
+SET SAFETY OFF 
+ctemp = FILETOSTR(tcFile)		
+STRTOFILE(lcTitle + strtran(cTemp,["],[]), tcFile)
+SET SAFETY ON 
+**************************************		
+tcFile = ADDBS(JUSTPATH(tcFile))+DTOS(DATE())+"-PA-Reserve-Followup.txt"
+COPY TO (tcFile) fields not_no,not_date,followup,bro_no,clm_no,ref_no,pol_no,cerf_no,cust_id,title,name,surname,eff_date,exp_date,plan,visit,type_clm,clm_type,;
+	acc_date,admit,disc,hosp_amt,discount,benf_covr,non_cover,benf_paid,exgratia,over_benf,hosp_code,hosp_name,ill_code,ill_name,icd_10,icd10_2,;
+	icd10_3,fee,no_r_b,a_r_b,d_r_b,o_r_b,p_r_b,e_r_b,c_r_b,n_r_b,no_icu,a_icu,d_icu,o_icu,p_icu,e_icu,c_icu,n_icu,f_ss_sa,a_ss_sa,d_ss_sa,o_ss_sa,;
+	p_ss_sa,e_ss_sa,c_ss_sa,n_ss_sa,a_oper,d_oper,o_oper,p_oper,e_oper,c_oper,n_oper,a_anes,d_anes,o_anes,p_anes,e_anes,c_anes,n_anes,a_ghe,d_ghe,;
+	o_ghe,p_ghe,e_ghe,c_ghe,n_ghe,a_med,d_med,o_med,p_med,e_med,c_med,n_med,a_lab,d_lab,o_lab,p_lab,e_lab,c_lab,n_lab,no_doct,a_doct_fee,d_doct_fee,;
+	o_doct_fee,p_doct_fee,e_doct_fee,c_doct_fee,n_doct_fee,a_consult,d_consult,o_consult,p_consult,e_consult,c_consult,n_consult,a_aet,d_aet,o_aet,;
+	p_aet,e_aet,c_aet,n_aet,a_opd,d_opd,o_opd,p_opd,e_opd,c_opd,n_opd,a_sf,d_sf,o_sf,p_sf,e_sf,c_sf,n_sf,a_et,d_et,o_et,p_et,e_et,c_et,n_et,a_acc,;
+	d_acc,o_acc,p_acc,e_acc,c_acc,n_acc,a_wr,d_wr,o_wr,p_wr,e_wr,c_wr,n_wr,a_rc,d_rc,o_rc,p_rc,e_rc,c_rc,n_rc,a_sl,d_sl,o_sl,p_sl,e_sl,c_sl,n_sl,;
+	other,clm_pstat,ret_date,indication,treatment,remark,paid_date,acno,acname,bankcode,acctime,admittime ;
+FOR bro_no = "P" AND !EMPTY(followup) and INLIST(left(clm_pstat,1), "W", "R") AND !DELETED() ;
+TYPE DELIMITED  WITH  CHARACTER "|"		
+SET SAFETY OFF 
+ctemp = FILETOSTR(tcFile)
+STRTOFILE(lcTitle + strtran(cTemp,["],[]), tcFile)
+SET SAFETY ON 
+**************************************		
+tcFile = ADDBS(JUSTPATH(tcFile))+DTOS(DATE())+"-PA-Settlement.txt"
+COPY TO (tcFile) fields not_no,not_date,followup,bro_no,clm_no,ref_no,pol_no,cerf_no,cust_id,title,name,surname,eff_date,exp_date,plan,visit,type_clm,clm_type,;
+	acc_date,admit,disc,hosp_amt,discount,benf_covr,non_cover,benf_paid,exgratia,over_benf,hosp_code,hosp_name,ill_code,ill_name,icd_10,icd10_2,;
+	icd10_3,fee,no_r_b,a_r_b,d_r_b,o_r_b,p_r_b,e_r_b,c_r_b,n_r_b,no_icu,a_icu,d_icu,o_icu,p_icu,e_icu,c_icu,n_icu,f_ss_sa,a_ss_sa,d_ss_sa,o_ss_sa,;
+	p_ss_sa,e_ss_sa,c_ss_sa,n_ss_sa,a_oper,d_oper,o_oper,p_oper,e_oper,c_oper,n_oper,a_anes,d_anes,o_anes,p_anes,e_anes,c_anes,n_anes,a_ghe,d_ghe,;
+	o_ghe,p_ghe,e_ghe,c_ghe,n_ghe,a_med,d_med,o_med,p_med,e_med,c_med,n_med,a_lab,d_lab,o_lab,p_lab,e_lab,c_lab,n_lab,no_doct,a_doct_fee,d_doct_fee,;
+	o_doct_fee,p_doct_fee,e_doct_fee,c_doct_fee,n_doct_fee,a_consult,d_consult,o_consult,p_consult,e_consult,c_consult,n_consult,a_aet,d_aet,o_aet,;
+	p_aet,e_aet,c_aet,n_aet,a_opd,d_opd,o_opd,p_opd,e_opd,c_opd,n_opd,a_sf,d_sf,o_sf,p_sf,e_sf,c_sf,n_sf,a_et,d_et,o_et,p_et,e_et,c_et,n_et,a_acc,;
+	d_acc,o_acc,p_acc,e_acc,c_acc,n_acc,a_wr,d_wr,o_wr,p_wr,e_wr,c_wr,n_wr,a_rc,d_rc,o_rc,p_rc,e_rc,c_rc,n_rc,a_sl,d_sl,o_sl,p_sl,e_sl,c_sl,n_sl,;
+	other,clm_pstat,ret_date,indication,treatment,remark,paid_date,acno,acname,bankcode,acctime,admittime ;
+FOR bro_no = "P" AND EMPTY(followup) AND INLIST(left(clm_pstat,1), "W", "R") ;
+	AND !DELETED() type delimited with character "|"		
+SET SAFETY OFF 
+ctemp = FILETOSTR(tcFile)		
+STRTOFILE(lcTitle + strtran(cTemp,["],[]), tcFile)
+SET SAFETY ON 
+**************************************		
+tcFile = ADDBS(JUSTPATH(tcFile))+DTOS(DATE())+"-Dental-Reserve-New.txt"
+COPY TO (tcFile) FIELDS not_no,not_date,followup,bro_no,clm_no,ref_no,pol_no,cerf_no,cust_id,title,name,surname,eff_date,exp_date,plan,visit,type_clm,clm_type,;
+	acc_date,admit,disc,hosp_amt,discount,benf_covr,non_cover,benf_paid,exgratia,over_benf,hosp_code,hosp_name,ill_code,ill_name,icd_10,icd10_2,;
+	icd10_3,fee,no_r_b,a_r_b,d_r_b,o_r_b,p_r_b,e_r_b,c_r_b,n_r_b,no_icu,a_icu,d_icu,o_icu,p_icu,e_icu,c_icu,n_icu,f_ss_sa,a_ss_sa,d_ss_sa,o_ss_sa,;
+	p_ss_sa,e_ss_sa,c_ss_sa,n_ss_sa,a_oper,d_oper,o_oper,p_oper,e_oper,c_oper,n_oper,a_anes,d_anes,o_anes,p_anes,e_anes,c_anes,n_anes,a_ghe,d_ghe,;
+	o_ghe,p_ghe,e_ghe,c_ghe,n_ghe,a_med,d_med,o_med,p_med,e_med,c_med,n_med,a_lab,d_lab,o_lab,p_lab,e_lab,c_lab,n_lab,no_doct,a_doct_fee,d_doct_fee,;
+	o_doct_fee,p_doct_fee,e_doct_fee,c_doct_fee,n_doct_fee,a_consult,d_consult,o_consult,p_consult,e_consult,c_consult,n_consult,a_aet,d_aet,o_aet,;
+	p_aet,e_aet,c_aet,n_aet,a_opd,d_opd,o_opd,p_opd,e_opd,c_opd,n_opd,a_sf,d_sf,o_sf,p_sf,e_sf,c_sf,n_sf,a_et,d_et,o_et,p_et,e_et,c_et,n_et,a_acc,;
+	d_acc,o_acc,p_acc,e_acc,c_acc,n_acc,a_wr,d_wr,o_wr,p_wr,e_wr,c_wr,n_wr,a_rc,d_rc,o_rc,p_rc,e_rc,c_rc,n_rc,a_sl,d_sl,o_sl,p_sl,e_sl,c_sl,n_sl,;
+	other,clm_pstat,ret_date,indication,treatment,remark,paid_date,acno,acname,bankcode,acctime,admittime ;
+FOR bro_no = "D" AND EMPTY(followup) and INLIST(left(clm_pstat,1), "W", "R") ;
+	AND !DELETED() type delimited with character "|"		
+SET SAFETY OFF 
+ctemp = FILETOSTR(tcFile)		
+STRTOFILE(lcTitle + strtran(cTemp,["],[]), tcFile)
+SET SAFETY ON 
+**************************************		
+tcFile = ADDBS(JUSTPATH(tcFile))+DTOS(DATE())+"-Dental-Reserve-Followup.txt"
+COPY TO (tcFile) FIELDS  not_no,not_date,followup,bro_no,clm_no,ref_no,pol_no,cerf_no,cust_id,title,name,surname,eff_date,exp_date,plan,visit,type_clm,clm_type,;
+	acc_date,admit,disc,hosp_amt,discount,benf_covr,non_cover,benf_paid,exgratia,over_benf,hosp_code,hosp_name,ill_code,ill_name,icd_10,icd10_2,;
+	icd10_3,fee,no_r_b,a_r_b,d_r_b,o_r_b,p_r_b,e_r_b,c_r_b,n_r_b,no_icu,a_icu,d_icu,o_icu,p_icu,e_icu,c_icu,n_icu,f_ss_sa,a_ss_sa,d_ss_sa,o_ss_sa,;
+	p_ss_sa,e_ss_sa,c_ss_sa,n_ss_sa,a_oper,d_oper,o_oper,p_oper,e_oper,c_oper,n_oper,a_anes,d_anes,o_anes,p_anes,e_anes,c_anes,n_anes,a_ghe,d_ghe,;
+	o_ghe,p_ghe,e_ghe,c_ghe,n_ghe,a_med,d_med,o_med,p_med,e_med,c_med,n_med,a_lab,d_lab,o_lab,p_lab,e_lab,c_lab,n_lab,no_doct,a_doct_fee,d_doct_fee,;
+	o_doct_fee,p_doct_fee,e_doct_fee,c_doct_fee,n_doct_fee,a_consult,d_consult,o_consult,p_consult,e_consult,c_consult,n_consult,a_aet,d_aet,o_aet,;
+	p_aet,e_aet,c_aet,n_aet,a_opd,d_opd,o_opd,p_opd,e_opd,c_opd,n_opd,a_sf,d_sf,o_sf,p_sf,e_sf,c_sf,n_sf,a_et,d_et,o_et,p_et,e_et,c_et,n_et,a_acc,;
+	d_acc,o_acc,p_acc,e_acc,c_acc,n_acc,a_wr,d_wr,o_wr,p_wr,e_wr,c_wr,n_wr,a_rc,d_rc,o_rc,p_rc,e_rc,c_rc,n_rc,a_sl,d_sl,o_sl,p_sl,e_sl,c_sl,n_sl,;
+	other,clm_pstat,ret_date,indication,treatment,remark,paid_date,acno,acname,bankcode,acctime,admittime ;
+FOR bro_no = "D" AND !EMPTY(followup) and INLIST(left(clm_pstat,1), "W", "R") AND !DELETED() ;
+TYPE DELIMITED  WITH  CHARACTER "|"		
+SET SAFETY OFF 
+ctemp = FILETOSTR(tcFile)
+STRTOFILE(lcTitle + strtran(cTemp,["],[]), tcFile)
+SET SAFETY ON 
+**************************************		
+tcFile = ADDBS(JUSTPATH(tcFile))+DTOS(DATE())+"-Dental-Setlement.txt"
+COPY TO (tcFile) fields not_no,not_date,followup,bro_no,clm_no,ref_no,pol_no,cerf_no,cust_id,title,name,surname,eff_date,exp_date,plan,visit,type_clm,clm_type,;
+	acc_date,admit,disc,hosp_amt,discount,benf_covr,non_cover,benf_paid,exgratia,over_benf,hosp_code,hosp_name,ill_code,ill_name,icd_10,icd10_2,;
+	icd10_3,fee,no_r_b,a_r_b,d_r_b,o_r_b,p_r_b,e_r_b,c_r_b,n_r_b,no_icu,a_icu,d_icu,o_icu,p_icu,e_icu,c_icu,n_icu,f_ss_sa,a_ss_sa,d_ss_sa,o_ss_sa,;
+	p_ss_sa,e_ss_sa,c_ss_sa,n_ss_sa,a_oper,d_oper,o_oper,p_oper,e_oper,c_oper,n_oper,a_anes,d_anes,o_anes,p_anes,e_anes,c_anes,n_anes,a_ghe,d_ghe,;
+	o_ghe,p_ghe,e_ghe,c_ghe,n_ghe,a_med,d_med,o_med,p_med,e_med,c_med,n_med,a_lab,d_lab,o_lab,p_lab,e_lab,c_lab,n_lab,no_doct,a_doct_fee,d_doct_fee,;
+	o_doct_fee,p_doct_fee,e_doct_fee,c_doct_fee,n_doct_fee,a_consult,d_consult,o_consult,p_consult,e_consult,c_consult,n_consult,a_aet,d_aet,o_aet,;
+	p_aet,e_aet,c_aet,n_aet,a_opd,d_opd,o_opd,p_opd,e_opd,c_opd,n_opd,a_sf,d_sf,o_sf,p_sf,e_sf,c_sf,n_sf,a_et,d_et,o_et,p_et,e_et,c_et,n_et,a_acc,;
+	d_acc,o_acc,p_acc,e_acc,c_acc,n_acc,a_wr,d_wr,o_wr,p_wr,e_wr,c_wr,n_wr,a_rc,d_rc,o_rc,p_rc,e_rc,c_rc,n_rc,a_sl,d_sl,o_sl,p_sl,e_sl,c_sl,n_sl,;
+	other,clm_pstat,ret_date,indication,treatment,remark,paid_date,acno,acname,bankcode,acctime,admittime ;
+FOR bro_no = "D" AND INLIST(left(clm_pstat,1), "P", "D") AND !DELETED() ;
+TYPE DELIMITED  WITH  CHARACTER "|"		
+SET SAFETY OFF 
+ctemp = FILETOSTR(tcFile)
+STRTOFILE(lcTitle + strtran(cTemp,["],[]), tcFile)
+SET SAFETY ON 
+*********************************************************************************
+function getClaimByPolicy(tcFundcode, tcPolicyNo, tnPersonNo, tcPlanId, tcPolicyId)
+
+lnRetVal = .F.
+lnSelect = select()
+if tcFundCode = "SMG"
+	lcSql = "{call sp_cims_getClaimByPolicy(?tcFundcode, ?tcPolicyNo, ?tnPersonNo, ?tcPlanId, ?tcPolicyId)}"
+else	
+	lcSql = "{call sp_cims_getClaimByPolicy(?tcFundcode, ?tcPolicyNo, ?tnPersonNo, ?tcPlanId)}"
+endif	
+if sqlexec(gnConn, lcSql, "claimbypolicy",aSqlInfo) = 1
+	llRetVal = aSqlInfo[2] > 0
+endif
+select (lnSelect)
+return llRetVal
+*********************************************************************************
+function getClaimByNatId(tcFundcode, tcNatId)
+
+llRetVal = .F.
+lnSelect = select()
+lcSql = "{call sp_cims_getClaimByNatId(?tcFundcode, ?tcNatId)}"
+if sqlexec(gnConn, lcSql, "claimbynatid",aSqlInfo) = 1
+	llRetVal = aSqlInfo[2] > 0
+endif
+select (lnSelect)
+return llRetVal
+*********************************************************************************
+function getClaimByNotifyNo(tcnotifyNo)
+
+llRetVal = .F.
+lnSelect = select()
+lcSql = "SELECT * FROM [CimsDB].[dbo].[tf_claimByNotifyNo] (?tcNotifyNo)"
+if sqlexec(gnConn, lcSql, "curClaim",aSqlInfo) = 1
+	llRetVal = aSqlInfo[2] > 0
+endif
+select (lnSelect)
+return llRetVal
+*********************************************************************************
+function getClaimLineByNotifyNo(tcnotifyNo)
+
+llRetVal = .F.
+lnSelect = select()
+lcSql = "SELECT * FROM [CimsDB].[dbo].[tf_claimLinesByNotifyNo] (?tcNotifyNo)"
+if sqlexec(gnConn, lcSql, "curClaimlines",aSqlInfo) = 1
+	llRetVal = aSqlInfo[2] > 0
+endif
+select (lnSelect)
+return llRetVal
+*********************************************************************************
+function getClaimItemsByNotifyNo(tcnotifyNo)
+
+llRetVal = .F.
+lnSelect = select()
+lcSql = "SELECT * FROM [CimsDB].[dbo].[tf_claimItemsByNotifyNo] (?tcNotifyNo)"
+if sqlexec(gnConn, lcSql, "curClaimitems",aSqlInfo) = 1
+	llRetVal = aSqlInfo[2] > 0
+endif
+select (lnSelect)
+return llRetVal
+*********************************************************************************
+function getClaimFeesByNotifyNo(tcnotifyNo)
+
+llRetVal = .F.
+lnSelect = select()
+lcSql = "SELECT * FROM [CimsDB].[dbo].[tf_claimFeesByNotifyNo] (?tcNotifyNo)"
+if sqlexec(gnConn, lcSql, "curClaimFees",aSqlInfo) = 1
+	llRetVal = aSqlInfo[2] > 0
+endif
+select (lnSelect)
+return llRetVal
+*********************************************************************************
+function getPercertByPolicy(tcFundcode, tcPolicyNo, tnPersonNo, tcPlanId, tcPolicyId)
+
+llRetVal = .F.
+lnSelect = select()
+if tcFundCode = "SMG"
+	lcSql = "{call sp_cims_getPrecertByPolicy(?tcFundcode, ?tcPolicyNo, ?tnPersonNo, ?tcPlanId, ?tcPolicyId)}"
+else	
+	lcSql = "{call sp_cims_getPrecertByPolicy(?tcFundcode, ?tcPolicyNo, ?tnPersonNo, ?tcPlanId)}"
+endif	
+if sqlexec(gnConn, lcSql, "precertbypolicy",aSqlInfo) = 1
+	llRetVal = aSqlInfo[2] > 0
+endif	
+select (lnSelect)
+return llRetVal
+*********************************************************************************
+function getPrecertByNotifyNo(tcnotifyNo)
+
+llRetVal = .F.
+lnSelect = select()
+lcSql = "SELECT * FROM [CimsDB].[dbo].[tf_PrecertByNotifyNo] (?tcNotifyNo)"
+if sqlexec(gnConn, lcSql, "curPrecert",aSqlInfo) = 1
+	llRetVal = aSqlInfo[2] > 0
+endif
+select (lnSelect)
+return llRetVal
+*********************************************************************************
+function getPeriodByPolicy(tcFundcode, tcPolicyNo, tnPersonNo, tcPlanId, tcPolicyId)
+
+llRetVal = .F.
+lnSelect = select()
+if tcFundCode = "SMG"
+	lcSql = "{call sp_cims_getPeriodByPolicy(?tcFundcode, ?tcPolicyNo, ?tnPersonNo, ?tcPlanId, ?tcPolicyId)}"
+else	
+	lcSql = "{call sp_cims_getPeriodByPolicy(?tcFundcode, ?tcPolicyNo, ?tnPersonNo, ?tcPlanId)}"
+endif	
+if sqlexec(gnConn, lcSql, "curPeriod",aSqlInfo) = 1
+	llRetVal = aSqlInfo[2] > 0
+endif	
+select (lnSelect)
+return llRetVal
+*********************************************************************************
+function getPeriodByNotifyNo(tcnotifyNo)
+
+llRetVal = .F.
+lnSelect = select()
+lcSql = "SELECT * FROM [CimsDB].[dbo].[tf_periodLinesByNotifyNo] (?tcNotifyNo)"
+if sqlexec(gnConn, lcSql, "periodbyno",aSqlInfo) = 1
+	llRetVal = aSqlInfo[2] > 0
+endif
+select (lnSelect)
+return llRetVal
+*********************************************************************************
+function getPeriodItemsByNotifyNo(tcnotifyNo)
+
+llRetVal = .F.
+lnSelect = select()
+lcSql = "SELECT * FROM [CimsDB].[dbo].[tf_periodItemsByNotifyNo] (?tcNotifyNo)"
+if sqlexec(gnConn, lcSql, "curPeriodItems",aSqlInfo) = 1
+	llRetVal = aSqlInfo[2] > 0
+endif
+select (lnSelect)
+return llRetVal
+
+*********************************************************************************
+function getPeriodLinesByNotifyNo(tcnotifyNo)
+
+llRetVal = .F.
+lnSelect = select()
+lcSql = "SELECT * FROM [CimsDB].[dbo].[tf_periodLinesByNotifyNo] (?tcNotifyNo)"
+if sqlexec(gnConn, lcSql, "curPeriodItems",aSqlInfo) = 1
+	llRetVal = aSqlInfo[2] > 0
+endif
+select (lnSelect)
+return llRetVal
+*********************************************************************************
+function getPeriodFeesByNotifyNo(tcnotifyNo)
+
+llRetVal = .F.
+lnSelect = select()
+lcSql = "SELECT * FROM [CimsDB].[dbo].[tf_periodFeesByNotifyNo] (?tcNotifyNo)"
+if sqlexec(gnConn, lcSql, "curPeriodFees",aSqlInfo) = 1
+	llRetVal = aSqlInfo[2] > 0
+endif
+select (lnSelect)
+return llRetVal
+*********************************************************************************
+function getEdcPreauthByPolicy(tcFundcode, tcPolicyNo, tnPersonNo, tcPlanId, tcPolicyId)
+
+llRetVal = .F.
+cFundCode = tcFundCode
+cPolicyId = tcPolicyId
+cPolicyNo = tcPolicyNo
+
+lnSuscess = sqlexec(gnConn, "SELECT * FROM [CimsDB].[dbo].[tf_edcPreauthByPolicyId] (?cPolicyId) ORDER BY swipe_date DESC","edcPreauth")
+IF USED("edcPreauth")
+	llRetVal = reccount("edcPreauth") > 0
+ENDIF 	 
+return llRetVal
+*************************************************************************************************************
+function getEdcPaymentByPolicy(tcFundcode, tcPolicyNo, tnPersonNo, tcPlanId, tcPolicyId)
+
+llRetVal = .F.
+cFundCode = tcFundCode
+cPolicyId = tcPolicyId
+cPolicyNo = tcPolicyNo
+*
+llSuscess =  sqlexec(gnConn, "SELECT * FROM [CimsDB].[dbo].[tf_edcPaymentByPolicyId] (?cPolicyId) ORDER BY transdate DESC","edcPayment")
+IF USED("edcPayment")
+	llRetVal = reccount("edcPayment") > 0
+ENDIF 	
+return llRetVal
+*********************************************************
+function getPolicyStatus(tcPlanId, ttEffDate, ttExpDate, ttToDay)
+
+loRetVal = createobject("empty")
+
+lcSql = "{call sp_getProductByPlanId(?tcPlanId)}"
+lnSuscess = sqlexec(gnConn, lcSql, "curCondition",aSqlInfo)
+if lnSuscess = 1
+	=addproperty(loRetVal,"waiting",0)
+	=addproperty(loRetVal,"exclWait",0)
+	=addproperty(loRetVal,"chronicWait",0)
+	=addproperty(loRetVal,"grace",0)
+	=addproperty(loRetVal,"status",0)
+	if curCondition.wait_per = "M" 
+		loRetVal.waiting = gomonth(ttEffDate,curCondition.wait)
+	else
+		loRetVal.waiting = ttEffDate+(curCondition.wait*86400)
+	endif
+	loRetVal.status = iif( ttToDay > loRetVal.waiting, "A", "W")
+	if curCondition.exclusion_per = "M" 
+		loRetVal.exclWait = gomonth(ttEffDate,curCondition.exclusion_wait)
+	else
+		loRetVal.exclWait = ttEffDate+(curCondition.exclusion_wait*86400)
+	endif		
+	loRetVal.status = iif( ttToDay > loRetVal.exclWait, "A", "E")	
+	if curCondition.chronic_per = "M" 
+		loRetVal.chronicWait = gomonth(ttEffDate,curCondition.chronic_wait)
+	else
+		loRetVal.chronicWait = ttEffDate+(curCondition.chronic_wait*86400)
+	endif		
+	loRetVal.status = iif( ttToDay > loRetVal.chronicWait, "A", "C")
+	loRetVal.grace = ttExpDate+(curCondition.grace*86400)
+	loRetVal.status = iif( ttToDay > ttExpDate, "G", "A")	
+	loRetVal.status = iif( ttToDay > loRetVal.grace, "T", "A")
+	loRetVal.status = iif( ttToDay < ttEffDate, "B", "A")
+endif 	
+return loRetVal
+***********************************************
+function getChangeCard(tcFundCode, tcPolicyNo)
+
+cFundCode = tcFundCode 
+cPolicyNo = tcPolicyNo
+IF USED("changecardbypolicyno")
+	=REQUERY("changecardbypolicyno")
+ELSE 
+	USE cims!changecardbypolicyno IN 0
+ENDIF 
+return reccount("changecardbypolicyno") > 0
+***********************************************
+FUNCTION getPolicyIdByPolicyNo(tcFundCode, tcPolicyNo, tnPersonNo, tcPlanId)
+
+lcRetVal = null
+lnSelect = SELECT()
+IF EMPTY(tcFundCode) AND EMPTY(tcPolicyNo) AND EMPTY(tcPlanId)
+	SELECT (lnSelect)
+	RETURN lcRetVal
+ENDIF 
+
+lcSql = "{call sp_getPolicyId(?tcFundCode, ?tcPolicyNo, ?tnPersonNo, ?tcPlanId)}"
+lnSql = SQLEXEC(gnConn, lcSql, "curPolID",aSqlInfo)
+IF lnSql = 1
+	IF aSqlInfo[2] > 0
+		lcRetVal = curPolId.policyid
+	ENDIF 
+	USE IN curPolid	
+ELSE 
+	=AERROR(aerrinfo)
+	lcSqlErr = ID()+"|"+aerrinfo[2]+"|"+aerrinfo[3]+CHR(13)
+	STRTOFILE(lcsqlerr,ADDBS(datapath)+"sql_error.txt",.T.)
+ENDIF 
+SELECT (lnSelect)
+RETURN lcRetVal
+*********************************************************
+FUNCTION getClaimByAccDate(tcPolicyId,ttAccDate)
+
+lnRetVal = 0
+lnSelect = SELECT()
+lcSql = "{call sp_getPaClaimByAccDate(?tcPolicyId,ttAccDate)}"
+lnSql = SQLEXEC(gnConn, lcSql, "curSqlClaim",aSqlErr)
+IF lnSql = 1
+	IF aSqlErr[2] > 0
+		lnRetVal = curSqlClaim.paid
+	ENDIF 	
+ENDIF 
+RETURN lnRetVal 
+*********************************************************
+FUNCTION checkYear(tdDate, tdAssessDate)
+
+IF EMPTY(tdDate) AND EMPTY(tdAssessDate)
+	RETURN {}
+ENDIF 	
+
+ldDate = tdDate
+lndiff = YEAR(tdAssessDate) - YEAR(tdDate)
+IF lnDiff > 3	
+	IF TYPE("tdDate") = "D"
+		ldDate = DATE(YEAR(tdAssessDate), MONTH(tdDate), DAY(tdDate))
+	ELSE 	
+		ldDate = DATETIME(YEAR(tdAssessDate), MONTH(tdDate), DAY(tdDate), HOUR(tdDate), MINUTE(tdDate))
+	ENDIF 
+	lndis = 0
+	DO WHILE ldDate > tdAssessDate
+		lndis = lnDis + 1	
+		IF TYPE("tdDate") = "D"
+			ldDate = DATE(YEAR(tdAssessDate)-lnDis, MONTH(tdDate), DAY(tdDate))
+		ELSE 	
+			ldDate = DATETIME(YEAR(tdAssessDate)-lnDis, MONTH(tdDate), DAY(tdDate), HOUR(tdDate), MINUTE(tdDate))			
+		ENDIF 
+	ENDDO 
+ENDIF 
+RETURN ldDate	
+*********************************************************
+FUNCTION saveClaimToSql
+
+*nSet = sqlsetprop(gnConn,"Transactions",2)
+
+llSuscess = .F.
+scatter memo memvar 
+m.notify_date = iif(empty(m.notify_date), null, m.notify_date)
+m.claim_date = iif(empty(m.claim_date), null, m.claim_date)
+m.doc_date = iif(empty(m.doc_date), null,  checkYear(m.doc_date, m.assessor_date))
+m.effective = iif(empty(m.effective), null, m.effective)
+m.expried = iif(empty(m.expried), null, m.expried)
+m.ref_date = iif(empty(m.ref_date), null, checkYear(m.ref_date, m.assessor_date))
+m.acc_date = iif(empty(m.acc_date), null, m.acc_date)
+m.admis_date = iif(empty(m.admis_date), null, m.admis_date)
+m.disc_date = iif(empty(m.disc_date), null, m.disc_date)
+m.fax_date = iif(empty(m.fax_date), null, m.fax_date)
+m.audit_date = iif(empty(m.audit_date), null, m.audit_date)
+m.return_date = iif(empty(m.return_date), null, m.return_date)
+m.paid_date = iif(empty(m.paid_date), null, m.paid_date)
+m.assess_begin = iif(empty(m.assess_begin), null, m.assess_begin)
+m.audit_begin = iif(empty(m.audit_begin), null, m.audit_begin)
+m.l_update = iif(empty(m.l_update), null, m.l_update)
+m.mail_date = iif(empty(m.mail_date), null, m.mail_date)
+m.faudit_date = iif(empty(m.faudit_date), null, m.faudit_date)
+m.draftdate = iif(empty(m.draftdate), null, m.draftdate)
+m.mail_return = iif(empty(m.mail_return), null, m.mail_return)
+m.retry_date = iif(empty(m.retry_date), null, m.retry_date)
+m.policy_date = iif(empty(m.policy_date), null, m.policy_date)
+m.policy_exp = iif(empty(m.policy_exp), null, m.policy_exp)
+m.dob = iif(empty(m.dob) or YEAR(m.dob) < 1900, null, m.dob)
+m.audit_summit = iif(empty(m.audit_summit), null, m.audit_summit)
+m.returnaccdate = iif(empty(m.returnaccdate), null, m.returnaccdate)
+m.insurepaydate = iif(empty(m.insurepaydate), null, m.insurepaydate)
+m.pvdate = iif(empty(m.pvdate), null, m.pvdate)
+m.senddate = iif(empty(m.senddate), null, m.senddate)
+m.faxid = null
+m.post = .F.
+*********************************
+llSuscess = updateClaim()
+if llSuscess 
+	select * from cims!claim_line where notify_no = ?m.notify_no into cursor __lines
+	if _TALLY > 0
+		lnRecNo = 0	
+		select __lines
+		scan 
+			scatter memo memvar
+			lnRecNo = lnRecNo+1
+			m.recno = iif(m.recno = 0, lnRecNo,m.recno)			
+			m.claim_line_id = ALLTRIM(m.notify_no)+"_"+PADL(m.recno,3,"0")			
+			llSuscess = updateLines()
+		endscan 
+	endif
+	*
+	select * from cims!claim_items where notify_no = ?m.notify_no into cursor __lines
+	if _TALLY > 0
+		lnrecNo = 0	
+		select __lines
+		scan 
+			scatter memo memvar
+			m.lineno = iif(m.recno = 0, lnRecNo+1,m.lineno)			
+			m.claim_items_id = ALLTRIM(m.notify_no)+"_"+PADL(m.lineno,3,"0")			
+			llSuscess = updateItems()
+		endscan 
+	endif
+	*
+	select * from cims!claim_item_icd9 where notify_no = ?m.notify_no into cursor __lines
+	if _TALLY > 0
+		select __lines
+		scan 
+			scatter memo memvar
+			m.recno = iif(m.recno = 0, lnRecNo+1,m.recno)
+			m.claim_fee_id = ALLTRIM(m.notify_no)+"_"+PADL(m.recno,3,"0")
+			llSuscess = updateFees()
+		endscan 
+	endif
+	*	 
+*!*		if llSuscess
+*!*			nSet = sqlcommit(gnConn)
+*!*		else
+*!*			nSet = sqlrollback(gnConn)	
+*!*		endif	
+endif
+=closeCursor("__lines")
+*nSet = SQLSETPROP(gnConn,"Transactions",1)
+
+RETURN llSuscess
+***************************************************
+function insertClaim
+
+local llRetVal
+llRetVal = .F.
+text to lcSql noshow
+	INSERT INTO [CimsDB].[dbo].[claim]
+    ([notify_no]
+      ,[notify_date]
+      ,[claim_id]
+      ,[claim_date]
+      ,[claim_with]
+      ,[doc_date]
+      ,[type_claim]
+      ,[claim_type]
+      ,[service_type]
+      ,[excl_type]
+      ,[cause_type]
+      ,[cause]
+      ,[followup]
+      ,[visit_no]
+      ,[visit]
+      ,[fundcode]
+      ,[customer_id]
+      ,[policy_no]
+      ,[policy_holder]
+      ,[family_no]
+      ,[person_no]
+      ,[planname]
+      ,[client_no]
+      ,[client_name]
+      ,[effective]
+      ,[expried]
+      ,[plan_id]
+      ,[claim_no]
+      ,[refno]
+      ,[ref_date]
+      ,[prov_id]
+      ,[prov_name]
+      ,[prov_class]
+      ,[acc_date]
+      ,[admis_date]
+      ,[disc_date]
+      ,[an_no]
+      ,[hn_no]
+      ,[indication_admit]
+      ,[doctor_note]
+      ,[attending]
+      ,[consultants]
+      ,[diag_plan]
+      ,[illness1]
+      ,[illness2]
+      ,[illness3]
+      ,[drg_10]
+      ,[drg_9]
+      ,[icd9_1]
+      ,[icd9_2]
+      ,[icd9_3]
+      ,[sender]
+      ,[prov_dep]
+      ,[aggregate]
+      ,[benf_cover]
+      ,[fday]
+      ,[fcharge]
+      ,[fdiscount]
+      ,[fbenfpaid]
+      ,[fnopaid]
+      ,[fremain]
+      ,[fnote]
+      ,[sday]
+      ,[scharge]
+      ,[sdiscount]
+      ,[sbenfpaid]
+      ,[snopaid]
+      ,[sremain]
+      ,[snote]
+      ,[aday]
+      ,[abenfpaid]
+      ,[anopaid]
+      ,[aremain]
+      ,[deduc_paid]
+      ,[exgratia]
+      ,[charge]
+      ,[anote]
+      ,[fax_by]
+      ,[fax_date]
+      ,[nurse]
+      ,[assessor_by]
+      ,[assessor_date]
+      ,[audit_by]
+      ,[audit_date]
+      ,[result]
+      ,[return_date]
+      ,[pvno]
+      ,[paid_date]
+      ,[paid_to]
+      ,[chqno]
+      ,[bank]
+      ,[payment_type]
+      ,[status]
+      ,[cancel]
+      ,[pass]
+      ,[prov_pending]
+      ,[inv_page]
+      ,[inv_user]
+      ,[hosp_note]
+      ,[notify_status]
+      ,[note2ins]
+      ,[deduc]
+      ,[dpaid]
+      ,[appr]
+      ,[assess_begin]
+      ,[audit_begin]
+      ,[policy_year]
+      ,[hb_act]
+      ,[hb_app]
+      ,[hb_note]
+      ,[app_no]
+      ,[agent_code]
+      ,[agent]
+      ,[agency]
+      ,[agent_province]
+      ,[exgratia_by]
+      ,[exgratia_note]
+      ,[version]
+      ,[l_user]
+      ,[l_update]
+      ,[branch]
+      ,[timein]
+      ,[timeout]
+      ,[mail_date]
+      ,[denied_diags]
+      ,[denied_note]
+      ,[prov_province]
+      ,[totalpaid]
+      ,[tr_acno]
+      ,[tr_name]
+      ,[tr_bank]
+      ,[tr_banch]
+      ,[unclean]
+      ,[unclean_note]
+      ,[fax_audit]
+      ,[faudit_date]
+      ,[address]
+      ,[agent_address]
+      ,[access_lvl]
+      ,[doc_fee]
+      ,[draftno]
+      ,[draftdate]
+      ,[mail_return]
+      ,[resson]
+      ,[retry_date]
+      ,[retry_to]
+      ,[policy_date]
+      ,[policy_exp]
+      ,[docin]
+      ,[docout]
+      ,[mail_by]
+      ,[pay_mode]
+      ,[diags]
+      ,[age]
+      ,[sex]
+      ,[cover]
+      ,[mail_in]
+      ,[mail_recipt]
+      ,[branch_claim]
+      ,[prov_fax]
+      ,[dob]
+      ,[fund_exgratia]
+      ,[over_respond]
+      ,[audit_summit]
+      ,[recovery]
+      ,[internal_note]
+      ,[external_note]
+      ,[returnaccdate]
+      ,[payee_addr1]
+      ,[payee_addr2]
+      ,[payee_jw_code]
+      ,[payee_zip_code]
+      ,[payee_tel]
+      ,[copayment]
+      ,[quotation]
+      ,[chronic_d]
+      ,[lotno]
+      ,[batchno]
+      ,[insurepaydate]
+      ,[pvdate]
+      ,[paytoac]
+      ,[highrisk]
+      ,[cardno]
+      ,[hb_cover]
+      ,[currency_rate]
+      ,[workstation]
+      ,[currency_type]
+      ,[policyid]
+      ,[senddate]
+      ,[dr_lincense1]
+      ,[dr_lincense2]
+      ,[faxid]
+      ,[post])
+   VALUES
+      (?m.notify_no
+      ,?m.notify_date
+      ,?m.claim_id
+      ,?m.claim_date
+      ,?m.claim_with
+      ,?m.doc_date
+      ,?m.type_claim
+      ,?m.claim_type
+      ,?m.service_type
+      ,?m.excl_type
+      ,?m.cause_type
+      ,?m.cause
+      ,?m.followup
+      ,?m.visit_no
+      ,?m.visit
+      ,?m.fundcode
+      ,?m.customer_id
+      ,?m.policy_no
+      ,?m.policy_holder
+      ,?m.family_no
+      ,?m.person_no
+      ,?m.plan
+      ,?m.client_no
+      ,?m.client_name
+      ,?m.effective
+      ,?m.expried
+      ,?m.plan_id
+      ,?m.claim_no
+      ,?m.refno
+      ,?m.ref_date
+      ,?m.prov_id
+      ,?m.prov_name
+      ,?m.prov_class
+      ,?m.acc_date
+      ,?m.admis_date
+      ,?m.disc_date
+      ,?m.an_no
+      ,?m.hn_no
+      ,?m.indication_admit
+      ,?m.doctor_note
+      ,?m.attending
+      ,?m.consultants
+      ,?m.diag_plan
+      ,?m.illness1
+      ,?m.illness2
+      ,?m.illness3
+      ,?m.drg_10
+      ,?m.drg_9
+      ,?m.icd9_1
+      ,?m.icd9_2
+      ,?m.icd9_3
+      ,?m.sender
+      ,?m.prov_dep
+      ,?m.aggregate
+      ,?m.benf_cover
+      ,?m.fday
+      ,?m.fcharge
+      ,?m.fdiscount
+      ,?m.fbenfpaid
+      ,?m.fnopaid
+      ,?m.fremain
+      ,?m.fnote
+      ,?m.sday
+      ,?m.scharge
+      ,?m.sdiscount
+      ,?m.sbenfpaid
+      ,?m.snopaid
+      ,?m.sremain
+      ,?m.snote
+      ,?m.aday
+      ,?m.abenfpaid
+      ,?m.anopaid
+      ,?m.aremain
+      ,?m.deduc_paid
+      ,?m.exgratia
+      ,?m.charge
+      ,?m.anote
+      ,?m.fax_by
+      ,?m.fax_date
+      ,?m.nurse
+      ,?m.assessor_by
+      ,?m.assessor_date
+      ,?m.audit_by
+      ,?m.audit_date
+      ,?m.result
+      ,?m.return_date
+      ,?m.pvno
+      ,?m.paid_date
+      ,?m.paid_to
+      ,?m.chqno
+      ,?m.bank
+      ,?m.payment_type
+      ,?m.status
+      ,?m.cancel
+      ,?m.pass
+      ,?m.prov_pending
+      ,?m.inv_page
+      ,?m.inv_user
+      ,?m.hosp_note
+      ,?m.notify_status
+      ,?m.note2ins
+      ,?m.deduc
+      ,?m.dpaid
+      ,?m.appr
+      ,?m.assess_begin
+      ,?m.audit_begin
+      ,?m.policy_year
+      ,?m.hb_act
+      ,?m.hb_app
+      ,?m.hb_note
+      ,?m.app_no
+      ,?m.agent_code
+      ,?m.agent
+      ,?m.agency
+      ,?m.agent_province
+      ,?m.exgratia_by
+      ,?m.exgratia_note
+      ,?m.version
+      ,?m.l_user
+      ,?m.l_update
+      ,?m.branch
+      ,?m.timein
+      ,?m.timeout
+      ,?m.mail_date
+      ,?m.denied_diags
+      ,?m.denied_note
+      ,?m.prov_province
+      ,?m.totalpaid
+      ,?m.tr_acno
+      ,?m.tr_name
+      ,?m.tr_bank
+      ,?m.tr_banch
+      ,?m.unclean
+      ,?m.unclean_note
+      ,?m.fax_audit
+      ,?m.faudit_date
+      ,?m.address
+      ,?m.agent_address
+      ,?m.access_lvl
+      ,?m.doc_fee
+      ,?m.draftno
+      ,?m.draftdate
+      ,?m.mail_return
+      ,?m.resson
+      ,?m.retry_date
+      ,?m.retry_to
+      ,?m.policy_date
+      ,?m.policy_exp
+      ,?m.docin
+      ,?m.docout
+      ,?m.mail_by
+      ,?m.pay_mode
+      ,?m.diags
+      ,?m.age
+      ,?m.sex
+      ,?m.cover
+      ,?m.mail_in
+      ,?m.mail_recipt
+      ,?m.branch_claim
+      ,?m.prov_fax
+      ,?m.dob
+      ,?m.fund_exgratia
+      ,?m.over_respond
+      ,?m.audit_summit
+      ,?m.recovery
+      ,?m.internal_note
+      ,?m.external_note
+      ,?m.returnaccdate
+      ,?m.payee_addr1
+      ,?m.payee_addr2
+      ,?m.payee_jw_code
+      ,?m.payee_zip_code
+      ,?m.payee_tel
+      ,?m.copayment
+      ,?m.quotation
+      ,?m.chronic_d
+      ,?m.lotno
+      ,?m.batchno
+      ,?m.insurepaydate
+      ,?m.pvdate
+      ,?m.paytoac
+      ,?m.highrisk
+      ,?m.cardno
+      ,?m.hb_cover
+      ,?m.currency_rate
+      ,?m.workstation
+      ,?m.currency_type
+      ,?m.memberid
+      ,?m.senddate
+      ,?m.dr_lincense1
+      ,?m.dr_lincense2
+      ,''
+      ,0)   
+endtext 
+lnSql = sqlexec(gnConn,lcsql,"_claim",aSqlInfo)
+if lnSql = 1
+	llRetVal = .T.			
+ELSE
+	=aerror(aSqlError)
+	lcError = DTOS(DATETIME())+"|INSERT|CLAIM|"+m.notify_no+"|"+aSqlError[2]
+	saveError(lcError) 
+endif 	
+return llRetVal
+*********************************************************
+function updateClaim
+
+local llRetVal
+llRetVal = .F.
+text to lcSql noshow
+ UPDATE [CimsDB].[dbo].[claim]
+   SET [notify_no] = ?m.notify_no
+      ,[notify_date] = ?m.notify_date
+      ,[claim_id] = ?m.claim_id
+      ,[claim_date] = ?m.claim_date
+      ,[claim_with] = ?m.claim_with
+      ,[doc_date] = ?m.doc_date
+      ,[type_claim] = ?m.type_claim
+      ,[claim_type] = ?m.claim_type
+      ,[service_type] = ?m.service_type
+      ,[excl_type] = ?m.excl_type
+      ,[cause_type] = ?m.cause_type
+      ,[cause] = ?m.cause
+      ,[followup] = ?m.followup
+      ,[visit_no] = ?m.visit_no
+      ,[visit] = ?m.visit
+      ,[fundcode] = ?m.fundcode
+      ,[customer_id] = ?m.customer_id
+      ,[policy_no] = ?m.policy_no
+      ,[policy_holder] = ?m.policy_holder
+      ,[family_no] = ?m.family_no
+      ,[person_no] = ?m.person_no
+      ,[planname] = ?m.plan
+      ,[client_no] = ?m.client_no
+      ,[client_name] = ?m.client_name
+      ,[effective] = ?m.effective
+      ,[expried] = ?m.expried
+      ,[plan_id] = ?m.plan_id
+      ,[claim_no] = ?m.claim_no
+      ,[refno] = ?m.refno
+      ,[ref_date] = ?m.ref_date
+      ,[prov_id] = ?m.prov_id
+      ,[prov_name] = ?m.prov_name
+      ,[prov_class] = ?m.prov_class
+      ,[acc_date] = ?m.acc_date
+      ,[admis_date] = ?m.admis_date
+      ,[disc_date] = ?m.disc_date
+      ,[an_no] = ?m.an_no
+      ,[hn_no] = ?m.hn_no
+      ,[indication_admit] = ?m.indication_admit
+      ,[doctor_note] = ?m.doctor_note
+      ,[attending] = ?m.attending
+      ,[consultants] = ?m.consultants
+      ,[diag_plan] = ?m.diag_plan
+      ,[illness1] = ?m.illness1
+      ,[illness2] = ?m.illness2
+      ,[illness3] = ?m.illness3
+      ,[drg_10] = ?m.drg_10
+      ,[drg_9] = ?m.drg_9
+      ,[icd9_1] = ?m.icd9_1
+      ,[icd9_2] = ?m.icd9_2
+      ,[icd9_3] = ?m.icd9_3
+      ,[sender] = ?m.sender
+      ,[prov_dep] = ?m.prov_dep
+      ,[aggregate] = ?m.aggregate
+      ,[benf_cover] = ?m.benf_cover
+      ,[fday] = ?m.fday
+      ,[fcharge] = ?m.fcharge
+      ,[fdiscount] = ?m.fdiscount
+      ,[fbenfpaid] = ?m.fbenfpaid
+      ,[fnopaid] = ?m.fnopaid
+      ,[fremain] = ?m.fremain
+      ,[fnote] = ?m.fnote
+      ,[sday] = ?m.sday
+      ,[scharge] = ?m.scharge
+      ,[sdiscount] = ?m.sdiscount
+      ,[sbenfpaid] = ?m.sbenfpaid
+      ,[snopaid] = ?m.snopaid
+      ,[sremain] = ?m.sremain
+      ,[snote] = ?m.snote
+      ,[aday] = ?m.aday
+      ,[abenfpaid] = ?m.abenfpaid
+      ,[anopaid] = ?m.anopaid
+      ,[aremain] = ?m.aremain
+      ,[deduc_paid] = ?m.deduc_paid
+      ,[exgratia] = ?m.exgratia
+      ,[charge] = ?m.charge
+      ,[anote] = ?m.anote
+      ,[fax_by] = ?m.fax_by
+      ,[fax_date] = ?m.fax_date
+      ,[nurse] = ?m.nurse
+      ,[assessor_by] = ?m.assessor_by
+      ,[assessor_date] = ?m.assessor_date
+      ,[audit_by] = ?m.audit_by
+      ,[audit_date] = ?m.audit_date
+      ,[result] = ?m.result
+      ,[return_date] = ?m.return_date
+      ,[pvno] = ?m.pvno
+      ,[paid_date] = ?m.paid_date
+      ,[paid_to] = ?m.paid_to
+      ,[chqno] = ?m.chqno
+      ,[bank] = ?m.bank
+      ,[payment_type] = ?m.payment_type
+      ,[status] = ?m.status
+      ,[cancel] = ?m.cancel
+      ,[pass] = ?m.pass
+      ,[prov_pending] = ?m.prov_pending
+      ,[inv_page] = ?m.inv_page
+      ,[inv_user] = ?m.inv_user
+      ,[hosp_note] = ?m.hosp_note
+      ,[notify_status] = ?m.notify_status
+      ,[note2ins] = ?m.note2ins
+      ,[deduc] = ?m.deduc
+      ,[dpaid] = ?m.dpaid
+      ,[appr] = ?m.appr
+      ,[assess_begin] = ?m.assess_begin
+      ,[audit_begin] = ?m.audit_begin
+      ,[policy_year] = ?m.policy_year
+      ,[hb_act] = ?m.hb_act
+      ,[hb_app] = ?m.hb_app
+      ,[hb_note] = ?m.hb_note
+      ,[app_no] = ?m.app_no
+      ,[agent_code] = ?m.agent_code
+      ,[agent] = ?m.agent
+      ,[agency] = ?m.agency
+      ,[agent_province] = ?m.agent_province
+      ,[exgratia_by] = ?m.exgratia_by
+      ,[exgratia_note] = ?m.exgratia_note
+      ,[version] = ?m.version
+      ,[l_user] = ?m.l_user
+      ,[l_update] = ?m.l_update
+      ,[branch] = ?m.branch
+      ,[timein] = ?m.timein
+      ,[timeout] = ?m.timeout
+      ,[mail_date] = ?m.mail_date
+      ,[denied_diags] = ?m.denied_diags
+      ,[denied_note] = ?m.denied_note
+      ,[prov_province] = ?m.prov_province
+      ,[totalpaid] = ?m.totalpaid
+      ,[tr_acno] = ?m.tr_acno
+      ,[tr_name] = ?m.tr_name
+      ,[tr_bank] = ?m.tr_bank
+      ,[tr_banch] = ?m.tr_banch
+      ,[unclean] = ?m.unclean
+      ,[unclean_note] = ?m.unclean_note
+      ,[fax_audit] = ?m.fax_audit
+      ,[faudit_date] = ?m.faudit_date
+      ,[address] = ?m.address
+      ,[agent_address] = ?m.agent_address
+      ,[access_lvl] = ?m.access_lvl
+      ,[doc_fee] = ?m.doc_fee
+      ,[draftno] = ?m.draftno
+      ,[draftdate] = ?m.draftdate
+      ,[mail_return] = ?m.mail_return
+      ,[resson] = ?m.resson
+      ,[retry_date] = ?m.retry_date
+      ,[retry_to] = ?m.retry_to
+      ,[policy_date] = ?m.policy_date
+      ,[policy_exp] = ?m.policy_exp
+      ,[docin] = ?m.docin
+      ,[docout] = ?m.docout
+      ,[mail_by] = ?m.mail_by
+      ,[pay_mode] = ?m.pay_mode
+      ,[diags] = ?m.diags
+      ,[age] = ?m.age
+      ,[sex] = ?m.sex
+      ,[cover] = ?m.cover
+      ,[mail_in] = ?m.mail_in
+      ,[mail_recipt] = ?m.mail_recipt
+      ,[branch_claim] = ?m.branch_claim
+      ,[prov_fax] = ?m.prov_fax
+      ,[dob] = ?m.dob
+      ,[fund_exgratia] = ?m.fund_exgratia
+      ,[over_respond] = ?m.over_respond
+      ,[audit_summit] = ?m.audit_summit
+      ,[recovery] = ?m.recovery
+      ,[internal_note] = ?m.internal_note
+      ,[external_note] = ?m.external_note
+      ,[returnaccdate] = ?m.returnaccdate
+      ,[payee_addr1] = ?m.payee_addr1
+      ,[payee_addr2] = ?m.payee_addr2
+      ,[payee_jw_code] = ?m.payee_jw_code
+      ,[payee_zip_code] = ?m.payee_zip_code
+      ,[payee_tel] = ?m.payee_tel
+      ,[copayment] = ?m.copayment
+      ,[quotation] = ?m.quotation
+      ,[chronic_d] = ?m.chronic_d
+      ,[lotno] = ?m.lotno
+      ,[batchno] = ?m.batchno
+      ,[insurepaydate] = ?m.insurepaydate
+      ,[pvdate] = ?m.pvdate
+      ,[paytoac] = ?m.paytoac
+      ,[highrisk] = ?m.highrisk
+      ,[cardno] = ?m.cardno
+      ,[hb_cover] = ?m.hb_cover
+      ,[currency_rate] = ?m.currency_rate
+      ,[workstation] = ?m.workstation
+      ,[currency_type] = ?m.currency_type
+      ,[policyid] = ?m.memberid
+      ,[senddate] = ?m.senddate
+      ,[dr_lincense1] = ?m.dr_lincense1
+      ,[dr_lincense2] = ?m.dr_lincense2
+      ,[faxid] = ''
+      ,[post] = 0
+ WHERE [notify_no] = ?m.notify_no
+endtext 
+lnSql = sqlexec(gnConn,lcsql,"_claim",aSqlInfo)
+if lnSql = 1
+	if aSqlInfo[2] = 0
+		llRetval = insertClaim()
+	else
+		llRetVal = .T.		
+	endif 	
+else
+	=aerror(aSqlError)
+	lcError = DTOS(DATETIME())+"|UPDATE|CLAIM|"+m.notify_no+"|"+aSqlError[2]
+	saveError(lcError) 
+endif 
+=closeCursor("_claim")	
+return llRetVal
+*******************************************************************************************************
+function updateLines
+
+local llRetVal
+llRetVal = .F.
+text to lcSql noshow 
+   UPDATE [CimsDB].[dbo].[claim_line]
+   SET [notify_no] = ?m.notify_no
+      ,[claim_id] = ?m.claim_id
+      ,[cat_id] = ?m.cat_id
+      ,[cat_code] = ?m.cat_code
+      ,[description] = ?m.description
+      ,[service_type] = ?m.service_type
+      ,[serv_cover] = ?m.serv_cover
+      ,[benf_cover] = ?m.benf_cover
+      ,[service_used] = ?m.service_used
+      ,[benefit_paid] = ?m.benefit_paid
+      ,[fadmis] = ?m.fadmis
+      ,[fcharge] = ?m.fcharge
+      ,[fdiscount] = ?m.fdiscount
+      ,[fservice] = ?m.fservice
+      ,[fpaid] = ?m.fpaid
+      ,[fremain] = ?m.fremain
+      ,[sadmis] = ?m.sadmis
+      ,[sservice] = ?m.sservice
+      ,[scharge] = ?m.scharge
+      ,[sdiscount] = ?m.sdiscount
+      ,[nopaid] = ?m.nopaid
+      ,[spaid] = ?m.spaid
+      ,[sremain] = ?m.sremain
+      ,[aadmis] = ?m.aadmis
+      ,[apaid] = ?m.apaid
+      ,[aremain] = ?m.aremain
+      ,[total_fee] = ?m.total_fee
+      ,[benefit] = ?m.benefit
+      ,[duefollowup] = ?m.duefollowup
+      ,[dueperiod] = ?m.dueperiod
+      ,[fee] = ?m.fee
+      ,[item_grp] = ?m.item_grp
+      ,[group] = ?m.group
+      ,[subservice] = ?m.subservice
+      ,[subpaid] = ?m.subpaid
+      ,[exgratia] = ?m.exgratia
+      ,[fnote] = ?m.fnote
+      ,[snote] = ?m.snote
+      ,[anote] = ?m.anote
+      ,[deduc] = ?m.deduc
+      ,[dpaid] = ?m.dpaid
+      ,[deductible] = ?m.deductible
+      ,[itemcode] = ?m.itemcode
+      ,[hb_act] = ?m.hb_act
+      ,[hb_app] = ?m.hb_app
+      ,[l_user] = ?m.l_user
+      ,[l_update] = ?m.l_update
+      ,[no_paid] = ?m.no_paid
+      ,[recno] = ?m.recno
+      ,[stdcode] = ?m.stdcode
+      ,[snoncover] = ?m.snoncover
+      ,[fund_exgratia] = ?m.fund_exgratia
+      ,[over_respond] = ?m.over_respond
+      ,[copayment] = ?m.copayment
+      ,[Claim_line_ID] = ?m.Claim_line_ID
+   WHERE [Claim_line_ID] = ?m.claim_line_id
+endtext
+lnSql = sqlexec(gnConn,lcsql,"_lines",aSqlInfo)
+if lnSql = 1
+	if aSqlInfo[2] = 0
+		llRetval = insertLines()
+	else
+		llRetVal = .T.		
+	endif 	
+else
+	=aerror(aSqlError)
+	lcError = DTOS(DATETIME())+"|INSERT|LINE|"+m.notify_no+"|"+aSqlError[2]
+	saveError(lcError) 
+endif 	
+=closeCursor("_lines")
+return llRetVal
+**************************************************************************
+function insertLines
+
+local llRetVal
+llRetVal = .F.
+text to lcSql noshow 
+   INSERT INTO [CimsDB].[dbo].[claim_line]
+           ([notify_no]
+           ,[claim_id]
+           ,[cat_id]
+           ,[cat_code]
+           ,[description]
+           ,[service_type]
+           ,[serv_cover]
+           ,[benf_cover]
+           ,[service_used]
+           ,[benefit_paid]
+           ,[fadmis]
+           ,[fcharge]
+           ,[fdiscount]
+           ,[fservice]
+           ,[fpaid]
+           ,[fremain]
+           ,[sadmis]
+           ,[sservice]
+           ,[scharge]
+           ,[sdiscount]
+           ,[nopaid]
+           ,[spaid]
+           ,[sremain]
+           ,[aadmis]
+           ,[apaid]
+           ,[aremain]
+           ,[total_fee]
+           ,[benefit]
+           ,[duefollowup]
+           ,[dueperiod]
+           ,[fee]
+           ,[item_grp]
+           ,[group]
+           ,[subservice]
+           ,[subpaid]
+           ,[exgratia]
+           ,[fnote]
+           ,[snote]
+           ,[anote]
+           ,[deduc]
+           ,[dpaid]
+           ,[deductible]
+           ,[itemcode]
+           ,[hb_act]
+           ,[hb_app]
+           ,[l_user]
+           ,[l_update]
+           ,[no_paid]
+           ,[recno]
+           ,[stdcode]
+           ,[snoncover]
+           ,[fund_exgratia]
+           ,[over_respond]
+           ,[copayment]
+           ,[Claim_line_ID])
+     VALUES
+           (?m.notify_no
+          ,?m.claim_id
+          ,?m.cat_id
+          ,?m.cat_code
+          ,?m.description
+          ,?m.service_type
+          ,?m.serv_cover
+          ,?m.benf_cover
+          ,?m.service_used
+          ,?m.benefit_paid
+          ,?m.fadmis
+          ,?m.fcharge
+          ,?m.fdiscount
+          ,?m.fservice
+          ,?m.fpaid
+          ,?m.fremain
+          ,?m.sadmis
+          ,?m.sservice
+          ,?m.scharge
+          ,?m.sdiscount
+          ,?m.nopaid
+          ,?m.spaid
+          ,?m.sremain
+          ,?m.aadmis
+          ,?m.apaid
+          ,?m.aremain
+          ,?m.total_fee
+          ,?m.benefit
+          ,?m.duefollowup
+          ,?m.dueperiod
+          ,?m.fee
+          ,?m.item_grp
+          ,?m.group
+          ,?m.subservice
+          ,?m.subpaid
+          ,?m.exgratia
+          ,?m.fnote
+          ,?m.snote
+          ,?m.anote
+          ,?m.deduc
+          ,?m.dpaid
+          ,?m.deductible
+          ,?m.itemcode
+          ,?m.hb_act
+          ,?m.hb_app
+          ,?m.l_user
+          ,?m.l_update
+          ,?m.no_paid
+          ,?m.recno
+          ,?m.stdcode
+          ,?m.snoncover
+          ,?m.fund_exgratia
+          ,?m.over_respond
+          ,?m.copayment
+          ,?m.Claim_line_ID)
+endtext
+lnSql = sqlexec(gnConn,lcsql,"_lines",aSqlInfo)
+if lnSql = 1
+	if aSqlInfo[2] = 0
+		llRetval = .F.
+	else
+		llRetVal = .T.		
+	endif 	
+else
+	=aerror(aSqlError)
+	lcError = DTOS(DATETIME())+"|INSERT|LINE|"+m.notify_no+"|"+aSqlError[2]
+	saveError(lcError) 
+endif 	
+return llRetVal
+*************************************************************
+function updateItems
+
+local llRetVal
+llRetVal = .F.
+text to lcSql noshow 
+UPDATE [CimsDB].[dbo].[claim_items]
+   SET [notify_no] = ?m.notify_no
+      ,[claim_id] = ?m.claim_id
+      ,[cat_id] = ?m.cat_id
+      ,[cat_code] = ?m.cat_code
+      ,[item_code] = ?m.item_code
+      ,[std_code] = ?m.std_code
+      ,[std_desc] = ?m.std_desc
+      ,[dos] = ?m.dos
+      ,[admis] = ?m.admis
+      ,[charge] = ?m.charge
+      ,[discount] = ?m.discount
+      ,[nopaid] = ?m.nopaid
+      ,[benf_paid] = ?m.benf_paid
+      ,[client_paid] = ?m.client_paid
+      ,[abuse] = ?m.abuse
+      ,[exgratia] = ?m.exgratia
+      ,[comment] = ?m.comment
+      ,[fee_rate] = ?m.fee_rate
+      ,[serv_cover] = ?m.serv_cover
+      ,[per] = ?m.per
+      ,[benf_cover] = ?m.benf_cover
+      ,[benefit] = ?m.benefit
+      ,[fadmis] = ?m.fadmis
+      ,[fcharge] = ?m.fcharge
+      ,[fdiscount] = ?m.fdiscount
+      ,[fpaid] = ?m.fpaid
+      ,[fremain] = ?m.fremain
+      ,[fnote] = ?m.fnote
+      ,[sadmis] = ?m.sadmis
+      ,[scharge] = ?m.scharge
+      ,[sdiscount] = ?m.sdiscount
+      ,[spaid] = ?m.spaid
+      ,[sremain] = ?m.sremain
+      ,[snote] = ?m.snote
+      ,[l_user] = ?m.l_user
+      ,[l_update] = ?m.l_update
+      ,[lineno] = ?m.lineno
+      ,[claim_items_id] = ?m.claim_items_id
+ WHERE [claim_items_id] = ?m.claim_items_id
+endtext
+lnSql = sqlexec(gnConn,lcsql,"_items",aSqlInfo)
+if lnSql = 1
+	if aSqlInfo[2] = 0
+		llRetval = insertItems()
+	else
+		llRetVal = .T.		
+	endif 	
+else
+	=aerror(aSqlError)
+	lcError = DTOS(DATETIME())+"|UPDATE|ITEMS|"+m.notify_no+"|"+aSqlError[2]
+	saveError(lcError) 
+endif 	
+=closeCursor("_items")
+return llRetVal
+*************************************************************
+function insertItems
+
+local llRetVal
+llRetVal = .F.
+text to lcSql noshow 
+	INSERT INTO [CimsDB].[dbo].[claim_items]
+           ([notify_no]
+           ,[claim_id]
+           ,[cat_id]
+           ,[cat_code]
+           ,[item_code]
+           ,[std_code]
+           ,[std_desc]
+           ,[dos]
+           ,[admis]
+           ,[charge]
+           ,[discount]
+           ,[nopaid]
+           ,[benf_paid]
+           ,[client_paid]
+           ,[abuse]
+           ,[exgratia]
+           ,[comment]
+           ,[fee_rate]
+           ,[serv_cover]
+           ,[per]
+           ,[benf_cover]
+           ,[benefit]
+           ,[fadmis]
+           ,[fcharge]
+           ,[fdiscount]
+           ,[fpaid]
+           ,[fremain]
+           ,[fnote]
+           ,[sadmis]
+           ,[scharge]
+           ,[sdiscount]
+           ,[spaid]
+           ,[sremain]
+           ,[snote]
+           ,[l_user]
+           ,[l_update]
+           ,[lineno]
+           ,[claim_items_id])
+     VALUES
+           (?m.notify_no
+          ,?m.claim_id
+          ,?m.cat_id
+          ,?m.cat_code
+          ,?m.item_code
+          ,?m.std_code
+          ,?m.std_desc
+          ,?m.dos
+          ,?m.admis
+          ,?m.charge
+          ,?m.discount
+          ,?m.nopaid
+          ,?m.benf_paid
+          ,?m.client_paid
+          ,?m.abuse
+          ,?m.exgratia
+          ,?m.comment
+          ,?m.fee_rate
+          ,?m.serv_cover
+          ,?m.per
+          ,?m.benf_cover
+          ,?m.benefit
+          ,?m.fadmis
+          ,?m.fcharge
+          ,?m.fdiscount
+          ,?m.fpaid
+          ,?m.fremain
+          ,?m.fnote
+          ,?m.sadmis
+          ,?m.scharge
+          ,?m.sdiscount
+          ,?m.spaid
+          ,?m.sremain
+          ,?m.snote
+          ,?m.l_user
+          ,?m.l_update
+          ,?m.lineno
+          ,?m.claim_items_id)
+endtext
+lnSql = sqlexec(gnConn,lcsql,"_items",aSqlInfo)
+if lnSql = 1
+	if aSqlInfo[2] = 0
+		llRetval = .F.
+	else
+		llRetVal = .T.		
+	endif 	
+else
+	=aerror(aSqlError)
+	lcError = DTOS(DATETIME())+"|INSERT|ITEMS|"+m.notify_no+"|"+aSqlError[2]
+	saveError(lcError) 
+endif 	
+return llRetVal
+*************************************************************
+function updateFees
+
+local llRetVal
+llRetVal = .F.
+text to lcSql noshow 
+   UPDATE [CimsDB].[dbo].[claim_fee]
+   SET [notify_no] = ?m.notify_no
+      ,[claim_id] = ?m.claim_id
+      ,[cat_id] = ?m.cat_id
+      ,[item_code] = ?m.item_code
+      ,[itemdesc] = ?m.itemdesc
+      ,[icd9] = ?m.icd9
+      ,[fee] = ?m.fee
+      ,[use] = ?m.use
+      ,[l_user] = ?m.l_user
+      ,[l_update] = ?m.l_update
+      ,[claim_fee_id] = ?m.claim_fee_id
+      ,[recno] = ?m.recno
+   WHERE [claim_fee_id] = ?m.claim_fee_id
+endtext
+lnSql = sqlexec(gnConn,lcsql,"_fees",aSqlInfo)
+if lnSql = 1
+	if aSqlInfo[2] = 0
+		llRetval = insertFees()
+	else
+		llRetVal = .T.		
+	endif 	
+else
+	=aerror(aSqlError)
+	lcError = DTOS(DATETIME())+"|UPDATE|FEE|"+m.notify_no+"|"+aSqlError[2]
+	saveError(lcError) 
+endif
+=closeCursor("_fees")	
+return llRetVal
+*************************************************************
+function insertFees
+
+local llRetVal
+llRetVal = .F.
+text to lcSql noshow 
+     INSERT INTO [CimsDB].[dbo].[claim_fee]
+           ([notify_no]
+           ,[claim_id]
+           ,[cat_id]
+           ,[item_code]
+           ,[itemdesc]
+           ,[icd9]
+           ,[fee]
+           ,[use]
+           ,[l_user]
+           ,[l_update]
+           ,[claim_fee_id]
+           ,[recno])
+     VALUES
+           (?m.notify_no
+          ,?m.claim_id
+          ,?m.cat_id
+          ,?m.item_code
+          ,?m.itemdesc
+          ,?m.icd9
+          ,?m.fee
+          ,?m.use
+          ,?m.l_user
+          ,?m.l_update
+          ,?m.claim_fee_id
+          ,?m.recno)
+endtext
+lnSql = sqlexec(gnConn,lcsql,"_fees",aSqlInfo)
+if lnSql = 1
+	if aSqlInfo[2] = 0
+		llRetval = .F.
+	else
+		llRetVal = .T.		
+	endif 	
+else
+	=aerror(aSqlError)
+	lcError = DTOS(DATETIME())+"|INSERT|FEE|"+m.notify_no+"|"+aSqlError[2]
+	saveError(lcError) 
+endif 	
+return llRetVal
+**************************************
+function closeCursor(tcAlias)
+
+if used(tcAlias)
+	use in (tcAlias)
+endif 	
+*************************************
+function saveError(tcError)
+
+lcFile = addbs(justpath(dbf(alias())))+"SqlError.txt"
+=strtofile(tcError+chr(10)+chr(13),lcFile,1)
+**************************************
+FUNCTION GetEdcPayOnClaim(tcFundCode, tcPolicyNo, tnPersonNo, tcPlanId, tcPolicyId, ttAccDate)
+
+lnPaid = 0
+lnSelect = select()
+IF !EMPTY(tcFundCode) AND !EMPTY(tcPolicyNo) AND !EMPTY(tcPlanId)
+	if empty(alltrim(tcPolicyId))
+		lcSql = "SELECT acc_date, sum(fbenfpaid) as paid FROM cimsdb.dbo.claim "+;
+			"WHERE notify_no LIKE '13%' AND fundcode = ?tcFundCode AND policy_no = ?tcPolicyNo "+;
+			"and family_no = ?tnPersonNo and plan_id = ?tcPlanId and acc_date = ?ttAccDate and result = 'W52'"+;
+			"group by acc_date"
+	else
+		lcSql = "select acc_date, sum(fbenfpaid) as paid from cimsdb.dbo.claim "+;
+			"where notify_no like '13%' and policyid = ?tcPolicyId and acc_date = ?ttAccDate and result = 'W52'"+;
+			"group by acc_date"
+	endif	
+	lnSql = sqlexec(gnConn,lcSql,"_curEdcPay",aSqlInfo)
+	if lnSql = 1
+		if aSqlInfo[2] <> 0
+			lnPaid = _curEdcPay.paid
+		endif
+		use in _curEdcPay	
+	ENDIF
+ENDIF 		 	
+select (lnSelect)
+return lnPaid
+**************************************
+FUNCTION GetEdcPayList(tcFundCode, tcPolicyNo, tnPersonNo, tcPlanId, tcPolicyId, ttAccDate)
+
+llRetVal = .F.
+lnSelect = select()
+IF !EMPTY(tcFundCode) AND !EMPTY(tcPolicyNo)  AND !EMPTY(tcPlanId)
+	if empty(alltrim(tcPolicyId))
+		lcSql = "SELECT notify_no,prov_name, admis_date,acc_date, fcharge AS charge, fbenfpaid as paid, result FROM cimsdb.dbo.claim "+;
+			"WHERE notify_no LIKE '13%' AND fundcode = ?tcFundCode AND policy_no = ?tcPolicyNo "+;
+			"and family_no = ?tnPersonNo and plan_id = ?tcPlanId and acc_date = ?ttAccDate and result = 'W52'"
+	else
+		lcSql = "SELECT notify_no,prov_name, admis_date, acc_date, fcharge AS charge, fbenfpaid as paid,result FROM cimsdb.dbo.claim "+;
+			"where notify_no like '13%' and policyid = ?tcPolicyId and acc_date = ?ttAccDate and result = 'W52'"
+	endif	
+	lnSql = sqlexec(gnConn,lcSql,"edcPayment",aSqlInfo)
+	if lnSql = 1
+		if aSqlInfo[2] <> 0
+			llRetVal = .T.
+		endif
+	ENDIF
+ENDIF 		 	
+select (lnSelect)
+return llRetVal
+***************************************************************
+function getPvByNotifyNo(tcFundCode, tcNotifyNo)
+
+cFundCode = tcFundCode
+cNotifyNo = tcNotifyNo
+if used("pvbyNotifyNo")
+	=requery 
+else
+	use cims!pvbynotifyno in 0
+endif		
+*
+*!*	SELECT Pv.paid_to, Pv.mail_address, Pv.paid_type, Pv.send_to, Pv.send_by,;
+*!*	  Pv.amt_chq, Pv.total, Pv.notes, Pv.cancel_by, Pv.cancel_date, Pv.cancel_note,;
+*!*	  Pv.recipt_date, Pv.chqno, Pv.chqdate, Pv.branch, Pv.agent_code, Pv.agent,;
+*!*	  Pv.agency, Pv.agent_province, Pv.tr_acno, Pv.tr_accname, Pv.tr_bank,;
+*!*	  Pv.tr_branch, Pv.tr_date, Pv.post_addr, Pv.draftno, Pv.draftdate,;
+*!*	  Pv.mail_return, Pv.resson, Pv.retry_date, Pv.retry_to, Pv.return_date2,;
+*!*	  Pv.resson2, Pv.retry_date2, Pv.retry_to2, Pv.retry_addr, Pv.retry_addr2,;
+*!*	  Pv.recipt_by, Pv.in_date, Pv.chqamt, Pv.chqno1, Pv.chqdate1, Pv.chqamt1,;
+*!*	  Pv.chqno2, Pv.chqdate2, Pv.chqamt2, Pv.chqno3, Pv.chqdate3, Pv.chqamt3,;
+*!*	  Pv.chqno4, Pv.chqdate4, Pv.chqamt4, Pv_notify.charge, Pv_notify.amount;
+*!*	 FROM ;
+*!*	     cims!pv ;
+*!*	    INNER JOIN cims!pv_notify ;
+*!*	   ON  Pv.pv_no = Pv_notify.pv_no.
+*!*	 WHERE  Pv.fundcode = ( ?cFundCode );
+*!*	   AND  Pv_notify.notify_no = ( ?cNotifyNo )..
+
+return reccount("pvbynotifyno") > 0
+*****************************************************************************************************
+FUNCTION updateCancelMember(tcFundCode, tcPolicyNo, tnPersonNo, tcPlanId, tdExpiry, tcPolstatus, tdAdjcancel, tdCanceldate, tcUserName, tdUpdate)
+ 
+llRetVal = .F.
+
+tnPersonNo = IIF(tcFundCode = "BKI", 1, tnPersonNo)
+tdCancelDate = IIF(EMPTY(tdCancelDate), tdExpiry, tdCancelDate)
+tdAdjCancel = DATETIME(YEAR(tdAdjCancel), MONTH(tdAdjCancel), DAY(tdAdjCancel), 00,00)
+tdUpdate = DATETIME()
+
+*lcSql = "{call sp_updateCancelMember(?tcFundCode, ?tcPolicyNo, ?tnPersonNo, ?tcPlanId, ?tdExpiry, ?tcPolstatus, ?tdAdjcancel, ?tdCanceldate, ?tcUserName, ?tdUpdate)}"
+lcSql = "UPDATE [cimsdb].[dbo].[member] SET [expried_y] = [expiry], [expiry] = ?tdExpiry, [polstatus] = ?tcPolStatus, [adjcancel] = ?tdAdjCancel, [canceldate] = ?tdcancelDate, "+;
+		"[l_user] = ?tcUserUser, [l_update] = ?tdUpdate WHERE [fundcode] = ?tcFundCode AND [policy_no] = ?tPolicyNo AND [family_no] = ?tnPersonNo AND [plan_id] = ?tPlanId"
+
+lnSuscess = SQLEXEC(gnConn, lcSql)
+IF lnSuscess = 1
+	llRetVal = .T.
+ENDIF 
+RETURN llRetVal
+**************************************
+FUNCTION checkInterFund(tcFund)
+
+RETURN INLIST(tcFund, "PIH","AHP")
+**************************************
+function getInterPolicyGroup(tcFund, tcGroup)
+
+lcFund = icase(tcFund = "PIH", "LIB", tcFund = "AHP", "AXA", "")
+
+loGrp  = createobject("empty")
+=addproperty(loGrp, "planid", "")
+=addproperty(loGrp, "product","")
+=addproperty(loGrp, "policydate", {})
+=addproperty(loGrp, "policyname", "")
+=addproperty(loGrp, "overalllimit",0)
+
+SELECT plan_id, product, policy_date, policy_name, overall_limit ;
+FROM cims!member ;
+WHERE tpacode = tcFund ;
+	AND policy_group = tcGroup ;
+INTO ARRAY laMember
+if _TALLY > 0
+	loGrp.planid = laMember[1]
+	loGrp.product = laMember[2]
+	loGrp.policydate = laMember[3]
+	loGrp.policyname = laMember[4]
+	loGrp.overalllimit = laMember[5]
+endif	
+
+return loGrp
+**************************************
+function getInterPlanId(tcFund, tcTitle)
+
+lcFund = icase(tcFund = "PIH", "LIB", tcFund = "AHP", "AXA", "")
+
+loGrp  = createobject("empty")
+=addproperty(loGrp, "planid", "")
+=addproperty(loGrp, "title","")
+=addproperty(loGrp, "aggregate", {})
+
+SELECT plan_id, title, aggregate_oon ;
+FROM cims!plan ;
+WHERE plan_id like tcFund+"%" ;
+	AND title = tcTitle ;
+INTO ARRAY laPlan
+
+if _TALLY > 0
+	loGrp.planid = laPlan[1]
+	loGrp.title = laPlan[2]
+	loGrp.aggregate = laPlan[3]
+endif	
+
+return loGrp
+********************************************************
+FUNCTION insertProduct()
+
+lnSelect = SELECT()
+llRetVal = .f.
+
+scatter memo memvar
+TEXT TO lcUpdate noshow 
+	update [cimsdb].[dbo].[product] set [fund_id] = ?m.fund_id, [fundcode] = ?m.fundcode, [prod_id] = ?m.prod_id, [prod_type] = ?m.prod_type, [prod_cat] = ?m.prod_cat,
+	[prod_title] = ?m.prod_title, [description] = ?m.description, [age_from] = ?m.age_from, [age_to] = ?m.age_to, [grace] = ?m.grace, [wait] = ?m.wait, [exclusion_wait] = ?m.exclusion_wait,
+	[exclusion_cover] = ?m.exclusion_cover, [exclusion] = ?m.exclusion, [admis] = ?m.admis, [cover] = ?m.cover, [period] = ?m.period, [period_type] = ?m.period_type,
+	[followup] = ?m.followup, [followup_type] = ?m.followup_type, [capitation] = ?m.capitation, [overall] = ?m.overall, [med_cover] = ?m.med_cover, [opd_cover] = ?m.opd_cover, 
+	[ipd_cover] = ?m.ipd_cover,	[er_cover] = ?m.er_cover, [prov_used] = ?m.prov_used, [template] = ?m.template, [l_user] = ?m.l_user, [l_update] = ?m.l_update, 
+	[hb_exclusion_wait] = ?m.hb_exclusion_wait, [period_per] = ?m.period_per, [followup_per] = ?m.followup_per, [wait_per] = ?m.wait_per, [exclusion_per] = ?m.exclusion_per,
+	[chronic_wait] = ?m.chronic_wait, [chronic_per] = ?m.chronic_per, [exclcover_per] = ?m.exclcover_per where [fundcode] = ?m.fundcode and [prod_id] = ?m.prod_id
+ENDTEXT 
+
+TEXT TO lcInsert noshow 
+	insert into [cimsdb].[dbo].[product] ([fund_id], [fundcode], [prod_id], [prod_type], [prod_cat], [prod_title], [description], [age_from],
+	[age_to], [grace], [wait], [exclusion_wait], [exclusion_cover], [exclusion], [admis], [cover], [period], [period_type],
+	[followup], [followup_type], [capitation], [overall], [med_cover], [opd_cover], [ipd_cover],	[er_cover], [prov_used],   
+	[template],  [l_user], [l_update], [hb_exclusion_wait], [period_per], [followup_per], [wait_per], [exclusion_per],
+	[chronic_wait], [chronic_per], [exclcover_per])
+	values (?m.fund_id, ?m.fundcode, ?m.prod_id, ?m.prod_type, ?m.prod_cat, ?m.prod_title, ?m.description, ?m.age_from,
+	?m.age_to, ?m.grace, ?m.wait, ?m.exclusion_wait, ?m.exclusion_cover, ?m.exclusion, ?m.admis, ?m.cover, ?m.period, ?m.period_type,
+	?m.followup, ?m.followup_type, ?m.capitation, ?m.overall, ?m.med_cover, ?m.opd_cover, ?m.ipd_cover,	?m.er_cover, ?m.prov_used,   
+	?m.template,  ?m.l_user, ?m.l_update, ?m.hb_exclusion_wait, ?m.period_per, ?m.followup_per, ?m.wait_per, ?m.exclusion_per,
+	?m.chronic_wait, ?m.chronic_per, ?m.exclcover_per)		
+ENDTEXT 
+
+lnSql = SQLEXEC(gnConn, lcUpdate, "sqlresult", laSql)  
+IF lnSql = 1
+	IF laSql[2] > 0
+		llRetval = .t.
+	else
+		lnSql = SQLEXEC(gnConn, lcInsert, "sqlresult", laSql)  	
+		if lnSql = 1
+			IF laSql[2] >= 0
+				llRetval = .t.
+			endif				
+		else	
+			=aerror(laError)	
+			?"Insert Error:"+laError[2]
+		endif	
+	ENDIF 
+else
+	=aerror(laError)
+	?"Update Error: "+laError[2]
+ENDIF 		
+IF USED("sqlresult")
+	USE IN sqlresult
+ENDIF 		
+
+SELECT (lnSelect)
+RETURN llRetVal
+**********************************************
+FUNCTION insertPlan()
+
+lnSelect = SELECT()
+llRetVal = .f.
+
+SCATTER MEMO MEMVAR 
+TEXT TO lcUpdate NOSHOW  
+	update [cimsdb].[dbo].[plan] set [prod_id] = ?m.prod_id, [plan_id] = ?m.plan_id, [title] = ?m.title, [description] = ?m.description,
+	[class] = ?m.class, [same_as] = ?m.same_as, [deductible] = ?m.deductible, [deductible_per] = ?m.deductible_per, [corepond] = ?m.corepond,
+	[corepond_per] = ?m.corepond_per, [aggregate] = ?m.aggregate, [aggregate_oon] = ?m.aggregate_oon, [aggregate_per] = ?m.aggregate_per,
+	[l_user] = ?m.l_user, [l_update] = ?m.l_update, [no_service] = ?m.no_service, [over_respond] = ?m.over_respond, [benefit_cover] = ?m.benefit_cover,
+	[fxtype] = ?m.fxtype, [waiting] = ?m.waiting, [waiting_per] = ?m.waiting_per where [prod_id] = ?m.prod_id and [plan_id] = ?m.plan_id
+ENDTEXT 	  
+*
+TEXT TO lcInsert NOSHOW  
+	insert into [cimsdb].[dbo].[plan] ([prod_id], [plan_id], [title], [description], [class], [same_as], [deductible],
+		[deductible_per], [corepond], [corepond_per], [aggregate], [aggregate_oon], [aggregate_per], [l_user], [l_update], 
+		[no_service], [over_respond], [benefit_cover], [fxtype], [waiting], [waiting_per])
+	values
+		(?m.prod_id,?m.plan_id,?m.title,?m.description,?m.class,?m.same_as,?m.deductible,
+		?m.deductible_per,?m.corepond,?m.corepond_per,?m.aggregate,?m.aggregate_oon,?m.aggregate_per,?m.l_user,?m.l_update,
+		?m.no_service,?m.over_respond,?m.benefit_cover,?m.fxtype,?m.waiting,?m.waiting_per)
+ENDTEXT 	  
+
+lnSql = SQLEXEC(gnConn, lcUpdate, "sqlresult", laSql)  
+IF lnSql = 1
+	IF laSql[2] > 0
+		llRetval = .t.
+	else
+		lnSql = SQLEXEC(gnConn, lcInsert, "sqlresult", laSql)  	
+		if lnSql = 1
+			IF laSql[2] >= 0
+				llRetval = .t.
+			else	
+				=aerror(laError)					
+			endif	
+		else
+			=aerror(laError)
+			?laError[2]
+		endif	
+	ENDIF 
+else
+	=aerror(laError)
+	?laError[2]	
+ENDIF 		
+IF USED("sqlresult")
+	USE IN sqlresult
+ENDIF 	  
+SELECT (lnSelect)
+RETURN llRetval
+**********************************************
+FUNCTION insertPlan2Cat()
+
+lnSelect = SELECT()
+llRetVal = .f.
+
+SCATTER MEMO MEMVAR 
+
+TEXT TO lcInsert NOSHOW
+	insert into [cimsdb].[dbo].[plan2cat] ([plan_id],[cat_id],[description],[group],[subgroup],[subtype],[ismaingrp],
+	   [issubmain],[benefit],[benefit2],[per],[benefit3],[aggregate],[condition],[l_user],[l_update],[cat_code])
+	values
+	(?m.plan_id, ?m.cat_id, ?m.description, ?m.group, ?m.subgroup, ?m.subtype, ?m.ismaingrp, ?m.issubmain,
+	   ?m.benefit, ?m.benefit2, ?m.per, ?m.benefit3, ?m.aggregate, ?m.condition, ?m.l_user, ?m.l_update, ?m.cat_code)
+ENDTEXT 	  
+
+TEXT TO lcUpdate NOSHOW
+	update [cimsdb].[dbo].[plan2cat] set [plan_id] = ?m.plan_id, [cat_id] = ?m.cat_id, [description] = ?m.description, [group] = ?m.group,	
+		[subgroup] = ?m.subgroup, [subtype] = ?m.subtype, [ismaingrp] = ?m.ismaingrp, [issubmain] = ?m.issubmain, [benefit] = ?m.benefit, 
+	    [benefit2] = ?m.benefit2, [per] = ?m.per, [benefit3] = ?m.benefit3, [aggregate] = ?m.aggregate, [condition] = ?m.condition, 
+	    [l_user] = ?m.l_user, [l_update] = ?m.l_update, [cat_code] = ?m.cat_code where [plan_id] = ?m.plan_id and [cat_id] = ?m.cat_id
+ENDTEXT 	  
+lnSql = SQLEXEC(gnConn, lcUpdate, "sqlresult", laSql)  
+IF lnSql = 1
+	IF laSql[2] > 0
+		llRetval = .t.
+	else
+		lnSql = SQLEXEC(gnConn, lcInsert, "sqlresult", laSql) 
+		if lnSql = 1 	
+			IF laSql[2] >= 0
+				llRetval = .t.
+			else	
+				=aerror(laError)	
+			endif	
+		else
+			=aerror(laError)
+			?laError[2]						
+		endif 	
+	ENDIF 
+else
+	=aerror(laError)		
+	?laError[2]							
+ENDIF 		
+IF USED("sqlresult")
+	USE IN sqlresult
+ENDIF 	  
+SELECT (lnSelect)
+RETURN llRetval
+**********************************************
+FUNCTION insertProdExclusion()
+
+lnSelect = SELECT()
+llRetVal = .f.
+
+SCATTER MEMO MEMVAR 
+
+TEXT TO lcUpdate NOSHOW
+	update [cimsdb].[dbo].[product_exclusion] set [prod_id] = ?m.prod_id, [excltype] = ?m.excltype, [exclno] = ?m.exclno, [icd10] = ?m.icd10,
+		[detail] = ?m.detail, [detailthai] = ?m.detailthai, [l_user] = ?m.l_user, [l_update] = ?m.l_update where [prod_id] = ?m.prod_id and [exclno] = ?m.exclno	
+ENDTEXT 	  
+
+TEXT TO lcInsert NOSHOW
+	insert into [cimsdb].[dbo].[product_exclusion] ([prod_id],[excltype],[exclno],[icd10],[detail],[detailthai],[l_user],[l_update])
+	values (?m.prod_id,?m.excltype,?m.exclno,?m.icd10,?m.detail,?m.detailthai,?m.l_user,?m.l_update)
+ENDTEXT 	  
+
+lnSql = SQLEXEC(gnConn, lcUpdate, "sqlresult", laSql)  
+IF lnSql = 1
+	IF laSql[2] > 0
+		llRetval = .t.
+	else
+		lnSql = SQLEXEC(gnConn, lcInsert, "sqlresult", laSql)  	
+		IF laSql[2] >= 0
+			llRetval = .t.
+		else	
+			=aerror(laError)	
+		endif	
+	ENDIF 
+ENDIF 		
+IF USED("sqlresult")
+	USE IN sqlresult
+ENDIF 	  
+SELECT (lnSelect)
+RETURN llRetval
+**********************************************
+function saveProduct(tcFundCode, tcProdId)
+
+if empty(tcFundCode) and empty(tcPlanId)
+	return .f.
+endif	
+
+llRetVal = .T.
+lnSelect = select()
+
+select * from cims!product where fundcode = tcFundCode and prod_id = tcProdId into cursor _product
+if _TALLY > 0
+	select _product
+	if insertProduct()
+		lcProdId = _product.fundcode + _product.prod_id
+		select * from cims!plan where prod_id = lcProdId into cursor _plan
+		if _TALLY  > 0
+			select _plan
+			scan 
+				if insertPlan()
+					lcPlanId = _plan.plan_id
+					select * from cims!plan2cat where plan_id = lcPlanId into cursor _plan2cat
+					if _TALLY  > 0
+						select _plan2cat
+						scan 
+							if insertPlan2Cat()
+								llRetVal = .T.
+							endif 
+						endscan
+					endif 
+					use in _plan2cat		
+				endif 
+			endscan
+		endif 
+		use in _plan
+	endif
+endif 
+use in _product
+		
+select (lnSelect)
+return llRetVal			
+**********************************************
+function savePlan(tcPlanId)
+
+if empty(tcPlanId)
+	return .f.
+endif	
+
+llRetVal = .T.
+lnSelect = select()
+
+select * from cims!plan where plan_id = tcPlanId into cursor _plan
+if _TALLY  > 0
+	lnRecNo = 0
+	select _plan
+	scan 
+		if insertPlan()
+			lnRecNo = lnRecNo + 1
+		endif 
+	endscan
+	llRetVal = lnRecNo > 0 
+	if llRetVal
+		select * from cims!plan2cat where plan_id = tcPlanId into cursor _plan2cat
+		if _TALLY  > 0
+			lnRecNo = 0
+			select _plan2cat
+			scan 
+				if insertPlan2Cat()
+					lnRecNo = lnRecNo + 1
+				endif 
+			endscan
+			llRetVal = lnRecNo > 0 
+		endif 
+		use in _plan2cat		
+	endif 	
+endif 
+use in _plan
+select (lnSelect)
+return llRetVal			
+**********************************************
+function saveProdExclusion(tcProdId)
+
+if empty(tcProdId)
+	return .f.
+endif	
+
+llRetVal = .T.
+lnSelect = select()
+select * from cims!product_exclusion where plan_id = tcPlanId into cursor _prodexclusion
+if _TALLY  > 0
+	lnRecNo = 0
+	select _prodexclusion
+	scan 
+		if insertprodexclusion()
+			lnRecNo = lnRecNo + 1
+		endif 
+	endscan
+	llRetVal = lnRecNo > 0 
+endif 
+use in _prodexclusion
+select (lnSelect)
+return llRetVal			
+**********************************************
+FUNCTION updateNotationFromClaim(tcNotifyNo, tcNotation)
+
+llRetVal = .F.
+
+SELECT fundcode, policy_no, family_no, plan_id ;
+FROM cims!claim ;
+WHERE notify_no = tcNotifyNo ;
+INTO ARRAY laClient
+IF _TALLY = 0
+	RETURN llRetVal
+ENDIF 
+
+UPDATE cims!member SET notation = ALLTRIM(tcNotation) ;
+WHERE tpacode = laClient[1] ;
+	AND policy_no = laClient[2] ;
+	AND family_no = laClient[3] ;
+	AND plan_id = laClient[4]
+IF _TALLY = 0
+	lcSql = "UPDATE cimsdb.dbo.member SET notation = ?tcNotation " +;	
+		"WHERE tpacode = '"+ laClient[1] + "' AND policy_no = '" + laClient[2] +"' AND family_no = " + laClient[3] + "  AND plan_id = '" + laClient[4] +"' "
+	lnSql = SQLEXEC(gnConn,lcSql)
+	IF lnSql = 1
+		llRetVal = .T.
+	ENDIF 	
+ENDIF 
+RETURN llRetVal
+***************************************
+FUNCTION insertNotation(tcNatId, ttDate, tcNotation)
+
+llRetVal = .F.
+lcSql = "{call sp_insertNotation(?tcNatId, ?ttDate, ?tcNotation)}"
+lnSql = SQLEXEC(gnConn, lcSql)
+IF lnSql = 1
+	llRetVal = .T.
+ENDIF 
+RETURN llRetVal	
+************************************************
+function getPreviousPolicy(tcFundCode, tcNatId, tcPlan, tdExpiry)
+
+loRetVal = null 
+if empty(tcFundcode) and empty(tcNatId) and empty(tcPlan) and empty(tdExpiry)
+	return loRetVal
+endif 
+
+*tdExpiry = tdExpiry + (86400-120)
+selec policy_no, renew, effective ;
+from cims!member ;
+where tpacode  = tcFundCode ;
+	and natid = tcNatId ;
+	and product  = tcPlan ;
+	and expiry  = tdExpiry ;
+into array laLastPolicy
+if _TALLY = 1
+	loRetVal = createobject("empty")
+	=addproperty(loRetVal,"policy_no", laLastPolicy[1])
+	=addproperty(loRetVal,"renew",laLastPolicy[2])
+	=addproperty(loRetVal,"effective",laLastPolicy[3])	
+endif 
+return loRetVal
+*****************************************************
+function checkNatId(tcNatId)
+
+if empty(tcNatId)
+	return .F.
+endif
+for i = 1 to 12
+	if !isdigit(substr(tcNatId, i, 1))
+		return .f.
+	endif	
+endfor  
+****************************
+returnVal = .f.
+if len(tcNatId) = 13
+	sumNat = 0
+    for i = 1 to 12
+    	if isdigit(substr(tcNatId, i, 1))
+		    sumNat = sumNat + val(substr(tcNatId, i, 1)) * (14 - i)
+		endif    
+	endfor 
+	   
+    * complements(12, sum mod 11) *
+    lnMod = mod(sumNat,11)
+   	lnCheckDigit = 11 - lnMod
+   	lcCheckDigit = iif(lnCheckDigit > 9, right(str(lnCheckDigit,2),1), str(lnCheckDigit,1))
+    returnVal = right(tcNatId,1) = 	lcCheckDigit
+endif 
+return returnVal 
+**************************************************************
+FUNCTION updateMemberToSql
+
+m.deductible = m.insure
+m.expried_y = IIF(m.expried_y = {}, null, m.expried_y)
+m.me_cover = IIF(INLIST(m.customer_type, "P"), m.overall_limit, 0)
+m.hs_cover = IIF(INLIST(m.customer_type, "I", "H"), m.overall_limit, 0)
+m.mc_cover = getMcCover(m.tpacode, m.package, m.product, m.overall_limit)		
+m.cardno = IIF(EMPTY(m.cardno), STRTRAN(m.policy_no,'-',''), m.cardno)
+m.cardno = strtran(m.cardno, '/','')
+m.duty = 'V'
+m.copayment = null
+m.oldcardno = null
+m.adjcarddate = null
+
+=chnageEmptyToNull()
+m.family_no = IIF(ISNULL(m.family_no), 0, m.family_no)
+
+TEXT TO lcSql NOSHOW 
+{call sp_insertMember(?m.fund_id
+   ,?m.tpacode
+   ,?m.policy_group
+   ,?m.policy_name
+   ,?m.policy_no
+   ,?m.family_no
+   ,?m.no_of_pers
+   ,?m.customer_id
+   ,?m.customer_type
+   ,?m.product
+   ,?m.plan_id
+   ,?m.overall_limit
+   ,?m.effective_y
+   ,?m.expried_y
+   ,?m.natid
+   ,?m.title
+   ,?m.name
+   ,?m.middlename
+   ,?m.surname
+   ,?m.h_addr1
+   ,?m.h_addr2
+   ,?m.h_city
+   ,?m.h_province
+   ,?m.h_postcode
+   ,?m.h_country
+   ,?m.h_phone
+   ,?m.wk_phone
+   ,?m.fax
+   ,?m.mobile
+   ,?m.access_lvl
+   ,?m.sex
+   ,?m.birth_date
+   ,?m.age
+   ,?m.policy_date
+   ,?m.effective
+   ,?m.expiry
+   ,?m.premium
+   ,?m.exclusion
+   ,?m.pay_fr
+   ,?m.pay_mode
+   ,?m.pay_seq
+   ,?m.status
+   ,?m.renew
+   ,?m.pay_status
+   ,?m.notation
+   ,?m.branch_code
+   ,?m.insure
+   ,?m.package
+   ,?m.l_submit
+   ,?m.hb_limit
+   ,?m.hb_cover
+   ,?m.employee
+   ,?m.payee
+   ,?m.mail_address
+   ,?m.l_user
+   ,?m.l_update
+   ,?m.agent 
+   ,?m.agentcy
+   ,?m.agent_name
+   ,?m.agency_name
+   ,?m.agent_addr1
+   ,?m.agent_addr2
+   ,?m.agent_addr3
+   ,?m.agent_addr4
+   ,?m.agent_addr5
+   ,?m.agent_addr6
+   ,?m.agent_province
+   ,?m.agent_postcode
+   ,?m.agent_phone
+   ,?m.old_policyno
+   ,?m.duty
+   ,?m.start_date
+   ,?m.policy_start
+   ,?m.policy_end
+   ,?m.end_serial
+   ,?m.lastpaid
+   ,?m.reindate
+   ,?m.polstatus
+   ,?m.canceldate
+   ,?m.lapsedate
+   ,?m.adddate
+   ,?m.adjcancel
+   ,?m.adjlapse
+   ,?m.adjrein
+   ,?m.adjrefund
+   ,?m.refunddate
+   ,?m.cancelexp
+   ,?m.replace_date
+   ,?m.infonote
+   ,?m.acno
+   ,?m.acname
+   ,?m.bankcode
+   ,?m.bankname
+   ,?m.brcode
+   ,?m.brname
+   ,?m.cardno
+   ,?m.quotation
+   ,?m.hs_cover
+   ,?m.me_cover
+   ,?m.mc_cover
+   ,?m.deductible
+   ,?m.copayment
+   ,?m.oldcardno
+   ,?m.adjcarddate)}
+ENDTEXT           
+lnSucess = SQLEXEC(gnConn, lcSql)	
+IF lnSucess = 1
+	llSuscess = .T.
+ELSE
+	llSuscess = .F.
+	=AERROR(laSqlError)
+	lcError =  ALLTRIM(m.policy_no)+'|'+laSqlError[2]+'|'+laSqlError[3]+CHR(13)
+	=STRTOFILE(lcError, addbs(DATAPATH)+"sqlerror.txt",1)
+ENDIF 	
+RETURN llSuscess	
+*******************************************
+FUNCTION chnageEmptyToNull()
+
+FOR i = 1 TO FCOUNT()
+	lcField = 'm.'+field[i]
+	IF EMPTY(&lcField)
+		&lcField = null
+	ENDIF 
+ENDFOR 	
+RETURN 0	
+*******************************************
+function updateClaimPaid(tcFundCode, tdReturnDate, tdPaidDate)
+
+lnRetVal = 0
+*update to VFP 
+update cims!claim set result = icase(inv_page = 1, 'P6','P61',result), paid_date = tdPaidDate ;
+where fundcode = tcFundCode and return_date = tdReturnDate
+lnRetVal = _TALLY
+if lnRetVal > 0
+	*update to sql
+	lcSql = "update cimsdb.dbo.claim set result = case when inv_page = 1 then 'P6' when inv_page = 2 then 'P61' else result end"+;
+		"paid_date = ?tdPaidDate where fundcode = ?tcFundCode and return_date = ?tdReturnDate"
+	lnSuscess = sqlexec(gnConn, lcSql, "sqlresult", aSqlInfo)
+	lnRetVal = aSqlInfo[2]
+endif 	
+
+return lnRetVal	
+*****************************************************
+FUNCTION getCardNo(tcPolicyNo)
+
+IF EMPTY(tcPolicyNo)
+	RETURN ""
+ENDIF 
+	
+lcCardNo = ""
+lnSelect  = SELECT()
+lcSql = "select cardno from cimsdb.dbo.member where policy_no = ?tcPolicyNo"
+lnSuscess = SQLEXEC(gnConn, lcSql, "_curPol", laSqlInfo)
+IF lnSuscess = 1
+	lcCardNo = _curPol.cardno
+ENDIF 
+USE IN _curPol
+SELECT (lnSelect)
+RETURN lcCardNo
+*************************************************
+function getIndiPolicy(tcFundcode, tcPolicyNo)
+
+if empty(tcFundcode) and empty(tcPolicyNo)
+	return ""
+endif 
+
+do case 
+case tcFundCode = 'FAL'
+	if left(tcPolicyNo,1) = '0'
+		lcRetVal = left(tcPolicyNo,17)		
+	else
+		lcRetVal = left(tcPolicyNo,20)			
+	endif
+otherwise 
+	lcRetVal = tcPolicyNo
+endcase 
+return lcRetVal	
+**************************************************************
+procedure groupDentalItem
+
+lcClmDbf = dbf()
+=afields(laField)
+lcdbf = strtran(dbf(), "IPD","DEN")
+lcDentalAlias = strtran(justfname(lcDbf),".DBF", "")
+create table (lcDbf) free from array laField
+
+select pol_no, cust_id, admit from (lcClmDbf) where bro_no = "D" group by pol_no, cust_id, admit into cursor _grp
+if _TALLY > 0
+	select _grp
+	go top 
+	do while !eof()
+		scatter memvar 
+		do sumDentalAll	
+		select _grp
+		skip
+	enddo
+	use in _grp
+endif 
+SELECT (lcDentalAlias)
+*************************		
+procedure sumDentalAll
+
+lnSelect = select()
+
+select * ;
+from (lcClmDbf) ;
+where pol_no = m.pol_no and cust_id = m.cust_id and admit = m.admit ;
+into cursor _fal
+
+select _fal
+scatter memvar memo 
+store "" to m.icd_10, m.indication, m.treatment, m.remark
+store 0 to m.hosp_amt, m.discount, m.non_cover, m.benf_paid, m.exgratia, ;
+	m.a_sf, m.d_sf, m.o_sf, m.p_sf, m.e_sf, m.c_sf, m.n_sf, ;
+	m.a_et, m.d_et, m.o_et, m.p_et, m.e_et, m.c_et, m.n_et, ;
+	m.a_acc, m.d_acc, m.o_acc, m.p_acc, m.e_acc, m.c_acc, m.n_acc, ;
+	m.a_wr, m.d_wr, m.o_wr, m.p_wr, m.e_wr, m.c_wr, m.n_wr, ;
+	m.a_rc, m.d_rc, m.o_rc, m.p_rc, m.e_rc, m.c_rc, m.n_rc, ;
+	m.a_sl, m.d_sl, m.o_sl, m.p_sl, m.e_sl, m.c_sl, m.n_sl
+scan 
+	m.hosp_amt = m.hosp_amt + _fal.hosp_amt
+	m.discount = m.discount + _fal.discount
+	m.non_cover = m.non_cover + _fal.non_cover
+	m.benf_paid = m.benf_paid + _fal.benf_paid
+	m.exgratia = m.exgratia + _fal.exgratia
+	m.icd_10 = alltrim(m.icd_10) + "," + alltrim(_fal.icd_10)
+	m.indication = alltrim(m.indication) + alltrim(_fal.Indication) + "("+_fal.Not_no+")"
+	m.treatment = alltrim(m.treatment) +  alltrim(_fal.Treatment) + "("+_fal.Not_no+")"
+	m.remark = alltrim(m.remark) + alltrim(_fal.Remark) + "("+_fal.Not_no+")"
+
+	m.a_sf = m.a_sf + _fal.a_sf
+	m.d_sf = m.d_sf + _fal.d_sf
+	m.o_sf = m.o_sf + _fal.o_sf
+	m.p_sf = m.p_sf + _fal.p_sf
+	m.e_sf = m.e_sf + _fal.e_sf
+	m.c_sf = m.c_sf + _fal.c_sf
+	m.n_sf = m.n_sf + _fal.n_sf
+			
+	m.a_et = m.a_et + _fal.a_et
+	m.d_et = m.d_et + _fal.d_et
+	m.o_et = m.o_et + _fal.o_et
+	m.p_et = m.p_et + _fal.p_et
+	m.e_et = m.e_et + _fal.e_et
+	m.c_et = m.c_et + _fal.c_et
+	m.n_et = m.n_et + _fal.n_et
+
+	m.a_acc = m.a_acc + _fal.a_acc
+	m.d_acc = m.d_acc + _fal.d_acc
+	m.o_acc = m.o_acc + _fal.o_acc
+	m.p_acc = m.p_acc + _fal.p_acc
+	m.e_acc = m.e_acc + _fal.e_acc
+	m.c_acc = m.c_acc + _fal.c_acc
+	m.n_acc = m.n_acc + _fal.n_acc
+
+	m.a_wr = m.a_wr + _fal.a_wr
+	m.d_wr = m.d_wr + _fal.d_wr
+	m.o_wr = m.o_wr + _fal.o_wr
+	m.p_wr = m.p_wr + _fal.p_wr
+	m.e_wr = m.e_wr + _fal.e_wr
+	m.c_wr = m.c_wr + _fal.c_wr
+	m.n_wr = m.n_wr + _fal.n_wr
+
+	m.a_rc = m.a_rc + _fal.a_rc
+	m.d_rc = m.d_rc + _fal.d_rc
+	m.o_rc = m.o_rc + _fal.o_rc
+	m.p_rc = m.p_rc + _fal.p_rc
+	m.e_rc = m.e_rc + _fal.e_rc
+	m.c_rc = m.c_rc + _fal.c_rc
+	m.n_rc = m.n_rc + _fal.n_rc
+
+	m.a_sl = m.a_sl + _fal.a_sl
+	m.d_sl = m.d_sl + _fal.d_sl
+	m.o_sl = m.o_sl + _fal.o_sl
+	m.p_sl = m.p_sl + _fal.p_sl
+	m.e_sl = m.e_sl + _fal.e_sl
+	m.c_sl = m.c_sl + _fal.c_sl
+	m.n_sl = m.n_sl + _fal.n_sl
+endscan 
+insert into (lcDbf) from memvar
+
+use in _fal
+select (lnSelect)

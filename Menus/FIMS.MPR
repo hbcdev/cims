@@ -1,6 +1,6 @@
 *       *********************************************************
 *       *                                                         
-*       * 06/10/2013             FIMS.MPR               19:48:48  
+*       * 25/12/2013             FIMS.MPR               13:10:12  
 *       *                                                         
 *       *********************************************************
 *       *                                                         
@@ -44,30 +44,30 @@ DEFINE PAD _msm_edit OF _MSYSMENU PROMPT "\<Edit" COLOR SCHEME 3 ;
 	NEGOTIATE  NONE, LEFT ;
 	KEY ALT+E, "" ;
 	MESSAGE "Edits text or current selection"
-DEFINE PAD _3wa16gtom OF _MSYSMENU PROMPT "Client Info" COLOR SCHEME 3 ;
+DEFINE PAD _3yi0s8839 OF _MSYSMENU PROMPT "Client Info" COLOR SCHEME 3 ;
 	KEY ALT+C, ""
-DEFINE PAD _3wa16gton OF _MSYSMENU PROMPT "Claim \<Payment" COLOR SCHEME 3 ;
+DEFINE PAD _3yi0s883a OF _MSYSMENU PROMPT "Claim \<Payment" COLOR SCHEME 3 ;
 	NEGOTIATE  MIDDLE, MIDDLE ;
 	KEY ALT+P, "" ;
 	SKIP FOR NOT INLIST(oApp.cUserLevel, 1, 2)
-DEFINE PAD _3wa16gtoo OF _MSYSMENU PROMPT "\<Report" COLOR SCHEME 3 ;
+DEFINE PAD _3yi0s883b OF _MSYSMENU PROMPT "\<Report" COLOR SCHEME 3 ;
 	KEY ALT+R, ""
-DEFINE PAD _3wa16gtop OF _MSYSMENU PROMPT "\<Web" COLOR SCHEME 3 ;
+DEFINE PAD _3yi0s883c OF _MSYSMENU PROMPT "\<Web" COLOR SCHEME 3 ;
 	KEY ALT+W, ""
-DEFINE PAD _3wa16gtoq OF _MSYSMENU PROMPT "\<Help" COLOR SCHEME 3 ;
+DEFINE PAD _3yi0s883d OF _MSYSMENU PROMPT "\<Help" COLOR SCHEME 3 ;
 	KEY ALT+H, ""
-DEFINE PAD _3wa16gtor OF _MSYSMENU PROMPT "E\<xit" COLOR SCHEME 3 ;
+DEFINE PAD _3yi0s883e OF _MSYSMENU PROMPT "E\<xit" COLOR SCHEME 3 ;
 	KEY ALT+X, ""
 ON PAD _msm_file OF _MSYSMENU ACTIVATE POPUP _mfile
 ON PAD _msm_edit OF _MSYSMENU ACTIVATE POPUP _medit
-ON SELECTION PAD _3wa16gtom OF _MSYSMENU oApp.Doform("client_info")
-ON PAD _3wa16gton OF _MSYSMENU ACTIVATE POPUP claimpay
-ON PAD _3wa16gtoo OF _MSYSMENU ACTIVATE POPUP report
-ON PAD _3wa16gtop OF _MSYSMENU ACTIVATE POPUP web
-ON PAD _3wa16gtoq OF _MSYSMENU ACTIVATE POPUP help
-ON SELECTION PAD _3wa16gtor OF _MSYSMENU ;
-	DO _3wa16gtp1 ;
-	IN LOCFILE("\HIPS_SRC\MENUS\FIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is FIMS?")
+ON SELECTION PAD _3yi0s8839 OF _MSYSMENU oApp.Doform("client_info")
+ON PAD _3yi0s883a OF _MSYSMENU ACTIVATE POPUP claimpay
+ON PAD _3yi0s883b OF _MSYSMENU ACTIVATE POPUP report
+ON PAD _3yi0s883c OF _MSYSMENU ACTIVATE POPUP web
+ON PAD _3yi0s883d OF _MSYSMENU ACTIVATE POPUP help
+ON SELECTION PAD _3yi0s883e OF _MSYSMENU ;
+	DO _3yi0s883f ;
+	IN LOCFILE("\CIMS\MENUS\FIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is FIMS?")
 
 DEFINE POPUP _mfile MARGIN RELATIVE SHADOW COLOR SCHEME 4
 DEFINE BAR 1 OF _mfile PROMPT "\<New..." ;
@@ -126,8 +126,8 @@ ON SELECTION BAR 5 OF _mfile oApp.oToolBar.CmdSave.Click()
 ON SELECTION BAR 6 OF _mfile oApp.oToolBar.CmdUndo.Click()
 ON SELECTION BAR 8 OF _mfile RUN /N1 fxsclnt.exe
 ON SELECTION BAR 9 OF _mfile ;
-	DO _3wa16gtp2 ;
-	IN LOCFILE("\HIPS_SRC\MENUS\FIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is FIMS?")
+	DO _3yi0s883g ;
+	IN LOCFILE("\CIMS\MENUS\FIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is FIMS?")
 ON SELECTION BAR 13 OF _mfile DO FORM form\sendmemo
 ON SELECTION BAR 15 OF _mfile Activate Window calculator
 ON SELECTION BAR 16 OF _mfile Activate Window calendar
@@ -257,11 +257,11 @@ ON SELECTION BAR 10 OF report oApp.DoForm("claimquery")
 ON SELECTION BAR 11 OF report oApp.DoForm("claimupload")
 ON SELECTION BAR 13 OF report Do progs\kta_cover
 ON SELECTION BAR 14 OF report ;
-	DO _3wa16gtp3 ;
-	IN LOCFILE("\HIPS_SRC\MENUS\FIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is FIMS?")
+	DO _3yi0s883h ;
+	IN LOCFILE("\CIMS\MENUS\FIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is FIMS?")
 ON SELECTION BAR 15 OF report ;
-	DO _3wa16gtp4 ;
-	IN LOCFILE("\HIPS_SRC\MENUS\FIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is FIMS?")
+	DO _3yi0s883i ;
+	IN LOCFILE("\CIMS\MENUS\FIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is FIMS?")
 ON SELECTION BAR 17 OF report DO FORM form\reportfilter
 
 DEFINE POPUP dailyrepor MARGIN RELATIVE SHADOW COLOR SCHEME 4
@@ -377,13 +377,13 @@ DEFINE BAR _mwi_view OF help PROMPT "Data Session" ;
 DEFINE BAR 8 OF help PROMPT "\-"
 DEFINE BAR 9 OF help PROMPT "About HBC Per-Certification"
 ON SELECTION BAR 9 OF help ;
-	DO _3wa16gtp5 ;
-	IN LOCFILE("\HIPS_SRC\MENUS\FIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is FIMS?")
+	DO _3yi0s883p ;
+	IN LOCFILE("\CIMS\MENUS\FIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is FIMS?")
 
 
 *       *********************************************************
 *       *                                                         
-*       * _3WA16GTP1  ON SELECTION PAD                            
+*       * _3YI0S883F  ON SELECTION PAD                            
 *       *                                                         
 *       * Procedure Origin:                                       
 *       *                                                         
@@ -394,7 +394,7 @@ ON SELECTION BAR 9 OF help ;
 *       *                                                         
 *       *********************************************************
 *
-PROCEDURE _3wa16gtp1
+PROCEDURE _3yi0s883f
 IF USED("tracking")
 	SELECT tracking
 	SET ORDER TO logintime
@@ -408,7 +408,7 @@ CLEAR EVENT
 
 *       *********************************************************
 *       *                                                         
-*       * _3WA16GTP2  ON SELECTION BAR 9 OF POPUP _mfile          
+*       * _3YI0S883G  ON SELECTION BAR 9 OF POPUP _mfile          
 *       *                                                         
 *       * Procedure Origin:                                       
 *       *                                                         
@@ -419,7 +419,7 @@ CLEAR EVENT
 *       *                                                         
 *       *********************************************************
 *
-PROCEDURE _3wa16gtp2
+PROCEDURE _3yi0s883g
 LOCAL lcOldError
 lcOldError = ON('ERROR')
 ON ERROR *
@@ -429,7 +429,7 @@ ON ERROR &lcOldError
 
 *       *********************************************************
 *       *                                                         
-*       * _3WA16GTP3  ON SELECTION BAR 14 OF POPUP report         
+*       * _3YI0S883H  ON SELECTION BAR 14 OF POPUP report         
 *       *                                                         
 *       * Procedure Origin:                                       
 *       *                                                         
@@ -440,7 +440,7 @@ ON ERROR &lcOldError
 *       *                                                         
 *       *********************************************************
 *
-PROCEDURE _3wa16gtp3
+PROCEDURE _3yi0s883h
 PUBLIC gdStartDate, ;
 	gdEndDate
 
@@ -458,7 +458,7 @@ ENDIF
 
 *       *********************************************************
 *       *                                                         
-*       * _3WA16GTP4  ON SELECTION BAR 15 OF POPUP report         
+*       * _3YI0S883I  ON SELECTION BAR 15 OF POPUP report         
 *       *                                                         
 *       * Procedure Origin:                                       
 *       *                                                         
@@ -469,7 +469,7 @@ ENDIF
 *       *                                                         
 *       *********************************************************
 *
-PROCEDURE _3wa16gtp4
+PROCEDURE _3yi0s883i
 PUBLIC gdStartDate, ;
 	gdEndDate
 
@@ -503,7 +503,7 @@ ENDIF
 
 *       *********************************************************
 *       *                                                         
-*       * _3WA16GTP5  ON SELECTION BAR 9 OF POPUP help            
+*       * _3YI0S883P  ON SELECTION BAR 9 OF POPUP help            
 *       *                                                         
 *       * Procedure Origin:                                       
 *       *                                                         
@@ -514,7 +514,7 @@ ENDIF
 *       *                                                         
 *       *********************************************************
 *
-PROCEDURE _3wa16gtp5
+PROCEDURE _3yi0s883p
 LOCAL loAboutBox
 SET CLASSLIB TO about ADDITIVE
 loAboutBox = CREATEOBJECT("AboutBox", ;

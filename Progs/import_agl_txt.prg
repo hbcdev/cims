@@ -12,9 +12,9 @@ IF FILE(lcDbf)
 ENDIF 
 *	
 SELECT 0
-CREATE DBF (lcDbf) FREE (Policy_grp C(30), Plan_type C(3), Plan_agl C(20), policy_no C(30), Name C(40), Surname C(40), Sex C(1), Dob D, ;
-	Pol_date T, Eff_date T, Exp_date T, Exclusion C(200), paymode C(1), curcy C(3), polstatus C(1), renew I,benfcode C(20), plan C(20), ;
-	plan_id C(10), cardno C(25), insure C(80), Adddate D, access_lvl C(1))
+CREATE DBF (lcDbf) FREE (Policy_grp C(30), Plan_type C(3), plan_agl C(20), policy_no C(30), Name C(40), Surname C(40), Sex C(1), Dob D, ;
+	Pol_date T, Eff_date T, Exp_date T, Exclusion C(200), paymode C(1), curcy C(3), polstatus C(1), renew I, benfcode C(20), plan C(20), ;
+	plan_id C(10), cardno C(25), insure C(80), adddate D, access_lvl C(1), family_no I)
 *
 ?DBF()
 lnFieldCounts = 17
@@ -37,7 +37,7 @@ FOR i = 1 TO lnLines
 				IF INLIST(j, 9, 10)
 					laData[j] = DATETIME(YEAR(laData[j]), MONTH(laData[j]), DAY(laData[j]), 00, 00)	
 				ELSE 
-					laData[j] = DATETIME(YEAR(laData[j]), MONTH(laData[j]), DAY(laData[j]), 23, 59)						
+					laData[j] = DATETIME(YEAR(laData[j]), MONTH(laData[j]), DAY(laData[j]), 23, 59)
 				ENDIF 	
 			ENDIF
 		ENDCASE  	
@@ -56,4 +56,4 @@ FOR i = 1 TO lnLines
 	INSERT INTO (lcdbf) FROM ARRAY laData
 ENDFOR 
 BROWSE 
-USE 
+USE 

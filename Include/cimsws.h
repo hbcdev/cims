@@ -1,0 +1,1 @@
+#DEFINE CIMSDB  "\\dragon1\hips\data\cims.dbc"

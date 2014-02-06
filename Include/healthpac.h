@@ -1,0 +1,5 @@
+#INCLUDE "include\precerf.h"
+*
+#DEFINE INIFILE		 "HEALTHPAC.INI"
+#DEFINE LOGFILE	 "HEALTHPAC.LOG"
+#DEFINE TITLE_LOC  "Helath Pac Management System"

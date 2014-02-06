@@ -313,4 +313,33 @@ DEFINE CLASS QueryWS AS Session OLEPUBLIC
 	   
 	ENDFUNC    
 	
+enddefine
+
+DEFINE CLASS ShowCustomers AS Session OLEPUBLIC
+   PROCEDURE CustomersInGermany AS String
+      LOCAL loXMLAdapter AS XMLAdapter
+      LOCAL lcXMLCustomers AS String
+
+      loXMLAdapter = CREATEOBJECT("XMLAdapter")
+      
+      OPEN DATABASE "C:\Program Files\Microsoft Visual FoxPro 9\" ;
+        + "Samples\Northwind\northwind.dbc"
+
+      USE customers
+      SELECT * ;
+        FROM customers ;
+        WHERE country LIKE "Germany%" ;
+        INTO CURSOR curCustomers
+
+      loXMLAdapter.AddTableSchema("curCustomers")
+      loXMLAdapter.UTF8Encoded = .T.
+      loXMLAdapter.ToXML("lcXMLCustomers")
+
+      CLOSE DATABASES ALL
+
+      RETURN lcXMLCustomers
+   ENDPROC
 ENDDEFINE
+
+
+

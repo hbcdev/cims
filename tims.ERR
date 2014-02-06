@@ -1,0 +1,273 @@
+Visual Class Library e:\cims\class\notify.vcx has the following errors:
+    Unknown NEWDATENO - Undefined
+    Unknown GETICD10TEXT - Undefined
+    Unknown GETBENEFIT - Undefined
+    Unknown NEWPROVID - Undefined
+    Unknown GETPAMEDICAL - Undefined
+    Unknown GETBENFPERIOD - Undefined
+    Unknown GETMCCOVER - Undefined
+    Unknown APP_FINDNOTIFYNO - Undefined
+    Unknown FINDINSURED - Undefined
+    Unknown REMAINFEDPAID - Undefined
+    Unknown REMAINFEDUSED - Undefined
+    Unknown REMAINFEDDPAID - Undefined
+    Unknown AGGREGATEBAL - Undefined
+    Unknown REMAINIPD - Undefined
+    Unknown REMAINOPD - Undefined
+    Proc./Func. SAVEPAPERIOD - Undefined
+    Proc./Func. SAVEHAPERIOD - Undefined
+    Unknown CLAIMCHECKLIST - Undefined
+    Unknown GETBENEFITCOVER - Undefined
+    Unknown GETICD9TEXT - Undefined
+    Unknown GETEFFECTIVEY - Undefined
+    Unknown REMAINGRACE - Undefined
+    Unknown REMAINWAIT - Undefined
+    Unknown REMAINEXCLUSIONWAIT - Undefined
+    Unknown GETSUMLINE - Undefined
+    Unknown SUMBENFGRP - Undefined
+    Unknown EDITNOTATION - Undefined
+    Unknown GETEFFCOVER - Undefined
+    Unknown CHECKDUPCLAIM - Undefined
+    Unknown GETPOLICYID - Undefined
+
+Program e:\cims\progs\claimnopaid.prg has the following errors:
+    Report CLAIMNOPAID - Undefined
+
+Program e:\cims\progs\month_qpr.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Form e:\cims\form\tims_clientadd.scx has the following errors:
+    Unknown GETPERSONNO - Undefined
+
+Form e:\cims\form\bui_clientadd.scx has the following errors:
+    Unknown GETPERSONNO - Undefined
+
+Form e:\cims\form\dialyreport.scx has the following errors:
+    Report RPTASSESS - Undefined
+
+Form e:\cims\form\updatemember.scx has the following errors:
+    Unknown GETPERSONNO - Undefined
+    Unknown GETEXCLUSION - Undefined
+    Unknown GETINDEXTAG - Undefined
+    Unknown GETOLDCUSTID - Undefined
+    Unknown NEWID - Undefined
+    Unknown GETPREMIUM - Undefined
+    Unknown CHECKMEMBERERROR - Undefined
+    Unknown SAVEDEPENDANTSSQL - Undefined
+    Unknown CHECKMEMBER - Undefined
+    Unknown INSERTTOMEMBER - Undefined
+
+Form e:\cims\form\categoryentry.scx has the following errors:
+    Unknown NEWID - Undefined
+    Unknown SAVECATEGORYTOSQL - Undefined
+
+Form e:\cims\form\claim_fee.scx has the following errors:
+    Unknown GETTYPECLAIM - Undefined
+    Unknown GETCLAIMTYPE - Undefined
+
+Form e:\cims\form\clientadd.scx has the following errors:
+    Unknown GETPERSONNO - Undefined
+
+Form e:\cims\form\noentry.scx has the following errors:
+    Report RPTASSESS - Undefined
+
+Form e:\cims\form\products.scx has the following errors:
+    Unknown NEWID - Undefined
+    Unknown SAVEPRODUCT - Undefined
+    Unknown INSERTPRODEXCLUSION - Undefined
+    Unknown SAVEERROR - Undefined
+
+Form e:\cims\form\tims02_pa.scx has the following errors:
+    Unknown NEWID - Undefined
+
+Program e:\cims\progs\query_dvs_ctac.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Form e:\cims\form\ticws.scx has the following errors:
+    Unknown NEWID - Undefined
+
+Program e:\cims\progs\query_nsi_hs.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+    Unknown MESSAGEALERT - Undefined
+
+Program e:\cims\progs\query_dvs_srimarem.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_dvs_ppp.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Form e:\cims\form\tims_memberadd.scx has the following errors:
+    Unknown NEWID - Undefined
+    Unknown GETTPAPLANID - Undefined
+    Unknown ABANK - Undefined
+
+Program e:\cims\progs\query_pa_fci.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_dvs_sosuco.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\pa_monthly_report.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\import_falcon_exp.prg has the following errors:
+    Unknown UPDATEFNISQL - Undefined
+
+Program e:\cims\progs\falcon_fee.prg has the following errors:
+    Unknown GETPREMIUM - Undefined
+
+Program e:\cims\progs\query_dvs_ttc.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_dvs_734.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\lot2excel.prg has the following errors:
+    Unknown FIRSTCHR - Undefined
+
+Form e:\cims\form\tims_membersadd.scx has the following errors:
+    Unknown NEWID - Undefined
+    Unknown GETTPAPLANID - Undefined
+    Unknown ABANK - Undefined
+
+Program e:\cims\progs\smg_monthly_report.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Menu e:\cims\menus\shcselectaddnew.mnx has the following errors:
+    Proc./Func. CLIENT_INFO - Undefined
+    Proc./Func. FIND_EDC - Undefined
+    Proc./Func. FIND_LOG - Undefined
+    Proc./Func. FIND_APPOINT - Undefined
+
+Program e:\cims\progs\import_lawton_xls.prg has the following errors:
+    Unknown CHECKINTERFUND - Undefined
+    Unknown GETINTERPOLICYGROUP - Undefined
+    Unknown GETINTERPLANID - Undefined
+    Unknown LAPLAN - Undefined
+
+Form e:\cims\form\appointment_add.scx has the following errors:
+    Unknown NEWDATENO - Undefined
+    Unknown NEWID - Undefined
+
+Visual Class Library e:\cims\class\timsmain.vcx has the following errors:
+    Unknown GETUSERINFO - Undefined
+
+Form e:\cims\form\provadd.scx has the following errors:
+    Unknown NEWPROVID - Undefined
+
+Form e:\cims\form\cims02_precode.scx has the following errors:
+    Unknown GETPERIODFEE - Undefined
+
+Form e:\cims\form\client_info.scx has the following errors:
+    Unknown NEWDATENO - Undefined
+    Unknown GETMCCOVER - Undefined
+    Unknown REMAINWAIT - Undefined
+    Unknown REMAINEXCLUSIONWAIT - Undefined
+    Unknown GETPOLICYID - Undefined
+    Unknown HOLIDAYS - Undefined
+    Unknown GETWARNING - Undefined
+    Unknown GETNOTIFYBYPOLICY - Undefined
+    Unknown GETCLAIMBYPOLICY - Undefined
+    Unknown GETPAPERIOD - Undefined
+    Unknown CHECKADJCARD - Undefined
+    Unknown GETCLAIMBYNATID - Undefined
+    Unknown GETDUEDATE - Undefined
+    Unknown GETPLANDESC - Undefined
+    Unknown CHECKBLACKLIST - Undefined
+    Unknown GETEDCPREAUTHBYPOLICY - Undefined
+    Unknown GETEDCPAYMENTBYPOLICY - Undefined
+    Unknown GETCUSTBYPOLICYID - Undefined
+    Unknown GETCUSTBYNATID - Undefined
+    Unknown GETPAPERIODITEMS - Undefined
+    Unknown GETPAPERIODLINES - Undefined
+    Unknown GETPRODUCTCOVER - Undefined
+    Unknown VOIDCLAIMPAYMENT - Undefined
+
+Program e:\cims\progs\import_bki_tqm.prg has the following errors:
+    Unknown GETBKIPREMIUM - Undefined
+
+Program e:\cims\progs\import_bki_tqm_cancel.prg has the following errors:
+    Unknown UPDATECANCELMEMBER - Undefined
+
+Program e:\cims\progs\import_agl_co_txt.prg has the following errors:
+    Unknown SAVEERROR - Undefined
+    Unknown INSERTPOLICY2ITEMSSQL - Undefined
+    Unknown UPDATEPOLICY2ITEMSSQL - Undefined
+
+Program e:\cims\progs\import_smg_pah_txt_sql.prg has the following errors:
+    Unknown CHECKN1 - Undefined
+    Unknown GETCARDNO - Undefined
+
+Form e:\cims\form\calllog.scx has the following errors:
+    Unknown NEWDATENO - Undefined
+
+Program e:\cims\progs\query_cig_dental.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_ssl_hs.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Visual Class Library e:\cims\class\cimsui.vcx has the following errors:
+    Unknown NEWDATENO - Undefined
+    Unknown FINDINSURED - Undefined
+    Unknown GETBENEFITCOVER - Undefined
+    Unknown GETPOLICYID - Undefined
+    Unknown GETCLAIMLINEBYNOTIFYNO - Undefined
+
+Program e:\cims\progs\import_falcon_endorse.prg has the following errors:
+    Unknown SAVEERROR - Undefined
+    Unknown UPDATEENDORSE - Undefined
+
+Program e:\cims\progs\import_falcon_policy.prg has the following errors:
+    Unknown UPDATEFNIPOLICY - Undefined
+
+Program e:\cims\progs\query_dvs_raksuk.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_dvs_hs.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_bki_tcc.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\query_dvs_scg.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Form e:\cims\form\client_infosql.scx has the following errors:
+    Unknown NEWDATENO - Undefined
+    Unknown REMAINWAIT - Undefined
+    Unknown REMAINEXCLUSIONWAIT - Undefined
+    Unknown GETPOLICYID - Undefined
+    Unknown GETPAPERIOD - Undefined
+    Unknown CHECKADJCARD - Undefined
+    Unknown GETDUEDATE - Undefined
+    Unknown GETPLANDESC - Undefined
+    Unknown CHECKBLACKLIST - Undefined
+    Unknown GETEDCPREAUTHBYPOLICY - Undefined
+    Unknown GETEDCPAYMENTBYPOLICY - Undefined
+    Unknown GETCUSTBYPOLICYID - Undefined
+    Unknown GETCUSTBYNATID - Undefined
+    Unknown GETPAPERIODITEMS - Undefined
+    Unknown GETPAPERIODLINES - Undefined
+    Unknown GETPRODUCTCOVER - Undefined
+    Unknown VOIDCLAIMPAYMENT - Undefined
+
+Program e:\cims\progs\import_fni_group_pa_xls.prg has the following errors:
+    Unknown UPDATEMEMBERTOSQL - Undefined
+
+Program e:\cims\progs\import_axa_xls.prg has the following errors:
+    Unknown GETINTERPOLICYGROUP - Undefined
+    Unknown GETPLANBYTITLE - Undefined
+
+Program e:\cims\progs\query_avi_hs.prg has the following errors:
+    Unknown HOLIDAYS - Undefined
+
+Program e:\cims\progs\import_bki_nr.prg has the following errors:
+    Unknown GETBKIPREMIUM - Undefined
+
+Program e:\hips_src\progs\import_bui_xls.prg has the following errors:
+    Unknown SAVEDEPENDANTSSQL - Undefined
+    Unknown SPLITFULLNAME - Undefined
+    Unknown GETPLANIDBYPOLICY - Undefined
+    Unknown GETOLDPOLICYBYPOLICY - Undefined
+

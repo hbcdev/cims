@@ -23,7 +23,7 @@ WAIT WINDOW "Query Data ....." NOWAIT
 IF tcFundCode = "SMG"
 	SELECT claim.notify_no, claim.policy_no, claim.family_no, claim.client_name, ;
 		firstChr(claim.prov_name) AS "first", claim.sbenfpaid+claim.abenfpaid AS sbenfpaid, ;
-		((claim.sbenfpaid+claim.abenfpaid) * provider.wt)/100 AS wt_amount, ;
+		round(((claim.sbenfpaid+claim.abenfpaid) * provider.wt)/100, 2) AS wt_amount, ;
 		claim.batchno, claim.prov_id, STRTRAN(claim.prov_name, "(A)", "") AS prov_name, ;
 		claim.refno, claim.paid_date, claim.tr_acno, claim.tr_name, claim.tr_bank, ;
 		claim.insurepaydate,  claim.lotno, ;
@@ -38,7 +38,7 @@ IF tcFundCode = "SMG"
 ELSE 
 	SELECT claim.notify_no, claim.policy_no, claim.family_no, claim.client_name, ;
 		firstChr(claim.prov_name) AS "first", claim.sbenfpaid+claim.abenfpaid AS sbenfpaid, ;
-		((claim.sbenfpaid+claim.abenfpaid) * provider.wt)/100 AS wt_amount, ;
+		round(((claim.sbenfpaid+claim.abenfpaid) * provider.wt)/100, 2) AS wt_amount, ;
 		claim.batchno, claim.prov_id, STRTRAN(claim.prov_name, "(A)", "") AS prov_name, ;
 		claim.refno, claim.paid_date, claim.tr_acno, claim.tr_name, claim.tr_bank, ;
 		claim.insurepaydate,  claim.lotno, ;
@@ -106,16 +106,16 @@ DO WHILE !EOF()
 	oSheet.Cells(lnRows, 9) = lnAmount
 	oSheet.Cells(lnRows, 10) = lnTax
 	*
-	IF lnPaid > 100000
-		oSheet.Cells(lnRows, 11) = lnPaid/2
-		oSheet.Cells(lnRows, 12) = 10
-		lnRows = lnRows + 1
-		oSheet.Cells(lnRows, 11) = lnPaid/2
-		oSheet.Cells(lnRows, 12) = 10
-	ELSE 
+*!*		IF lnPaid > 100000
+*!*			oSheet.Cells(lnRows, 11) = lnPaid/2
+*!*			oSheet.Cells(lnRows, 12) = 10
+*!*			lnRows = lnRows + 1
+*!*			oSheet.Cells(lnRows, 11) = lnPaid/2
+*!*			oSheet.Cells(lnRows, 12) = 10
+*!*		ELSE 
 		oSheet.Cells(lnRows, 11) = lnPaid				
 		oSheet.Cells(lnRows, 12) = 10
-	ENDIF 
+*!*		ENDIF 
 	*	
 	oSheet.Cells(lnRows,13).Value = lcTrNo
 	oSheet.Cells(lnRows,14).Value = lcTrName
@@ -264,4 +264,4 @@ PROCEDURE ColumnLetter
                                                                                 
 	RETURN lcFirstLetter + lcSecondLetter
 
-ENDPROC 
+ENDPROC 

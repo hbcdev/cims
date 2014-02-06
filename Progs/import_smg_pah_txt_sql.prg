@@ -407,10 +407,10 @@ IF lnSucess > 0
 		IF RECCOUNT("curExist") = 0
 			llRetVal = .F.
 		ENDIF 	
+		USE IN curExist		
 	ENDIF 	
 ENDIF 
 WAIT CLEAR 
-USE IN curExist
 SELECT (lnSelect)
 RETURN llRetVal
 ************************************************************************

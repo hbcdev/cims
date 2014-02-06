@@ -1,0 +1,26 @@
+28/11/2013 10:35
+A FoxcodePlus error has occured. Press CTRL+C to copy this error or send the file foxcodeplus.err to the author. 
+
+FoxcodePlus version: Beta 3.13.2
+OS version: Windows 6.02
+Wontop: 
+Localization: E:\HIPS_SRC\TIMS.APP
+Method: timsmain
+Line: 0
+Error message: Cannot clear the object FOXCODEPLUSMAIN because it is in use.
+Error number: 1951
+Line contents: ...
+
+28/11/2013 10:38
+A FoxcodePlus error has occured. Press CTRL+C to copy this error or send the file foxcodeplus.err to the author. 
+
+FoxcodePlus version: Beta 3.13.2
+OS version: Windows 6.02
+Wontop: 
+Localization: E:\CIMS\TIMS.APP
+Method: timsmain
+Line: 128
+Error message: Cannot clear the object FOXCODEPLUSMAIN because it is in use.
+Error number: 1951
+Line contents: CLEAR ALL
+

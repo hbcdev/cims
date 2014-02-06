@@ -37,35 +37,28 @@ DO WHILE !ISNULL(oSheet.Cells(lnRow, 37).Value)
 		DO CASE 
 		CASE INLIST(i, 15, 29, 32, 33, 34)
 			laData[i] = IIF(ISNULL(laData[i]), {}, laData[i])
-			IF EMPTY(laData[i])
+			IF ISNULL(laData[i])
 				laData[i] = {}
 			ENDIF
 			*
-			laData[i] = IIF(TYPE("laData[i]") = "N", ALLTRIM(STR(laData[i])), laData[i])
-			IF TYPE("laData[i]") = "C"
-				IF AT("/", laData[i]) = 0
-					laData[i] = SUBSTR(laData[i],7,2)+"/"+SUBSTR(laData[i],5,2)+"/"+LEFT(laData[i],4)
-				ENDIF 
-				laData[i] = CTOD(laData[i])
-			ENDIF
-			*
-			IF INLIST(i, 32, 33)
-				IF EMPTY(laData[i])
-					laData[i] = {}
-				ELSE
-					laData[i] = DATETIME(YEAR(laData[i]), MONTH(laData[i]), DAY(laData[i]), 00, 00)
-				ENDIF 	
-			ENDIF 
-			IF i = 33
-				IF !EMPTY(laData[i])
-					laData[i] = GOMONTH(laData[i],12)-1
-					laData[i] = DATETIME(YEAR(laData[i]), MONTH(laData[i]), DAY(laData[i]), 23, 59)
-				ENDIF 	
-			ENDIF 
+			if empty(laData[i])
+				laData[i] = {}
+			else			
+				laData[i] = IIF(TYPE("laData[i]") = "N", ALLTRIM(STR(laData[i])), laData[i])
+				if TYPE("laData[i]") = "C"
+					IF AT("/", laData[i]) = 0
+						laData[i] = SUBSTR(laData[i],7,2)+"/"+SUBSTR(laData[i],5,2)+"/"+LEFT(laData[i],4)
+					ENDIF 
+					laData[i] = CTOD(laData[i])
+				endif	
+				IF INLIST(i, 32, 33, 34)
+					laData[i] = DATETIME(YEAR(laData[i]), MONTH(laData[i]), DAY(laData[i]), 16, 30)
+				ENDIF 				
+			endif 
 		OTHERWISE 		
 			laData[i] = IIF(ISNULL(laData[i]), "", laData[i])
-			IF TYPE(laData[i]) = "N"
-				laData[i] = LTRIM(STR(laData[i]))
+			IF TYPE("laData[i]") = "D"
+				laData[i] = {}
 			ENDIF 	
 		ENDCASE 
 	ENDFOR
@@ -84,7 +77,7 @@ DO WHILE !ISNULL(oSheet.Cells(lnRow, 37).Value)
 	laData[38] = ALLTRIM(laData[12])+" "+ALLTRIM(laData[13])
 	laData[39] = laData[9]
 	laData[40] = ALLTRIM(laData[5])
-	laData[41] = ICASE(laData[5] = "BP1", "FAL1744",laData[5]= "BP2", "FAL1745","")
+	laData[41] = getPlanID(upper(laData[5])) &&ICASE(laData[5] = "BP1", "FAL1744",laData[5]= "BP2", "FAL1745","")
 	laData[42] = ldDate	
 	laData[43] = JUSTFNAME(lcDataFile)	
 	laData[44] = DATETIME()

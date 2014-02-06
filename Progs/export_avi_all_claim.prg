@@ -9,9 +9,10 @@ lcOrder = IIF(tnClaimBy = 2, "7", "4")+", claim.notify_no"
 SET PROCEDURE TO progs\utility
 SELECT claim.notify_no, member.policy_group, IIF(LEFT(claim.policy_no, 2) <> "DW", member.customer_id, claim.policy_no) AS policy_no, ;
 	claim.client_name, claim.service_type, claim.cause_type, claim.prov_id, claim.prov_name, claim.admis_date, claim.paid_to, claim.indication_admit, ;
-	claim.disc_date, claim.scharge, claim.sdiscount, claim.sbenfpaid, claim.deduc, claim.deduc_paid, claim.copayment, claim.snote, claim.currency_rate, claim.refno, claim.sday, ;
-	claim.icd9_1, claim.illness1, claim.illness2, claim.currency_type, claim.policy_no AS policy, LEFT(member.policy_group,6) AS groupno, claim.result, claim.return_date, ;
-	STRTRAN(STRTRAN(IIF(LEFT(claim.policy_no, 2) <> "DW", member.customer_id, claim.policy_no), "P",""), "DW", "P") AS claimantid, claim.policy_no AS pol_no ;
+	claim.disc_date, claim.scharge, claim.sdiscount, claim.sbenfpaid, claim.deduc, claim.deduc_paid + claim.snopaid + claim.sremain AS deduc_paid, claim.snote, ;
+	claim.currency_rate, claim.refno, claim.sday, claim.icd9_1, claim.illness1, claim.illness2, claim.currency_type, claim.policy_no AS policy, ;
+	LEFT(member.policy_group,6) AS groupno, claim.result, claim.return_date, STRTRAN(STRTRAN(IIF(LEFT(claim.policy_no, 2) <> "DW", member.customer_id, ;
+	claim.policy_no), "P",""), "DW", "P") AS claimantid, claim.policy_no AS pol_no, claim.copayment ;
 FROM cims!claim LEFT JOIN cims!member ;
 	ON claim.fundcode+claim.policy_no = member.tpacode+member.policy_no ;
 WHERE claim.fundcode = tcFundCode ;
@@ -95,7 +96,7 @@ WITH loWorkSheet
 	.Cells(1,10).Value = "Total Submitted charges"
 	.Cells(1,11).Value = "Bank Charges"
 	.Cells(1,12).Value = "Total Submitted charges (incl of Bank charge)"
-	.Cells(1,13).Value = "Deductible/Non Payable"
+	.Cells(1,13).Value = "Deductible/Non Payable/Co-Payment"
 	.Cells(1,14).Value = "Total Amount Payable"
 	.Cells(1,15).Value = "Comments"
 	.Cells(1,16).Value = "Patient No"

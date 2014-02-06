@@ -1,12 +1,12 @@
 *       *********************************************************
 *       *                                                         
-*       * 07/11/2013             TIMS.MPR               06:17:06  
+*       * 22/01/2014             TIMS.MPR               06:15:41  
 *       *                                                         
 *       *********************************************************
 *       *                                                         
 *       * Wacharakiat Arkachaisri                                 
 *       *                                                         
-*       * Copyright (C) 2013 Health Benefit Consultants           
+*       * Copyright (C) 2014 Health Benefit Consultants           
 *       * Vorawat Building 19 floor 849 Silom RD.                 
 *       * Bangrak, BKK  10500                                      
 *       * Thailand                                          
@@ -40,7 +40,7 @@ DEFINE PAD _msm_file OF _MSYSMENU PROMPT "\<File" COLOR SCHEME 3 ;
 	NEGOTIATE  LEFT, NONE ;
 	KEY ALT+F, "" ;
 	MESSAGE "Creates, opens, saves, prints files or quits Visual FoxPro"
-DEFINE PAD _3x60dgz15 OF _MSYSMENU PROMPT "\<Client Info SQL" COLOR SCHEME 3 ;
+DEFINE PAD _3zc0df569 OF _MSYSMENU PROMPT "\<Client Info SQL" COLOR SCHEME 3 ;
 	NEGOTIATE  MIDDLE, MIDDLE ;
 	KEY CTRL+I, "CTRL+I" ;
 	MESSAGE "Client Infomation from SQL"
@@ -53,34 +53,34 @@ DEFINE PAD member OF _MSYSMENU PROMPT "\<Member" COLOR SCHEME 3 ;
 	NEGOTIATE  MIDDLE, MIDDLE ;
 	KEY ALT+M, "" ;
 	MESSAGE "View TPA member informatiom"
-DEFINE PAD _3x60dgz16 OF _MSYSMENU PROMPT "\<Convert File To Transfer" COLOR SCHEME 3 ;
+DEFINE PAD _3zc0df56a OF _MSYSMENU PROMPT "\<Convert File To Transfer" COLOR SCHEME 3 ;
 	KEY ALT+C, "" ;
 	SKIP FOR NOT INLIST(oApp.cUserLevel, 1, 8,9)
-DEFINE PAD _3x60dgz17 OF _MSYSMENU PROMPT "\<Import To SQL Server" COLOR SCHEME 3 ;
+DEFINE PAD _3zc0df56b OF _MSYSMENU PROMPT "\<Import To SQL Server" COLOR SCHEME 3 ;
 	KEY ALT+I, "" ;
 	SKIP FOR NOT INLIST(oApp.cUserLevel, 1, 8)
-DEFINE PAD _3x60dgz18 OF _MSYSMENU PROMPT "\<Report" COLOR SCHEME 3 ;
+DEFINE PAD _3zc0df56c OF _MSYSMENU PROMPT "\<Report" COLOR SCHEME 3 ;
 	KEY ALT+R, ""
-DEFINE PAD _3x60dgz19 OF _MSYSMENU PROMPT "\<Utility" COLOR SCHEME 3 ;
+DEFINE PAD _3zc0df56d OF _MSYSMENU PROMPT "\<Utility" COLOR SCHEME 3 ;
 	NEGOTIATE  MIDDLE, MIDDLE ;
 	KEY ALT+U, "" ;
 	SKIP FOR NOT INLIST(oApp.cUserLevel, 1, 8)
-DEFINE PAD _3x60dgz1a OF _MSYSMENU PROMPT "\<Web" COLOR SCHEME 3 ;
+DEFINE PAD _3zc0df56e OF _MSYSMENU PROMPT "\<Web" COLOR SCHEME 3 ;
 	KEY ALT+W, ""
-DEFINE PAD _3x60dgz1b OF _MSYSMENU PROMPT "E\<xit" COLOR SCHEME 3 ;
+DEFINE PAD _3zc0df56f OF _MSYSMENU PROMPT "E\<xit" COLOR SCHEME 3 ;
 	KEY ALT+X, ""
 ON PAD _msm_file OF _MSYSMENU ACTIVATE POPUP _mfile
-ON SELECTION PAD _3x60dgz15 OF _MSYSMENU oApp.DoForm("client_infoSQL")
+ON SELECTION PAD _3zc0df569 OF _MSYSMENU oApp.DoForm("client_infoSQL")
 ON PAD tpa OF _MSYSMENU ACTIVATE POPUP tpaclient
 ON PAD member OF _MSYSMENU ACTIVATE POPUP member
-ON PAD _3x60dgz16 OF _MSYSMENU ACTIVATE POPUP convertfil
-ON PAD _3x60dgz17 OF _MSYSMENU ACTIVATE POPUP importtosq
-ON PAD _3x60dgz18 OF _MSYSMENU ACTIVATE POPUP report
-ON PAD _3x60dgz19 OF _MSYSMENU ACTIVATE POPUP utility
-ON PAD _3x60dgz1a OF _MSYSMENU ACTIVATE POPUP web
-ON SELECTION PAD _3x60dgz1b OF _MSYSMENU ;
-	DO _3x60dgz1c ;
-	IN LOCFILE("\HIPS_SRC\MENUS\TIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is TIMS?")
+ON PAD _3zc0df56a OF _MSYSMENU ACTIVATE POPUP convertfil
+ON PAD _3zc0df56b OF _MSYSMENU ACTIVATE POPUP importtosq
+ON PAD _3zc0df56c OF _MSYSMENU ACTIVATE POPUP report
+ON PAD _3zc0df56d OF _MSYSMENU ACTIVATE POPUP utility
+ON PAD _3zc0df56e OF _MSYSMENU ACTIVATE POPUP web
+ON SELECTION PAD _3zc0df56f OF _MSYSMENU ;
+	DO _3zc0df56g ;
+	IN LOCFILE("\CIMS\MENUS\TIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is TIMS?")
 
 DEFINE POPUP _mfile MARGIN RELATIVE SHADOW COLOR SCHEME 4
 DEFINE BAR 1 OF _mfile PROMPT "\<New..." ;
@@ -139,8 +139,8 @@ ON SELECTION BAR 5 OF _mfile oApp.oToolBar.CmdSave.Click()
 ON SELECTION BAR 6 OF _mfile oApp.oToolBar.CmdUndo.Click()
 ON SELECTION BAR 8 OF _mfile RUN /N1 fxsclnt.exe
 ON SELECTION BAR 9 OF _mfile ;
-	DO _3x60dgz1d ;
-	IN LOCFILE("\HIPS_SRC\MENUS\TIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is TIMS?")
+	DO _3zc0df56o ;
+	IN LOCFILE("\CIMS\MENUS\TIMS" ,"MPX;MPR|FXP;PRG" ,"WHERE is TIMS?")
 ON SELECTION BAR 13 OF _mfile DO FORM form\sendmemo
 ON SELECTION BAR 15 OF _mfile Activate Window calculator
 ON SELECTION BAR 16 OF _mfile Activate Window calendar
@@ -198,44 +198,46 @@ DEFINE BAR 1 OF convertfil PROMPT "Falcon Member File"
 DEFINE BAR 2 OF convertfil PROMPT "\-"
 DEFINE BAR 3 OF convertfil PROMPT "BUI TXT File"
 DEFINE BAR 4 OF convertfil PROMPT "BUI CSV File"
-DEFINE BAR 5 OF convertfil PROMPT "\-"
-DEFINE BAR 6 OF convertfil PROMPT "ALA PA File"
-DEFINE BAR 7 OF convertfil PROMPT "Kurnia PA File"
-DEFINE BAR 8 OF convertfil PROMPT "Siam City Data File"
-DEFINE BAR 9 OF convertfil PROMPT "\-"
-DEFINE BAR 10 OF convertfil PROMPT "Deves Raksuk Data File"
-DEFINE BAR 11 OF convertfil PROMPT "Deves Group Member"
-DEFINE BAR 12 OF convertfil PROMPT "\-"
-DEFINE BAR 13 OF convertfil PROMPT "Cigna Data File"
-DEFINE BAR 14 OF convertfil PROMPT "Siam Sumsung Data File"
-DEFINE BAR 15 OF convertfil PROMPT "BKI TQM Member File"
-DEFINE BAR 16 OF convertfil PROMPT "KPI Member File"
-DEFINE BAR 17 OF convertfil PROMPT "\-"
-DEFINE BAR 18 OF convertfil PROMPT "AGL Member file"
-DEFINE BAR 19 OF convertfil PROMPT "AGL Benefit File"
-DEFINE BAR 20 OF convertfil PROMPT "Update Fx Rate"
-DEFINE BAR 21 OF convertfil PROMPT "\-"
-DEFINE BAR 22 OF convertfil PROMPT "Aviva Data file"
-DEFINE BAR 23 OF convertfil PROMPT "Aviva Cancel Data"
-DEFINE BAR 24 OF convertfil PROMPT "AXA Data File"
+DEFINE BAR 5 OF convertfil PROMPT "BUI XLS File"
+DEFINE BAR 6 OF convertfil PROMPT "\-"
+DEFINE BAR 7 OF convertfil PROMPT "ALA PA File"
+DEFINE BAR 8 OF convertfil PROMPT "Kurnia PA File"
+DEFINE BAR 9 OF convertfil PROMPT "Siam City Data File"
+DEFINE BAR 10 OF convertfil PROMPT "\-"
+DEFINE BAR 11 OF convertfil PROMPT "Deves Raksuk Data File"
+DEFINE BAR 12 OF convertfil PROMPT "Deves Group Member"
+DEFINE BAR 13 OF convertfil PROMPT "\-"
+DEFINE BAR 14 OF convertfil PROMPT "Cigna Data File"
+DEFINE BAR 15 OF convertfil PROMPT "Siam Sumsung Data File"
+DEFINE BAR 16 OF convertfil PROMPT "BKI TQM Member File"
+DEFINE BAR 17 OF convertfil PROMPT "KPI Member File"
+DEFINE BAR 18 OF convertfil PROMPT "\-"
+DEFINE BAR 19 OF convertfil PROMPT "AGL Member file"
+DEFINE BAR 20 OF convertfil PROMPT "AGL Benefit File"
+DEFINE BAR 21 OF convertfil PROMPT "Update Fx Rate"
+DEFINE BAR 22 OF convertfil PROMPT "\-"
+DEFINE BAR 23 OF convertfil PROMPT "Aviva Data file"
+DEFINE BAR 24 OF convertfil PROMPT "Aviva Cancel Data"
+DEFINE BAR 25 OF convertfil PROMPT "AXA Data File"
 ON BAR 1 OF convertfil ACTIVATE POPUP falconmemb
 ON SELECTION BAR 3 OF convertfil do progs\import_bui
 ON SELECTION BAR 4 OF convertfil do progs\import_bui_group
-ON SELECTION BAR 6 OF convertfil do progs\import_ala
-ON SELECTION BAR 7 OF convertfil do progs\import_kurnia_txt
-ON SELECTION BAR 8 OF convertfil do Progs\import_scil_xls.prg
-ON SELECTION BAR 10 OF convertfil do Progs\import_dvs_raksuk
-ON SELECTION BAR 11 OF convertfil do Progs\import_dvs_group.prg
-ON BAR 13 OF convertfil ACTIVATE POPUP cignadataf
-ON SELECTION BAR 14 OF convertfil do Progs\import_ssl_txt
-ON BAR 15 OF convertfil ACTIVATE POPUP bkitqmmemb
-ON SELECTION BAR 16 OF convertfil do Progs\import_kpi_txt.prg
-ON SELECTION BAR 18 OF convertfil do Progs\import_agl_txt.prg
-ON SELECTION BAR 19 OF convertfil do Progs\import_agl_co_txt.prg
-ON SELECTION BAR 20 OF convertfil do Progs\update_agl_fxrate
-ON SELECTION BAR 22 OF convertfil do Progs\import_lawton_xls.prg
-ON SELECTION BAR 23 OF convertfil do Progs\import_lawton_delete_xls.prg
-ON SELECTION BAR 24 OF convertfil do Progs\import_axa_xls.prg
+ON SELECTION BAR 5 OF convertfil do progs\import_bui_xls
+ON SELECTION BAR 7 OF convertfil do progs\import_ala
+ON SELECTION BAR 8 OF convertfil do progs\import_kurnia_txt
+ON SELECTION BAR 9 OF convertfil do Progs\import_scil_xls.prg
+ON SELECTION BAR 11 OF convertfil do Progs\import_dvs_raksuk
+ON SELECTION BAR 12 OF convertfil do Progs\import_dvs_group.prg
+ON BAR 14 OF convertfil ACTIVATE POPUP cignadataf
+ON SELECTION BAR 15 OF convertfil do Progs\import_ssl_txt
+ON BAR 16 OF convertfil ACTIVATE POPUP bkitqmmemb
+ON SELECTION BAR 17 OF convertfil do Progs\import_kpi_txt.prg
+ON SELECTION BAR 19 OF convertfil do Progs\import_agl_txt.prg
+ON SELECTION BAR 20 OF convertfil do Progs\import_agl_co_txt.prg
+ON SELECTION BAR 21 OF convertfil do Progs\update_agl_fxrate
+ON SELECTION BAR 23 OF convertfil do Progs\import_lawton_xls.prg
+ON SELECTION BAR 24 OF convertfil do Progs\import_lawton_delete_xls.prg
+ON SELECTION BAR 25 OF convertfil do Progs\import_axa_xls.prg
 
 DEFINE POPUP falconmemb MARGIN RELATIVE SHADOW COLOR SCHEME 4
 DEFINE BAR 1 OF falconmemb PROMPT "New Member Data"
@@ -269,9 +271,11 @@ DEFINE POPUP bkitqmmemb MARGIN RELATIVE SHADOW COLOR SCHEME 4
 DEFINE BAR 1 OF bkitqmmemb PROMPT "New & Adjust File"
 DEFINE BAR 2 OF bkitqmmemb PROMPT "Payment File"
 DEFINE BAR 3 OF bkitqmmemb PROMPT "Cancel File"
+DEFINE BAR 4 OF bkitqmmemb PROMPT "NR File"
 ON SELECTION BAR 1 OF bkitqmmemb do Progs\import_bki_tqm.prg
 ON SELECTION BAR 2 OF bkitqmmemb do Progs\import_bki_tqm_payment.prg
 ON SELECTION BAR 3 OF bkitqmmemb do Progs\import_bki_tqm_cancel.prg
+ON SELECTION BAR 4 OF bkitqmmemb do Progs\import_bki_nr
 
 DEFINE POPUP importtosq MARGIN RELATIVE SHADOW COLOR SCHEME 4
 DEFINE BAR 1 OF importtosq PROMPT "SMG New Text File"
@@ -281,6 +285,7 @@ DEFINE BAR 4 OF importtosq PROMPT "SMG New Excel File"
 DEFINE BAR 5 OF importtosq PROMPT "SMG Adj Excel File"
 DEFINE BAR 6 OF importtosq PROMPT "SMG Renew Excel File"
 DEFINE BAR 7 OF importtosq PROMPT "SMG BlackList"
+DEFINE BAR 8 OF importtosq PROMPT "\-"
 ON SELECTION BAR 1 OF importtosq do import_smg_pah_txt_sql
 ON SELECTION BAR 2 OF importtosq do import_smg_pah_endos_txt_sql
 ON SELECTION BAR 4 OF importtosq do import_smg_new_sql
@@ -292,14 +297,11 @@ DEFINE POPUP report MARGIN RELATIVE SHADOW COLOR SCHEME 4
 DEFINE BAR 1 OF report PROMPT "\<Daily Report"
 DEFINE BAR 2 OF report PROMPT "\<Monthly Report" ;
 	SKIP FOR NOT INLIST(oApp.cUserLevel, 1, 8)
-DEFINE BAR 3 OF report PROMPT "\<Fee Report" ;
-	SKIP FOR NOT INLIST(oApp.cUserLevel, 1, 2)
-DEFINE BAR 4 OF report PROMPT "\-"
-DEFINE BAR 5 OF report PROMPT "Report List"
+DEFINE BAR 3 OF report PROMPT "\-"
+DEFINE BAR 4 OF report PROMPT "Report List"
 ON BAR 1 OF report ACTIVATE POPUP dailyrepor
 ON BAR 2 OF report ACTIVATE POPUP monthlyrep
-ON BAR 3 OF report ACTIVATE POPUP feereport
-ON SELECTION BAR 5 OF report DO FORM form\reportfilter
+ON SELECTION BAR 4 OF report DO FORM form\reportfilter
 
 DEFINE POPUP dailyrepor MARGIN RELATIVE SHADOW COLOR SCHEME 4
 DEFINE BAR 1 OF dailyrepor PROMPT "Excel Cover Report"
@@ -325,7 +327,7 @@ ON SELECTION BAR 1 OF excelcover do progs\excelcover
 ON SELECTION BAR 2 OF excelcover do progs\policy2xls_cover
 
 DEFINE POPUP monthlyrep MARGIN RELATIVE SHADOW COLOR SCHEME 4
-DEFINE BAR 1 OF monthlyrep PROMPT "Claim by Agent"
+DEFINE BAR 1 OF monthlyrep PROMPT "Aviva Monthly Report"
 DEFINE BAR 2 OF monthlyrep PROMPT "\--------------------------------------"
 DEFINE BAR 3 OF monthlyrep PROMPT "HS Indv Monthly Report"
 DEFINE BAR 4 OF monthlyrep PROMPT "PA Monthly Report"
@@ -348,7 +350,7 @@ DEFINE BAR 20 OF monthlyrep PROMPT "DVS Group Monthly Report"
 DEFINE BAR 21 OF monthlyrep PROMPT "\-"
 DEFINE BAR 22 OF monthlyrep PROMPT "Cigna Dental Monthly Report"
 DEFINE BAR 23 OF monthlyrep PROMPT "Aviva Monthly Report"
-ON SELECTION BAR 1 OF monthlyrep Do progs\claimbyagent
+ON SELECTION BAR 1 OF monthlyrep Do progs\Progs\query_avi_hs
 ON SELECTION BAR 3 OF monthlyrep Do progs\query_nsi_hs
 ON SELECTION BAR 4 OF monthlyrep Do progs\pa_monthly_report
 ON SELECTION BAR 5 OF monthlyrep Do progs\dental_monthly_report
@@ -366,27 +368,6 @@ ON SELECTION BAR 19 OF monthlyrep Do progs\query_dvs_ttc
 ON SELECTION BAR 20 OF monthlyrep Do progs\query_dvs_734
 ON SELECTION BAR 22 OF monthlyrep Do progs\query_cig_dental
 ON SELECTION BAR 23 OF monthlyrep Do Progs\query_avi_hs
-
-DEFINE POPUP feereport MARGIN RELATIVE SHADOW COLOR SCHEME 4
-DEFINE BAR 1 OF feereport PROMPT "Fee Report By Claim"
-DEFINE BAR 2 OF feereport PROMPT "BUI Fee Report"
-DEFINE BAR 3 OF feereport PROMPT "TIC Fee Report"
-DEFINE BAR 4 OF feereport PROMPT "HB Fee Report"
-DEFINE BAR 5 OF feereport PROMPT "Falcon Fee Report"
-DEFINE BAR 6 OF feereport PROMPT "Advance Fee Report"
-DEFINE BAR 7 OF feereport PROMPT "Kurnia Fee Report"
-DEFINE BAR 8 OF feereport PROMPT "Siam City Fee Report"
-ON SELECTION BAR 1 OF feereport oApp.doform("fee_by_claim")
-ON SELECTION BAR 2 OF feereport Do progs\bui_fee
-ON BAR 3 OF feereport ACTIVATE POPUP ticfeerepo
-ON SELECTION BAR 4 OF feereport do progs\hb_ep
-ON SELECTION BAR 5 OF feereport do progs\falcon_fee
-ON SELECTION BAR 6 OF feereport do progs\ala_fee
-ON SELECTION BAR 7 OF feereport do progs\kni_fee
-
-DEFINE POPUP ticfeerepo MARGIN RELATIVE SHADOW COLOR SCHEME 4
-DEFINE BAR 1 OF ticfeerepo PROMPT "PA Fee"
-ON SELECTION BAR 1 OF ticfeerepo Do progs\tic_pa_fee
 
 DEFINE POPUP utility MARGIN RELATIVE SHADOW COLOR SCHEME 4
 DEFINE BAR 1 OF utility PROMPT "Item Definition" ;
@@ -446,18 +427,18 @@ ON SELECTION BAR 4 OF web do "progs\del browser2screen"
 
 *       *********************************************************
 *       *                                                         
-*       * _3X60DGZ1C  ON SELECTION PAD                            
+*       * _3ZC0DF56G  ON SELECTION PAD                            
 *       *                                                         
 *       * Procedure Origin:                                       
 *       *                                                         
-*       * From Menu:  TIMS.MPR,            Record:  185           
+*       * From Menu:  TIMS.MPR,            Record:  176           
 *       * Called By:  ON SELECTION PAD                            
 *       * Prompt:     Exit                                        
 *       * Snippet:    1                                           
 *       *                                                         
 *       *********************************************************
 *
-PROCEDURE _3x60dgz1c
+PROCEDURE _3zc0df56g
 IF USED("tracking")
 	SELECT tracking
 	SET ORDER TO logintime
@@ -471,7 +452,7 @@ CLEAR EVENT
 
 *       *********************************************************
 *       *                                                         
-*       * _3X60DGZ1D  ON SELECTION BAR 9 OF POPUP _mfile          
+*       * _3ZC0DF56O  ON SELECTION BAR 9 OF POPUP _mfile          
 *       *                                                         
 *       * Procedure Origin:                                       
 *       *                                                         
@@ -482,7 +463,7 @@ CLEAR EVENT
 *       *                                                         
 *       *********************************************************
 *
-PROCEDURE _3x60dgz1d
+PROCEDURE _3zc0df56o
 LOCAL lcOldError
 lcOldError = ON('ERROR')
 ON ERROR *

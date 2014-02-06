@@ -134,7 +134,7 @@ SELECT Claim.notify_no, Claim.notify_date, Claim.service_type AS serv_type, Clai
 FROM  cims!claim ;
 WHERE Claim.fundcode = gcFundCode ;
 	AND Claim.claim_with = "H" ;
-	AND inlist(Claim.result, 'A1', 'A11', 'D3', 'D31', 'W6') ;
+	AND inlist(Claim.result, 'A1', 'A11', 'D3', 'D31', 'W6','W61') ;
 	AND Claim.ref_date BETWEEN gtCurDate AND gtEndDate ;
 INTO TABLE (gcFundCode+"_HS_Claim_Month")
 ***
@@ -185,6 +185,7 @@ SELECT cause_type, ;
 	SUM(IIF(status = "W", 1, 0)) AS w_noc, ;
 	SUM(IIF(status = "W", paid, 0)) AS w_paid ;
 FROM (gcFundCode+"_HS_Claim") ;
+where notify_dat BETWEEN gtCurDate AND gtEndDate ;
 GROUP BY 1 ;
 ORDER BY 1 ;
 INTO TABLE (gcFundCode+"_HS_PlanbyItems_Year")
